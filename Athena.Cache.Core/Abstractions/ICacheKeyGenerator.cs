@@ -1,12 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Athena.Cache.Core.Abstractions;
 
-namespace Athena.Cache.Core.Abstractions
+/// <summary>
+/// 캐시 키 생성기 인터페이스
+/// </summary>
+public interface ICacheKeyGenerator
 {
-    internal interface ICacheKeyGenerator
-    {
-    }
+    /// <summary>
+    /// API 요청 파라미터를 기반으로 캐시 키 생성
+    /// </summary>
+    string GenerateKey(string controller, string action, IDictionary<string, object?>? parameters = null);
+
+    /// <summary>
+    /// 테이블 추적용 키 생성
+    /// </summary>
+    string GenerateTableTrackingKey(string tableName);
+
+    /// <summary>
+    /// 파라미터 해시 생성
+    /// </summary>
+    string GenerateParameterHash(IDictionary<string, object?>? parameters);
 }

@@ -1,9 +1,34 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
+		<!-- Package Info -->
+		<PackageId>Athena.Cache.Core</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Bruno Kim</Authors>
+		<Description>Smart caching library for ASP.NET Core with automatic query parameter key generation and table-based cache invalidation</Description>
+		<PackageTags>cache aspnetcore caching invalidation</PackageTags>
+		<RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.3.0" />
+		<PackageReference Include="System.Text.Json" Version="9.0.7" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
+	</ItemGroup>
 </Project>

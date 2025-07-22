@@ -11,6 +11,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Tests", "Athen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Sample", "Athena.Cache.Sample\Athena.Cache.Sample.csproj", "{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EA6E562B-CA6A-43AB-B329-4BE38DE45E74}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3FAA31C9-A0B7-48AB-BEBF-0AB91478D8A8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{CE8B05B8-5445-4B13-9EBB-486392B9E29C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{03C24C82-DFE7-4DBB-9F5C-DF72E3563833}"
+	ProjectSection(SolutionItems) = preProject
+		API-Documentation.md = API-Documentation.md
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +48,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{568E603B-E653-4797-A2F8-A0484593DFFA} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
+		{A1867461-ABD0-4D1E-A31A-4DFD0C19FBFC} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
+		{94A5A735-5BB3-4FB5-88A5-0FDF105F936B} = {3FAA31C9-A0B7-48AB-BEBF-0AB91478D8A8}
+		{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4} = {CE8B05B8-5445-4B13-9EBB-486392B9E29C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FA0453E9-B173-4B9B-A314-A78075A9F0BA}
