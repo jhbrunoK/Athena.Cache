@@ -2,91 +2,90 @@
 using Athena.Cache.Sample.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Athena.Cache.Sample.Services
+namespace Athena.Cache.Sample.Services;
+
+public class OrderService : IOrderService
 {
-    public class OrderService : IOrderService
+    private readonly SampleDbContext _context;
+    private readonly ILogger<OrderService> _logger;
+
+    public OrderService(SampleDbContext context, ILogger<OrderService> logger)
     {
-        private readonly SampleDbContext _context;
-        private readonly ILogger<OrderService> _logger;
+        _context = context;
+        _logger = logger;
+    }
 
-        public OrderService(SampleDbContext context, ILogger<OrderService> logger)
+    public async Task<IEnumerable<OrderDto>> GetOrdersAsync(int? userId = null, decimal? minAmount = null)
+    {
+        var query = _context.Orders.Include(o => o.User).AsQueryable();
+
+        if (userId.HasValue)
         {
-            _context = context;
-            _logger = logger;
+            query = query.Where(o => o.UserId == userId.Value);
         }
 
-        public async Task<IEnumerable<OrderDto>> GetOrdersAsync(int? userId = null, decimal? minAmount = null)
+        if (minAmount.HasValue)
         {
-            var query = _context.Orders.Include(o => o.User).AsQueryable();
+            query = query.Where(o => o.Amount >= minAmount.Value);
+        }
 
-            if (userId.HasValue)
+        var orders = await query
+            .Select(o => new OrderDto
             {
-                query = query.Where(o => o.UserId == userId.Value);
-            }
+                Id = o.Id,
+                UserName = o.User.Name,
+                ProductName = o.ProductName,
+                Amount = o.Amount,
+                OrderDate = o.OrderDate
+            })
+            .ToListAsync();
 
-            if (minAmount.HasValue)
-            {
-                query = query.Where(o => o.Amount >= minAmount.Value);
-            }
+        return orders;
+    }
 
-            var orders = await query
-                .Select(o => new OrderDto
-                {
-                    Id = o.Id,
-                    UserName = o.User.Name,
-                    ProductName = o.ProductName,
-                    Amount = o.Amount,
-                    OrderDate = o.OrderDate
-                })
-                .ToListAsync();
+    public async Task<OrderDto?> GetOrderByIdAsync(int id)
+    {
+        var order = await _context.Orders
+            .Include(o => o.User)
+            .FirstOrDefaultAsync(o => o.Id == id);
 
-            return orders;
-        }
+        if (order == null) return null;
 
-        public async Task<OrderDto?> GetOrderByIdAsync(int id)
+        return new OrderDto
         {
-            var order = await _context.Orders
-                .Include(o => o.User)
-                .FirstOrDefaultAsync(o => o.Id == id);
+            Id = order.Id,
+            UserName = order.User.Name,
+            ProductName = order.ProductName,
+            Amount = order.Amount,
+            OrderDate = order.OrderDate
+        };
+    }
 
-            if (order == null) return null;
+    public async Task<OrderDto> CreateOrderAsync(Order order)
+    {
+        _context.Orders.Add(order);
+        await _context.SaveChangesAsync();
 
-            return new OrderDto
-            {
-                Id = order.Id,
-                UserName = order.User.Name,
-                ProductName = order.ProductName,
-                Amount = order.Amount,
-                OrderDate = order.OrderDate
-            };
-        }
+        var user = await _context.Users.FindAsync(order.UserId);
 
-        public async Task<OrderDto> CreateOrderAsync(Order order)
+        return new OrderDto
         {
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
+            Id = order.Id,
+            UserName = user?.Name ?? "Unknown",
+            ProductName = order.ProductName,
+            Amount = order.Amount,
+            OrderDate = order.OrderDate
+        };
+    }
 
-            var user = await _context.Users.FindAsync(order.UserId);
+    public async Task<bool> DeleteOrderAsync(int id)
+    {
+        var order = await _context.Orders.FindAsync(id);
+        if (order == null) return false;
 
-            return new OrderDto
-            {
-                Id = order.Id,
-                UserName = user?.Name ?? "Unknown",
-                ProductName = order.ProductName,
-                Amount = order.Amount,
-                OrderDate = order.OrderDate
-            };
-        }
+        _context.Orders.Remove(order);
+        await _context.SaveChangesAsync();
 
-        public async Task<bool> DeleteOrderAsync(int id)
-        {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null) return false;
-
-            _context.Orders.Remove(order);
-            await _context.SaveChangesAsync();
-
-            return true;
-        }
+        return true;
     }
 }

@@ -2,7 +2,6 @@
 using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Filters;
 using Athena.Cache.Core.Implementations;
-using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Athena.Cache.Core.Extensions;

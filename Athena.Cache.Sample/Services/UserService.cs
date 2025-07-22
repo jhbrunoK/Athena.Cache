@@ -2,114 +2,113 @@
 using Athena.Cache.Sample.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Athena.Cache.Sample.Services
+namespace Athena.Cache.Sample.Services;
+
+public class UserService(SampleDbContext context, ILogger<UserService> logger) : IUserService
 {
-    public class UserService(SampleDbContext context, ILogger<UserService> logger) : IUserService
+    private readonly ILogger<UserService> _logger = logger;
+
+    public async Task<IEnumerable<UserDto>> GetUsersAsync(string? searchName = null, int? minAge = null, bool? isActive = null)
     {
-        private readonly ILogger<UserService> _logger = logger;
+        var query = context.Users.AsQueryable();
 
-        public async Task<IEnumerable<UserDto>> GetUsersAsync(string? searchName = null, int? minAge = null, bool? isActive = null)
+        if (!string.IsNullOrEmpty(searchName))
         {
-            var query = context.Users.AsQueryable();
-
-            if (!string.IsNullOrEmpty(searchName))
-            {
-                query = query.Where(u => u.Name.Contains(searchName));
-            }
-
-            if (minAge.HasValue)
-            {
-                query = query.Where(u => u.Age >= minAge.Value);
-            }
-
-            if (isActive.HasValue)
-            {
-                query = query.Where(u => u.IsActive == isActive.Value);
-            }
-
-            var users = await query
-                .Include(u => u.Orders)
-                .Select(u => new UserDto
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Email = u.Email,
-                    Age = u.Age,
-                    IsActive = u.IsActive,
-                    OrderCount = u.Orders.Count
-                })
-                .ToListAsync();
-
-            return users;
+            query = query.Where(u => u.Name.Contains(searchName));
         }
 
-        public async Task<UserDto?> GetUserByIdAsync(int id)
+        if (minAge.HasValue)
         {
-            var user = await context.Users
-                .Include(u => u.Orders)
-                .FirstOrDefaultAsync(u => u.Id == id);
+            query = query.Where(u => u.Age >= minAge.Value);
+        }
 
-            if (user == null) return null;
+        if (isActive.HasValue)
+        {
+            query = query.Where(u => u.IsActive == isActive.Value);
+        }
 
-            return new UserDto
+        var users = await query
+            .Include(u => u.Orders)
+            .Select(u => new UserDto
             {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Age = user.Age,
-                IsActive = user.IsActive,
-                OrderCount = user.Orders.Count
-            };
-        }
+                Id = u.Id,
+                Name = u.Name,
+                Email = u.Email,
+                Age = u.Age,
+                IsActive = u.IsActive,
+                OrderCount = u.Orders.Count
+            })
+            .ToListAsync();
 
-        public async Task<UserDto> CreateUserAsync(User user)
+        return users;
+    }
+
+    public async Task<UserDto?> GetUserByIdAsync(int id)
+    {
+        var user = await context.Users
+            .Include(u => u.Orders)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null) return null;
+
+        return new UserDto
         {
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Age = user.Age,
+            IsActive = user.IsActive,
+            OrderCount = user.Orders.Count
+        };
+    }
 
-            return new UserDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Age = user.Age,
-                IsActive = user.IsActive,
-                OrderCount = 0
-            };
-        }
+    public async Task<UserDto> CreateUserAsync(User user)
+    {
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
 
-        public async Task<UserDto?> UpdateUserAsync(int id, User updatedUser)
+        return new UserDto
         {
-            var user = await context.Users.FindAsync(id);
-            if (user == null) return null;
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Age = user.Age,
+            IsActive = user.IsActive,
+            OrderCount = 0
+        };
+    }
 
-            user.Name = updatedUser.Name;
-            user.Email = updatedUser.Email;
-            user.Age = updatedUser.Age;
-            user.IsActive = updatedUser.IsActive;
+    public async Task<UserDto?> UpdateUserAsync(int id, User updatedUser)
+    {
+        var user = await context.Users.FindAsync(id);
+        if (user == null) return null;
 
-            await context.SaveChangesAsync();
+        user.Name = updatedUser.Name;
+        user.Email = updatedUser.Email;
+        user.Age = updatedUser.Age;
+        user.IsActive = updatedUser.IsActive;
 
-            return new UserDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Age = user.Age,
-                IsActive = user.IsActive,
-                OrderCount = user.Orders?.Count ?? 0
-            };
-        }
+        await context.SaveChangesAsync();
 
-        public async Task<bool> DeleteUserAsync(int id)
+        return new UserDto
         {
-            var user = await context.Users.FindAsync(id);
-            if (user == null) return false;
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Age = user.Age,
+            IsActive = user.IsActive,
+            OrderCount = user.Orders?.Count ?? 0
+        };
+    }
 
-            context.Users.Remove(user);
-            await context.SaveChangesAsync();
+    public async Task<bool> DeleteUserAsync(int id)
+    {
+        var user = await context.Users.FindAsync(id);
+        if (user == null) return false;
 
-            return true;
-        }
+        context.Users.Remove(user);
+        await context.SaveChangesAsync();
+
+        return true;
     }
 }

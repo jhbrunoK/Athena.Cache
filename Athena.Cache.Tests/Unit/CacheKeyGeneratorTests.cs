@@ -96,7 +96,7 @@ public class CacheKeyGeneratorTests
             { "age", null },
             { "active", true },
             { "description", "" },
-            { "tags", new string[0] }
+            { "tags", Array.Empty<string>() }
         };
 
         var parametersWithoutNulls = new Dictionary<string, object?>
