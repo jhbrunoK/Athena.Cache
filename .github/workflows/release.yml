@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+          6.0.x
+          8.0.x
+    
+    - name: Extract version from tag
+      id: extract_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --no-restore --configuration Release -p:Version=${{ steps.extract_version.outputs.VERSION }}
+    
+    - name: Test
+      run: dotnet test --no-build --configuration Release
+    
+    - name: Pack NuGet packages
+      run: |
+        dotnet pack src/Athena.Cache.Core/Athena.Cache.Core.csproj --no-build --configuration Release -p:Version=${{ steps.extract_version.outputs.VERSION }} --output ./packages
+        dotnet pack src/Athena.Cache.Redis/Athena.Cache.Redis.csproj --no-build --configuration Release -p:Version=${{ steps.extract_version.outputs.VERSION }} --output ./packages
+    
+    - name: Publish to NuGet
+      run: |
+        dotnet nuget push ./packages/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.extract_version.outputs.VERSION }}
+        body: |
+          ## Changes in ${{ steps.extract_version.outputs.VERSION }}
+          
+          ### Features
+          - Automatic query parameter cache key generation
+          - Table-based cache invalidation
+          - Support for MemoryCache and Redis
+          - ASP.NET Core middleware and action filters
+          
+          ### Installation
+          ```bash
+          # Core package
+          dotnet add package Athena.Cache.Core
+          
+          # Redis support
+          dotnet add package Athena.Cache.Redis
+          ```
+          
+          ### Quick Start
+          ```csharp
+          // Program.cs
+          services.AddAthenaCacheComplete(options => {
+              options.Namespace = "MyApp";
+              options.DefaultExpirationMinutes = 30;
+          });
+          
+          app.UseAthenaCache();
+          
+          // Controller
+          [AthenaCache(ExpirationMinutes = 60)]
+          [CacheInvalidateOn("Users")]
+          public async Task<IActionResult> GetUsers() { ... }
+          ```
+        draft: false
+        prerelease: false
