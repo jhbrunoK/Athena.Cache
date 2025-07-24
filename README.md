@@ -13,13 +13,13 @@ Athena.Cache는 ASP.NET Core 애플리케이션을 위한 지능형 캐싱 라�
 
 ## ✨ 주요 기능
 
-    - 🔑 **자동 캐시 키 생성**: 쿼리 파라미터 → SHA256 해시 키 자동 변환
-    - 🗂️ **테이블 기반 무효화**: 데이터베이스 테이블 변경 시 관련 캐시 자동 삭제
-    - 🚀 **다중 백엔드 지원**: MemoryCache, Redis, Valkey 지원
-    - 🎯 **선언적 캐싱**: `[AthenaCache]`, `[CacheInvalidateOn]` 어트리뷰트
-    - ⚡ **고성능**: 대용량 트래픽 환경에 최적화
-    - 🔧 **쉬운 통합**: 미들웨어와 액션 필터로 간단한 설정
-    - 🧪 **완전한 테스트**: 포괄적인 단위 및 통합 테스트
+- 🔑 **자동 캐시 키 생성**: 쿼리 파라미터 → SHA256 해시 키 자동 변환
+- 🗂️ **테이블 기반 무효화**: 데이터베이스 테이블 변경 시 관련 캐시 자동 삭제
+- 🚀 **다중 백엔드 지원**: MemoryCache, Redis, Valkey 지원
+- 🎯 **선언적 캐싱**: `[AthenaCache]`, `[CacheInvalidateOn]` 어트리뷰트
+- ⚡ **고성능**: 대용량 트래픽 환경에 최적화
+- 🔧 **쉬운 통합**: 미들웨어와 액션 필터로 간단한 설정
+- 🧪 **완전한 테스트**: 포괄적인 단위 및 통합 테스트
 
 ## 🚀 빠른 시작
 
@@ -205,15 +205,6 @@ dotnet test --collect:"XPlat Code Coverage"
 docker run -d -p 6379:6379 redis:7-alpine
 dotnet test --filter Category=Integration
 ```
-
-## 📖 추가 문서
-
-- [설치 가이드](docs/installation.md)
-- [설정 방법](docs/configuration.md)
-- [캐시 무효화](docs/invalidation.md)
-- [성능 최적화](docs/performance.md)
-- [API 레퍼런스](docs/api-reference.md)
-- [예제 모음](samples/)
 
 ## 🏗️ 아키텍처
 
