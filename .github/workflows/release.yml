@@ -34,8 +34,8 @@ jobs:
     
     - name: Pack NuGet packages
       run: |
-        dotnet pack src/Athena.Cache.Core/Athena.Cache.Core.csproj --no-build --configuration Release -p:Version=${{ steps.extract_version.outputs.VERSION }} --output ./packages
-        dotnet pack src/Athena.Cache.Redis/Athena.Cache.Redis.csproj --no-build --configuration Release -p:Version=${{ steps.extract_version.outputs.VERSION }} --output ./packages
+        dotnet pack Athena.Cache.Core/Athena.Cache.Core.csproj --no-build --configuration Release -p:Version=${{ steps.extract_version.outputs.VERSION }} --output ./packages
+        dotnet pack Athena.Cache.Redis/Athena.Cache.Redis.csproj --no-build --configuration Release -p:Version=${{ steps.extract_version.outputs.VERSION }} --output ./packages
     
     - name: Publish to NuGet
       run: |
