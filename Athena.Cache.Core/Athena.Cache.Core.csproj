@@ -12,10 +12,31 @@
 		<Version>1.0.0</Version>
 		<Authors>Bruno Kim</Authors>
 		<Description>Smart caching library for ASP.NET Core with automatic query parameter key generation and table-based cache invalidation</Description>
-		<PackageTags>cache aspnetcore caching invalidation</PackageTags>
+		<PackageTags>cache;caching;aspnetcore;redis;performance;invalidation;memcache</PackageTags>
 		<RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
+		<PackageReleaseNotes> v1.0.0:
+      - Initial release
+      - Automatic query parameter cache key generation
+      - Table-based cache invalidation
+      - Support for MemoryCache and Redis
+      - ASP.NET Core middleware and action filters
+      - Comprehensive test coverage</PackageReleaseNotes>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Include="..\icon.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />

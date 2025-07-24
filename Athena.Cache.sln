@@ -20,6 +20,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{03C24C82-DFE7-4DBB-9F5C-DF72E3563833}"
 	ProjectSection(SolutionItems) = preProject
 		API-Documentation.md = API-Documentation.md
+		..\..\..\Downloads\icon.png = ..\..\..\Downloads\icon.png
 		README.md = README.md
 	EndProjectSection
 EndProject
