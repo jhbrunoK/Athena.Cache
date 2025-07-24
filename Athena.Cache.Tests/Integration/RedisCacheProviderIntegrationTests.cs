@@ -56,7 +56,7 @@ public class RedisCacheProviderIntegrationTests : IAsyncLifetime
 
         // Act
         await _cacheProvider!.SetAsync(key, value);
-        var result = await _cacheProvider.GetAsync<dynamic>(key);
+        var result = await _cacheProvider.GetAsync<object>(key);
 
         // Assert
         result.Should().NotBeNull();

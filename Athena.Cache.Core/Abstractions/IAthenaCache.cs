@@ -1,6 +1,4 @@
-﻿using Athena.Cache.Core.Enums;
-
-namespace Athena.Cache.Core.Abstractions;
+﻿namespace Athena.Cache.Core.Abstractions;
 
 /// <summary>
 /// 캐시 제공자 추상화 인터페이스

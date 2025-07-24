@@ -1,7 +1,7 @@
 ﻿using Athena.Cache.Core.Abstractions;
+using Athena.Cache.Core.Extensions;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Athena.Cache.Core.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Athena.Cache.Tests.EndToEnd;
@@ -14,7 +14,8 @@ public class EndToEndScenarioTests
         // Arrange - DI 컨테이너 설정
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
-        services.AddAthenaCache(options =>
+
+        services.AddAthenaCacheComplete(options =>
         {
             options.Namespace = "E2ETest";
             options.DefaultExpirationMinutes = 10;
@@ -30,7 +31,7 @@ public class EndToEndScenarioTests
         var cacheKey = keyGenerator.GenerateKey("TestController", "GetTest", new Dictionary<string, object?> { { "id", 1 } });
 
         await cache.SetAsync(cacheKey, testData);
-        var retrievedData = await cache.GetAsync<dynamic>(cacheKey);
+        var retrievedData = await cache.GetAsync<object>(cacheKey); // dynamic → object 변경
         retrievedData.Should().NotBeNull();
 
         // Scenario 2: 테이블 추적 및 무효화
@@ -40,7 +41,7 @@ public class EndToEndScenarioTests
 
         // Scenario 3: 무효화 실행
         await invalidator.InvalidateAsync("TestTable");
-        var afterInvalidation = await cache.GetAsync<dynamic>(cacheKey);
+        var afterInvalidation = await cache.GetAsync<object>(cacheKey); // dynamic → object 변경
         afterInvalidation.Should().BeNull();
 
         // Scenario 4: 통계 확인
@@ -55,7 +56,9 @@ public class EndToEndScenarioTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddAthenaCache();
+
+        // Athena Cache 전체 시스템 등록
+        services.AddAthenaCacheComplete();
 
         var serviceProvider = services.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<IAthenaCache>();
@@ -64,7 +67,7 @@ public class EndToEndScenarioTests
         // Edge Case 1: Null 값 처리
         await cache.SetAsync("null_test", (string?)null);
         var nullResult = await cache.GetAsync<string>("null_test");
-        // null 값은 저장하지 않음
+        nullResult.Should().BeNull(); // null 값은 저장하지 않음
 
         // Edge Case 2: 빈 컬렉션 처리
         await cache.SetAsync("empty_list", new List<string>());
@@ -80,7 +83,7 @@ public class EndToEndScenarioTests
         };
 
         await cache.SetAsync("large_object", largeObject);
-        var largeResult = await cache.GetAsync<dynamic>("large_object");
+        var largeResult = await cache.GetAsync<object>("large_object"); // dynamic → object 변경
         largeResult.Should().NotBeNull();
 
         // Edge Case 4: 동시 무효화 처리

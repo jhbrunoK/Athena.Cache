@@ -1,5 +1,4 @@
 ﻿using Athena.Cache.Core.Abstractions;
-using Athena.Cache.Core.Enums;
 
 namespace Athena.Cache.Tests.Mocks;
 

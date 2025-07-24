@@ -1,4 +1,4 @@
-﻿namespace Athena.Cache.Core.Enums;
+﻿namespace Athena.Cache.Core.Abstractions;
 
 /// <summary>
 /// 캐시 통계 정보

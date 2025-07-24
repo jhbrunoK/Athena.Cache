@@ -67,7 +67,7 @@ public class MemoryCacheProviderTests
 
         // Act
         await _cacheProvider.SetAsync(key, user);
-        var result = await _cacheProvider.GetAsync<dynamic>(key);
+        var result = await _cacheProvider.GetAsync<object>(key);
 
         // Assert
         result.Should().NotBeNull();

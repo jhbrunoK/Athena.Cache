@@ -2,9 +2,8 @@
 
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
-		<GenerateDependencyFile>true</GenerateDependencyFile>
 		<PreserveCompilationContext>true</PreserveCompilationContext>
-		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<PreserveCompilationReferences>true</PreserveCompilationReferences>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 

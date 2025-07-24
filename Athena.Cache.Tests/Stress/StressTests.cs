@@ -14,7 +14,7 @@ public class StressTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddAthenaCache();
+        services.AddAthenaCacheComplete();
 
         var serviceProvider = services.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<IAthenaCache>();
@@ -76,7 +76,7 @@ public class StressTests
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddAthenaCache();
+        services.AddAthenaCacheComplete();
 
         var serviceProvider = services.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<IAthenaCache>();
