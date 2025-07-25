@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.34928.147
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Core", "Athena.Cache.Core\Athena.Cache.Core.csproj", "{568E603B-E653-4797-A2F8-A0484593DFFA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Core", "Athena.Cache.Core\Athena.Cache.Core.csproj", "{568E603B-E653-4797-A2F8-A0484593DFFA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Redis", "Athena.Cache.Redis\Athena.Cache.Redis.csproj", "{A1867461-ABD0-4D1E-A31A-4DFD0C19FBFC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Redis", "Athena.Cache.Redis\Athena.Cache.Redis.csproj", "{A1867461-ABD0-4D1E-A31A-4DFD0C19FBFC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Tests", "Athena.Cache.Tests\Athena.Cache.Tests.csproj", "{94A5A735-5BB3-4FB5-88A5-0FDF105F936B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Tests", "Athena.Cache.Tests\Athena.Cache.Tests.csproj", "{94A5A735-5BB3-4FB5-88A5-0FDF105F936B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Sample", "Athena.Cache.Sample\Athena.Cache.Sample.csproj", "{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Sample", "Athena.Cache.Sample\Athena.Cache.Sample.csproj", "{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EA6E562B-CA6A-43AB-B329-4BE38DE45E74}"
 EndProject
@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{03C24C82-D
 		..\..\..\Downloads\icon.png = ..\..\..\Downloads\icon.png
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Analytics", "Athena.Cache.Analytics\Athena.Cache.Analytics.csproj", "{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,6 +48,10 @@ Global
 		{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -55,6 +61,7 @@ Global
 		{A1867461-ABD0-4D1E-A31A-4DFD0C19FBFC} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
 		{94A5A735-5BB3-4FB5-88A5-0FDF105F936B} = {3FAA31C9-A0B7-48AB-BEBF-0AB91478D8A8}
 		{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4} = {CE8B05B8-5445-4B13-9EBB-486392B9E29C}
+		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FA0453E9-B173-4B9B-A314-A78075A9F0BA}
