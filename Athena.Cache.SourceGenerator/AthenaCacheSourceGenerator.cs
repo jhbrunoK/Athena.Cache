@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -13,15 +14,15 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Controller 클래스 찾기
-        var controllerProvider = context.SyntaxProvider
+        // 간단한 진단을 위해 모든 클래스를 체크
+        var allClassProvider = context.SyntaxProvider
             .CreateSyntaxProvider(
-                predicate: static (s, _) => IsControllerClass(s),
+                predicate: static (s, _) => s is ClassDeclarationSyntax,
                 transform: static (ctx, _) => GetControllerInfo(ctx))
             .Where(static m => m is not null);
 
         // 생성된 레지스트리 출력
-        context.RegisterSourceOutput(controllerProvider.Collect(), GenerateCacheRegistry);
+        context.RegisterSourceOutput(allClassProvider.Collect(), GenerateCacheRegistry);
     }
 
     private static bool IsControllerClass(SyntaxNode node)
@@ -171,6 +172,7 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
                             0 => "All",
                             1 => "Pattern", 
                             2 => "Related",
+                            3 => "Update",  // Update 추가
                             _ => "All"
                         };
                     }
@@ -210,9 +212,34 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
     {
         var validControllers = controllers.Where(c => c != null).Cast<ControllerInfo>().ToList();
         
-        // 디버깅: 항상 파일 생성
-        var sourceCode = GenerateRegistryCode(validControllers);
-        context.AddSource("CacheConfigurationRegistry.g.cs", sourceCode);
+        // 디버깅: 항상 파일 생성 + 강제 진단 메시지
+        try
+        {
+            var sourceCode = GenerateRegistryCode(validControllers);
+            context.AddSource("CacheConfigurationRegistry.g.cs", sourceCode);
+            
+            // 디버깅을 위한 진단 메시지
+            var descriptor = new DiagnosticDescriptor(
+                "AthenaCache001", 
+                "Source Generator executed", 
+                $"AthenaCacheSourceGenerator executed successfully. Found {validControllers.Count} controllers.", 
+                "Athena.Cache", 
+                DiagnosticSeverity.Info, 
+                isEnabledByDefault: true);
+            context.ReportDiagnostic(Diagnostic.Create(descriptor, Location.None));
+        }
+        catch (Exception ex)
+        {
+            // 오류 진단 메시지
+            var errorDescriptor = new DiagnosticDescriptor(
+                "AthenaCache002", 
+                "Source Generator error", 
+                $"AthenaCacheSourceGenerator failed: {ex.Message}", 
+                "Athena.Cache", 
+                DiagnosticSeverity.Error, 
+                isEnabledByDefault: true);
+            context.ReportDiagnostic(Diagnostic.Create(errorDescriptor, Location.None));
+        }
     }
 
     private static string GenerateRegistryCode(List<ControllerInfo> controllers)
@@ -226,14 +253,14 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
         sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine("using Athena.Cache.Core.Models;");
         sb.AppendLine("using Athena.Cache.Core.Enums;");
-        sb.AppendLine("using Athena.Cache.Core.Interfaces;");
+        // sb.AppendLine("using Athena.Cache.Core.Interfaces;"); // 인터페이스 참조 제거
         sb.AppendLine();
         sb.AppendLine("namespace Athena.Cache.Core.Generated;");
         sb.AppendLine();
         sb.AppendLine("/// <summary>");
         sb.AppendLine("/// Compile-time generated cache configuration registry");
         sb.AppendLine("/// </summary>");
-        sb.AppendLine("public class CacheConfigurationRegistry : ICacheConfigurationRegistry");
+        sb.AppendLine("public class CacheConfigurationRegistry");
         sb.AppendLine("{");
         
         // Dictionary 생성
