@@ -63,15 +63,14 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 전체 Athena 캐시 시스템 등록 (MemoryCache + 미들웨어 + 필터)
+    /// 전체 Athena 캐시 시스템 등록 (MemoryCache + 미들웨어)
     /// </summary>
     public static IServiceCollection AddAthenaCacheComplete(
         this IServiceCollection services,
         Action<AthenaCacheOptions>? configure = null)
     {
         return services
-            .AddAthenaCacheMemory(configure)
-            .AddAthenaCacheActionFilter();
+            .AddAthenaCacheMemory(configure);
     }
 
     /// <summary>

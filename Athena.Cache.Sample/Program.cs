@@ -13,7 +13,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Entity Framework ¼³Á¤
+// Entity Framework ï¿½ï¿½ï¿½ï¿½
 builder.Services.AddDbContext<SampleDbContext>(options =>
 {
     if (builder.Environment.IsDevelopment())
@@ -26,14 +26,14 @@ builder.Services.AddDbContext<SampleDbContext>(options =>
     }
 });
 
-// »ùÇÃ ¼­ºñ½º µî·Ï
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
-// Athena Cache ¼³Á¤
+// Athena Cache ï¿½ï¿½ï¿½ï¿½
 if (builder.Environment.IsDevelopment())
 {
-    // °³¹ß È¯°æ: MemoryCache »ç¿ë
+    // ï¿½ï¿½ï¿½ï¿½ È¯ï¿½ï¿½: MemoryCache ï¿½ï¿½ï¿½
     builder.Services.AddAthenaCacheComplete(options =>
     {
         options.Namespace = "SampleApp_DEV";
@@ -45,7 +45,7 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    // ¿î¿µ È¯°æ: Redis »ç¿ë
+    // ï¿½î¿µ È¯ï¿½ï¿½: Redis ï¿½ï¿½ï¿½
     builder.Services.AddAthenaCacheRedisComplete(
         athena =>
         {
@@ -65,7 +65,7 @@ else
 
 var app = builder.Build();
 
-// °³¹ß È¯°æ¿¡¼­ »ùÇÃ µ¥ÀÌÅÍ ½Ãµå
+// ï¿½ï¿½ï¿½ï¿½ È¯ï¿½æ¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ãµï¿½
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
@@ -83,6 +83,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+// Athena Cache ë¯¸ë“¤ì›¨ì–´ ì¶”ê°€
+app.UseAthenaCache();
 
 app.MapControllers();
 

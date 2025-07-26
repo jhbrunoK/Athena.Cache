@@ -52,4 +52,8 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
 		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Athena.Cache.SourceGenerator\Athena.Cache.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
 </Project>

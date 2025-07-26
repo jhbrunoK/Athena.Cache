@@ -1,0 +1,367 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
+
+namespace Athena.Cache.SourceGenerator;
+
+[Generator]
+public class AthenaCacheSourceGenerator : IIncrementalGenerator
+{
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        // Controller 클래스들을 찾기 위한 Syntax Provider
+        var controllerProvider = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (s, _) => IsControllerClass(s),
+                transform: static (ctx, _) => GetControllerInfo(ctx))
+            .Where(static x => x != null);
+
+        // 수집된 컨트롤러 정보를 기반으로 코드 생성
+        context.RegisterSourceOutput(controllerProvider.Collect(), 
+            static (spc, controllers) => GenerateCacheRegistry(spc, controllers));
+    }
+
+    private static bool IsControllerClass(SyntaxNode node)
+    {
+        // Controller로 끝나는 클래스이거나 ControllerBase를 상속받는 클래스 찾기
+        if (node is not ClassDeclarationSyntax classDeclaration)
+            return false;
+
+        return classDeclaration.Identifier.ValueText.EndsWith("Controller") ||
+               HasBaseType(classDeclaration, "ControllerBase") ||
+               HasBaseType(classDeclaration, "Controller");
+    }
+
+    private static bool HasBaseType(ClassDeclarationSyntax classDeclaration, string baseTypeName)
+    {
+        return classDeclaration.BaseList?.Types
+            .Any(baseType => baseType.Type.ToString().Contains(baseTypeName)) == true;
+    }
+
+    private static ControllerInfo? GetControllerInfo(GeneratorSyntaxContext context)
+    {
+        var classDeclaration = (ClassDeclarationSyntax)context.Node;
+        var semanticModel = context.SemanticModel;
+
+        // 클래스의 Symbol 정보 가져오기
+        var classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration);
+        if (classSymbol == null)
+            return null;
+
+        var controllerName = classSymbol.Name;
+        var actions = new List<ActionInfo>();
+
+        // 모든 public 메서드를 액션으로 간주
+        foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
+        {
+            if (member.DeclaredAccessibility != Accessibility.Public ||
+                member.IsStatic ||
+                member.MethodKind != MethodKind.Ordinary)
+                continue;
+
+            var actionInfo = ExtractActionInfo(member);
+            if (actionInfo != null)
+                actions.Add(actionInfo);
+        }
+
+        return new ControllerInfo(controllerName, actions);
+    }
+
+    private static ActionInfo? ExtractActionInfo(IMethodSymbol methodSymbol)
+    {
+        var actionName = methodSymbol.Name;
+        
+        // AthenaCacheAttribute 찾기
+        var cacheAttribute = FindAttribute(methodSymbol, "AthenaCacheAttribute");
+        var invalidationAttributes = FindAttributes(methodSymbol, "CacheInvalidateOnAttribute");
+
+        // 컨트롤러 레벨에서도 찾기
+        if (cacheAttribute == null)
+            cacheAttribute = FindAttribute(methodSymbol.ContainingType, "AthenaCacheAttribute");
+
+        var controllerInvalidationAttributes = FindAttributes(methodSymbol.ContainingType, "CacheInvalidateOnAttribute");
+        invalidationAttributes = invalidationAttributes.Concat(controllerInvalidationAttributes).ToList();
+
+        // NoCacheAttribute 체크
+        var hasNoCache = FindAttribute(methodSymbol, "NoCacheAttribute") != null ||
+                        FindAttribute(methodSymbol.ContainingType, "NoCacheAttribute") != null;
+
+        if (hasNoCache || (cacheAttribute == null && invalidationAttributes.Count == 0))
+            return null;
+
+        return new ActionInfo(
+            actionName,
+            ExtractCacheSettings(cacheAttribute),
+            invalidationAttributes.Select(ExtractInvalidationSettings).ToList());
+    }
+
+    private static AttributeData? FindAttribute(ISymbol symbol, string attributeName)
+    {
+        return symbol.GetAttributes()
+            .FirstOrDefault(attr => attr.AttributeClass?.Name == attributeName);
+    }
+
+    private static List<AttributeData> FindAttributes(ISymbol symbol, string attributeName)
+    {
+        return symbol.GetAttributes()
+            .Where(attr => attr.AttributeClass?.Name == attributeName)
+            .ToList();
+    }
+
+    private static CacheSettings ExtractCacheSettings(AttributeData? attribute)
+    {
+        if (attribute == null)
+            return new CacheSettings();
+
+        var settings = new CacheSettings();
+
+        // Named arguments 처리
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            switch (namedArg.Key)
+            {
+                case nameof(CacheSettings.Enabled):
+                    settings.Enabled = (bool)namedArg.Value.Value!;
+                    break;
+                case nameof(CacheSettings.ExpirationMinutes):
+                    settings.ExpirationMinutes = (int)namedArg.Value.Value!;
+                    break;
+                case nameof(CacheSettings.CustomKeyPrefix):
+                    settings.CustomKeyPrefix = (string?)namedArg.Value.Value;
+                    break;
+                case nameof(CacheSettings.MaxRelatedDepth):
+                    settings.MaxRelatedDepth = (int)namedArg.Value.Value!;
+                    break;
+                case nameof(CacheSettings.AdditionalKeyParameters):
+                    settings.AdditionalKeyParameters = ExtractStringArray(namedArg.Value);
+                    break;
+                case nameof(CacheSettings.ExcludeParameters):
+                    settings.ExcludeParameters = ExtractStringArray(namedArg.Value);
+                    break;
+            }
+        }
+
+        return settings;
+    }
+
+    private static InvalidationSettings ExtractInvalidationSettings(AttributeData attribute)
+    {
+        var settings = new InvalidationSettings();
+        
+        // Constructor arguments
+        if (attribute.ConstructorArguments.Length > 0)
+        {
+            settings.TableName = (string)attribute.ConstructorArguments[0].Value!;
+        }
+
+        // Named arguments
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            switch (namedArg.Key)
+            {
+                case nameof(InvalidationSettings.InvalidationType):
+                    settings.InvalidationType = namedArg.Value.Value?.ToString() ?? "Update";
+                    break;
+                case nameof(InvalidationSettings.Pattern):
+                    settings.Pattern = (string?)namedArg.Value.Value;
+                    break;
+                case nameof(InvalidationSettings.RelatedTables):
+                    settings.RelatedTables = ExtractStringArray(namedArg.Value);
+                    break;
+                case nameof(InvalidationSettings.MaxDepth):
+                    settings.MaxDepth = (int)namedArg.Value.Value!;
+                    break;
+            }
+        }
+
+        return settings;
+    }
+
+    private static string[] ExtractStringArray(TypedConstant typedConstant)
+    {
+        if (typedConstant.Kind == TypedConstantKind.Array)
+        {
+            return typedConstant.Values
+                .Select(v => (string)v.Value!)
+                .ToArray();
+        }
+        return new string[0];
+    }
+
+    private static void GenerateCacheRegistry(SourceProductionContext context, 
+        ImmutableArray<ControllerInfo?> controllers)
+    {
+        var validControllers = controllers.Where(c => c != null).Cast<ControllerInfo>().ToList();
+        
+        // 디버깅: 항상 파일 생성
+        var sourceCode = GenerateRegistryCode(validControllers);
+        context.AddSource("CacheConfigurationRegistry.g.cs", sourceCode);
+    }
+
+    private static string GenerateRegistryCode(List<ControllerInfo> controllers)
+    {
+        var sb = new StringBuilder();
+        
+        sb.AppendLine("// <auto-generated />");
+        sb.AppendLine("// Debug: Found " + controllers.Count + " controllers");
+        sb.AppendLine("using System;");
+        sb.AppendLine("using System.Collections.Generic;");
+        sb.AppendLine("using Athena.Cache.Core.Models;");
+        sb.AppendLine("using Athena.Cache.Core.Enums;");
+        sb.AppendLine();
+        sb.AppendLine("namespace Athena.Cache.Core.Generated;");
+        sb.AppendLine();
+        sb.AppendLine("/// <summary>");
+        sb.AppendLine("/// Compile-time generated cache configuration registry");
+        sb.AppendLine("/// </summary>");
+        sb.AppendLine("public static class CacheConfigurationRegistry");
+        sb.AppendLine("{");
+        
+        // Dictionary 생성
+        sb.AppendLine("    private static readonly Dictionary<string, CacheConfiguration> _configurations = new()");
+        sb.AppendLine("    {");
+        
+        if (controllers.Count == 0)
+        {
+            sb.AppendLine("        // No controllers with cache attributes found");
+        }
+        else
+        {
+            foreach (var controller in controllers)
+            {
+                sb.AppendLine($"        // Controller: {controller.Name}");
+                foreach (var action in controller.Actions)
+                {
+                    var key = $"{controller.Name}.{action.Name}";
+                    sb.AppendLine($"        [\"{key}\"] = new CacheConfiguration");
+                    sb.AppendLine("        {");
+                    sb.AppendLine($"            Controller = \"{controller.Name}\",");
+                    sb.AppendLine($"            Action = \"{action.Name}\",");
+                    sb.AppendLine($"            Enabled = {action.CacheSettings.Enabled.ToString().ToLower()},");
+                    sb.AppendLine($"            ExpirationMinutes = {action.CacheSettings.ExpirationMinutes},");
+                    sb.AppendLine($"            MaxRelatedDepth = {action.CacheSettings.MaxRelatedDepth},");
+                    
+                    if (action.CacheSettings.CustomKeyPrefix != null)
+                        sb.AppendLine($"            CustomKeyPrefix = \"{action.CacheSettings.CustomKeyPrefix}\",");
+                    
+                    GenerateStringArray(sb, "AdditionalKeyParameters", action.CacheSettings.AdditionalKeyParameters);
+                    GenerateStringArray(sb, "ExcludeParameters", action.CacheSettings.ExcludeParameters);
+                    
+                    // Invalidation rules
+                    if (action.InvalidationSettings.Count > 0)
+                    {
+                        sb.AppendLine("            InvalidationRules = new List<TableInvalidationRule>");
+                        sb.AppendLine("            {");
+                        
+                        foreach (var invalidation in action.InvalidationSettings)
+                        {
+                            sb.AppendLine("                new TableInvalidationRule");
+                            sb.AppendLine("                {");
+                            sb.AppendLine($"                    TableName = \"{invalidation.TableName}\",");
+                            sb.AppendLine($"                    InvalidationType = InvalidationType.{invalidation.InvalidationType},");
+                            
+                            if (invalidation.Pattern != null)
+                                sb.AppendLine($"                    Pattern = \"{invalidation.Pattern}\",");
+                            
+                            GenerateStringArray(sb, "RelatedTables", invalidation.RelatedTables, "                    ");
+                            sb.AppendLine($"                    MaxDepth = {invalidation.MaxDepth}");
+                            sb.AppendLine("                },");
+                        }
+                        
+                        sb.AppendLine("            }");
+                    }
+                    else
+                    {
+                        sb.AppendLine("            InvalidationRules = new List<TableInvalidationRule>()");
+                    }
+                    
+                    sb.AppendLine("        },");
+                }
+            }
+        }
+        
+        sb.AppendLine("    };");
+        sb.AppendLine();
+        
+        // Get method
+        sb.AppendLine("    public static CacheConfiguration? GetConfiguration(string controllerName, string actionName)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        var key = $\"{controllerName}.{actionName}\";");
+        sb.AppendLine("        return _configurations.TryGetValue(key, out var config) ? config : null;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        
+        // GetAll method
+        sb.AppendLine("    public static IReadOnlyDictionary<string, CacheConfiguration> GetAllConfigurations()");
+        sb.AppendLine("    {");
+        sb.AppendLine("        return _configurations;");
+        sb.AppendLine("    }");
+        
+        sb.AppendLine("}");
+        
+        return sb.ToString();
+    }
+
+    private static void GenerateStringArray(StringBuilder sb, string propertyName, 
+        string[] values, string indent = "            ")
+    {
+        if (values.Length == 0)
+        {
+            sb.AppendLine($"{indent}{propertyName} = new string[0],");
+        }
+        else
+        {
+            sb.AppendLine($"{indent}{propertyName} = new string[] {{ {string.Join(", ", values.Select(v => $"\"{v}\""))} }},");
+        }
+    }
+}
+
+// Data classes for collecting information
+public class ControllerInfo
+{
+    public string Name { get; }
+    public List<ActionInfo> Actions { get; }
+    
+    public ControllerInfo(string name, List<ActionInfo> actions)
+    {
+        Name = name;
+        Actions = actions;
+    }
+}
+
+public class ActionInfo
+{
+    public string Name { get; }
+    public CacheSettings CacheSettings { get; }
+    public List<InvalidationSettings> InvalidationSettings { get; }
+    
+    public ActionInfo(string name, CacheSettings cacheSettings, List<InvalidationSettings> invalidationSettings)
+    {
+        Name = name;
+        CacheSettings = cacheSettings;
+        InvalidationSettings = invalidationSettings;
+    }
+}
+
+public class CacheSettings
+{
+    public bool Enabled { get; set; } = true;
+    public int ExpirationMinutes { get; set; } = -1;
+    public string? CustomKeyPrefix { get; set; }
+    public int MaxRelatedDepth { get; set; } = -1;
+    public string[] AdditionalKeyParameters { get; set; } = new string[0];
+    public string[] ExcludeParameters { get; set; } = new string[0];
+}
+
+public class InvalidationSettings
+{
+    public string TableName { get; set; } = "";
+    public string InvalidationType { get; set; } = "Update";
+    public string? Pattern { get; set; }
+    public string[] RelatedTables { get; set; } = new string[0];
+    public int MaxDepth { get; set; } = -1;
+}
