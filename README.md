@@ -13,12 +13,13 @@ Athena.Cache는 ASP.NET Core 애플리케이션을 위한 지능형 캐싱 라�
 
 ## ✨ 주요 기능
 
+- 🎯 **Source Generator**: 컴파일 타임에 캐시 설정 자동 생성, AOT 호환
 - 🔑 **자동 캐시 키 생성**: 쿼리 파라미터 → SHA256 해시 키 자동 변환
 - 🗂️ **테이블 기반 무효화**: 데이터베이스 테이블 변경 시 관련 캐시 자동 삭제
 - 🚀 **다중 백엔드 지원**: MemoryCache, Redis, Valkey 지원
-- 🎯 **선언적 캐싱**: `[AthenaCache]`, `[CacheInvalidateOn]` 어트리뷰트
-- ⚡ **고성능**: 대용량 트래픽 환경에 최적화
-- 🔧 **쉬운 통합**: 미들웨어와 액션 필터로 간단한 설정
+- 🎨 **선언적 캐싱**: `[AthenaCache]`, `[CacheInvalidateOn]` 어트리뷰트
+- ⚡ **고성능**: 대용량 트래픽 환경에 최적화, Primary Constructor 사용
+- 🔧 **쉬운 통합**: 단일 패키지 설치로 모든 기능 사용 가능
 - 🧪 **완전한 테스트**: 포괄적인 단위 및 통합 테스트
 
 ## 🚀 빠른 시작
@@ -26,12 +27,14 @@ Athena.Cache는 ASP.NET Core 애플리케이션을 위한 지능형 캐싱 라�
 ### 설치
 
 ```bash
-# 기본 패키지 (MemoryCache 포함)
-    dotnet add package Athena.Cache.Core
+# 기본 패키지 (MemoryCache + Source Generator 포함)
+dotnet add package Athena.Cache.Core
 
-# Redis 지원
-    dotnet add package Athena.Cache.Redis
+# Redis 지원 (선택사항)
+dotnet add package Athena.Cache.Redis
 ```
+
+> **🎯 통합 패키지**: `Athena.Cache.Core`만 설치하면 Source Generator가 자동으로 포함되어 컴파일 타임에 캐시 설정을 자동 생성합니다.
 
 ### 기본 설정
 
@@ -39,14 +42,17 @@ Athena.Cache는 ASP.NET Core 애플리케이션을 위한 지능형 캐싱 라�
 // Program.cs
 using Athena.Cache.Core.Extensions;
 
+var builder = WebApplication.CreateBuilder(args);
+
 // 개발 환경 (MemoryCache)
-services.AddAthenaCacheComplete(options => {
+builder.Services.AddAthenaCacheComplete(options => {
     options.Namespace = "MyApp_DEV";
     options.DefaultExpirationMinutes = 30;
+    options.Logging.LogCacheHitMiss = true; // 캐시 히트/미스 로깅
 });
 
 // 운영 환경 (Redis)
-services.AddAthenaCacheRedisComplete(
+builder.Services.AddAthenaCacheRedisComplete(
     athena => {
         athena.Namespace = "MyApp_PROD";
         athena.DefaultExpirationMinutes = 60;
@@ -56,49 +62,88 @@ services.AddAthenaCacheRedisComplete(
         redis.DatabaseId = 1;
     });
 
-// 미들웨어 추가
-app.UseAthenaCache();
+var app = builder.Build();
+
+// 🔧 미들웨어 추가 (중요: 라우팅 후, 컨트롤러 전에 추가)
+app.UseRouting();
+app.UseAthenaCache();  // 라우팅 후에 추가
+app.MapControllers();
+
+app.Run();
 ```
 
 ### 컨트롤러에서 사용
 
 ```csharp
+using Athena.Cache.Core.Attributes;
+using Athena.Cache.Core.Enums;
+
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
+    private readonly IUserService _userService;
+
+    public UsersController(IUserService userService)
+    {
+        _userService = userService;
+    }
+
     [HttpGet]
     [AthenaCache(ExpirationMinutes = 30)]
     [CacheInvalidateOn("Users")]
-    public async Task<IActionResult> GetUsers(
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers(
         [FromQuery] string? search = null,
         [FromQuery] int page = 1)
     {
-        // 비즈니스 로직
-        // 쿼리 파라미터로부터 캐시 키 자동 생성됨
+        // 🚀 Source Generator가 컴파일 타임에 이 어트리뷰트를 스캔하여
+        // 캐시 설정을 자동 생성합니다. 별도 설정 불필요!
         var users = await _userService.GetUsersAsync(search, page);
         return Ok(users);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> CreateUser([FromBody] User user)
-    {
-        var createdUser = await _userService.CreateUserAsync(user);
-        // Users 테이블 관련 캐시 자동 무효화됨
-        return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
     }
 
     [HttpGet("{id}")]
     [AthenaCache(ExpirationMinutes = 60)]
     [CacheInvalidateOn("Users")]
     [CacheInvalidateOn("Orders", InvalidationType.Pattern, "User_*")]
-    public async Task<IActionResult> GetUser(int id)
+    public async Task<ActionResult<UserDto>> GetUser(int id)
     {
         var user = await _userService.GetUserByIdAsync(id);
         if (user == null) return NotFound();
         return Ok(user);
     }
+
+    [HttpPost]
+    public async Task<ActionResult<UserDto>> CreateUser([FromBody] User user)
+    {
+        var createdUser = await _userService.CreateUserAsync(user);
+        // Users 테이블 관련 캐시가 자동 무효화됨
+        return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
+    }
+
+    // 캐시 비활성화 예제
+    [HttpGet("no-cache")]
+    [NoCache]  // 이 액션은 캐싱하지 않음
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersWithoutCache()
+    {
+        var users = await _userService.GetUsersAsync();
+        return Ok(users);
+    }
 }
+```
+
+### 📊 캐시 상태 확인
+
+Athena.Cache는 HTTP 헤더를 통해 캐시 상태를 확인할 수 있습니다:
+
+```bash
+# 첫 번째 요청 (캐시 미스)
+curl -v http://localhost:5000/api/users
+# 응답 헤더: X-Athena-Cache: MISS
+
+# 두 번째 요청 (캐시 히트)
+curl -v http://localhost:5000/api/users  
+# 응답 헤더: X-Athena-Cache: HIT
 ```
 
 ## 🛠️ 고급 기능
@@ -209,18 +254,27 @@ dotnet test --filter Category=Integration
 ## 🏗️ 아키텍처
 
 ### 핵심 컴포넌트
+- **🎯 Source Generator**: 컴파일 타임에 Controller 어트리뷰트를 스캔하여 캐시 설정 자동 생성
+- **ICacheConfigurationRegistry**: 생성된 캐시 설정을 관리하는 레지스트리
 - **ICacheKeyGenerator**: 쿼리 파라미터 → 캐시 키 변환
 - **ICacheInvalidator**: 테이블 기반 캐시 무효화 관리
 - **IAthenaCache**: 캐시 제공자 추상화 (Memory/Redis/Valkey)
-- **AthenaCacheMiddleware**: HTTP 요청 가로채기 및 캐싱
-- **AthenaCacheActionFilter**: 어트리뷰트 메타데이터 수집
+- **AthenaCacheMiddleware**: HTTP 요청 가로채기 및 캐싱 (Primary Constructor 사용)
 
 ### 동작 원리
-1. **요청 가로채기**: 미들웨어가 GET 요청을 가로챔
-2. **키 생성**: 쿼리 파라미터를 정렬하여 SHA256 해시 생성
-3. **캐시 확인**: 생성된 키로 캐시에서 응답 조회
-4. **응답 캐싱**: 캐시 미스 시 응답을 캐시에 저장
-5. **무효화**: 테이블 변경 시 관련 캐시 자동 삭제
+1. **🔧 컴파일 타임**: Source Generator가 Controller를 스캔하여 캐시 설정 클래스 자동 생성
+2. **🚀 런타임 초기화**: 생성된 설정이 있으면 사용, 없으면 Reflection 백업 사용
+3. **📡 요청 가로채기**: 미들웨어가 GET 요청을 라우팅 정보와 함께 가로챔
+4. **🔑 키 생성**: 쿼리 파라미터를 정렬하여 SHA256 해시 생성
+5. **💾 캐시 확인**: 생성된 키로 캐시에서 응답 조회
+6. **📦 응답 캐싱**: 캐시 미스 시 응답을 캐시에 저장 후 테이블 추적 등록
+7. **🔄 무효화**: 테이블 변경 시 관련 캐시 자동 삭제
+
+### 🎯 Source Generator 장점
+- **⚡ 성능**: 런타임 Reflection 불필요, 컴파일 타임 최적화
+- **🛡️ 타입 안전성**: 컴파일 타임에 어트리뷰트 검증
+- **🚀 AOT 호환**: Native AOT 배포 지원
+- **🔧 자동 관리**: 별도 설정 파일 불필요, 어트리뷰트만으로 완성
 
 ## 🔄 캐시 무효화 전략
 
