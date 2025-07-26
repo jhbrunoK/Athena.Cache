@@ -8,17 +8,8 @@ namespace Athena.Cache.Sample.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController : ControllerBase
+public class UsersController(IUserService userService, ILogger<UsersController> logger) : ControllerBase
 {
-    private readonly IUserService _userService;
-    private readonly ILogger<UsersController> _logger;
-
-    public UsersController(IUserService userService, ILogger<UsersController> logger)
-    {
-        _userService = userService;
-        _logger = logger;
-    }
-
     /// <summary>
     /// 사용자 목록 조회 (캐시 적용 + Users 테이블 변경 시 무효화)
     /// </summary>
@@ -30,10 +21,10 @@ public class UsersController : ControllerBase
         [FromQuery] int? minAge = null,
         [FromQuery] bool? isActive = null)
     {
-        _logger.LogInformation("GetUsers called with searchName: {SearchName}, minAge: {MinAge}, isActive: {IsActive}",
+        logger.LogInformation("GetUsers called with searchName: {SearchName}, minAge: {MinAge}, isActive: {IsActive}",
             searchName, minAge, isActive);
 
-        var users = await _userService.GetUsersAsync(searchName, minAge, isActive);
+        var users = await userService.GetUsersAsync(searchName, minAge, isActive);
         return Ok(users);
     }
 
@@ -46,9 +37,9 @@ public class UsersController : ControllerBase
     [CacheInvalidateOn("Orders", InvalidationType.Pattern, "User_*")]
     public async Task<ActionResult<UserDto>> GetUser(int id)
     {
-        _logger.LogInformation("GetUser called with id: {Id}", id);
+        logger.LogInformation("GetUser called with id: {Id}", id);
 
-        var user = await _userService.GetUserByIdAsync(id);
+        var user = await userService.GetUserByIdAsync(id);
         if (user == null)
         {
             return NotFound();
@@ -68,7 +59,7 @@ public class UsersController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var createdUser = await _userService.CreateUserAsync(user);
+        var createdUser = await userService.CreateUserAsync(user);
         return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
     }
 
@@ -83,7 +74,7 @@ public class UsersController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var updatedUser = await _userService.UpdateUserAsync(id, user);
+        var updatedUser = await userService.UpdateUserAsync(id, user);
         if (updatedUser == null)
         {
             return NotFound();
@@ -99,7 +90,7 @@ public class UsersController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteUser(int id)
     {
-        var deleted = await _userService.DeleteUserAsync(id);
+        var deleted = await userService.DeleteUserAsync(id);
         if (!deleted)
         {
             return NotFound();
@@ -116,9 +107,9 @@ public class UsersController : ControllerBase
     [NoCache]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersWithoutCache()
     {
-        _logger.LogInformation("GetUsersWithoutCache called - 캐시 사용 안함");
+        logger.LogInformation("GetUsersWithoutCache called - 캐시 사용 안함");
 
-        var users = await _userService.GetUsersAsync();
+        var users = await userService.GetUsersAsync();
         return Ok(users);
     }
 }

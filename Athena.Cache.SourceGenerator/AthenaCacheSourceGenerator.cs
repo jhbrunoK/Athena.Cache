@@ -189,7 +189,7 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
                 .Select(v => (string)v.Value!)
                 .ToArray();
         }
-        return new string[0];
+        return [];
     }
 
     private static void GenerateCacheRegistry(SourceProductionContext context, 
@@ -321,30 +321,17 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
 }
 
 // Data classes for collecting information
-public class ControllerInfo
+public class ControllerInfo(string name, List<ActionInfo> actions)
 {
-    public string Name { get; }
-    public List<ActionInfo> Actions { get; }
-    
-    public ControllerInfo(string name, List<ActionInfo> actions)
-    {
-        Name = name;
-        Actions = actions;
-    }
+    public string Name { get; } = name;
+    public List<ActionInfo> Actions { get; } = actions;
 }
 
-public class ActionInfo
+public class ActionInfo(string name, CacheSettings cacheSettings, List<InvalidationSettings> invalidationSettings)
 {
-    public string Name { get; }
-    public CacheSettings CacheSettings { get; }
-    public List<InvalidationSettings> InvalidationSettings { get; }
-    
-    public ActionInfo(string name, CacheSettings cacheSettings, List<InvalidationSettings> invalidationSettings)
-    {
-        Name = name;
-        CacheSettings = cacheSettings;
-        InvalidationSettings = invalidationSettings;
-    }
+    public string Name { get; } = name;
+    public CacheSettings CacheSettings { get; } = cacheSettings;
+    public List<InvalidationSettings> InvalidationSettings { get; } = invalidationSettings;
 }
 
 public class CacheSettings
@@ -353,8 +340,8 @@ public class CacheSettings
     public int ExpirationMinutes { get; set; } = -1;
     public string? CustomKeyPrefix { get; set; }
     public int MaxRelatedDepth { get; set; } = -1;
-    public string[] AdditionalKeyParameters { get; set; } = new string[0];
-    public string[] ExcludeParameters { get; set; } = new string[0];
+    public string[] AdditionalKeyParameters { get; set; } = [];
+    public string[] ExcludeParameters { get; set; } = [];
 }
 
 public class InvalidationSettings
@@ -362,6 +349,6 @@ public class InvalidationSettings
     public string TableName { get; set; } = "";
     public string InvalidationType { get; set; } = "Update";
     public string? Pattern { get; set; }
-    public string[] RelatedTables { get; set; } = new string[0];
+    public string[] RelatedTables { get; set; } = [];
     public int MaxDepth { get; set; } = -1;
 }
