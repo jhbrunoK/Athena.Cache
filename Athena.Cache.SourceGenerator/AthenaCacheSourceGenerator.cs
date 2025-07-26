@@ -152,13 +152,45 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
     {
         var settings = new InvalidationSettings();
         
-        // Constructor arguments
+        // Constructor arguments 처리
         if (attribute.ConstructorArguments.Length > 0)
         {
+            // 첫 번째 인수: TableName
             settings.TableName = (string)attribute.ConstructorArguments[0].Value!;
+            
+            // 두 번째 인수: InvalidationType (enum)
+            if (attribute.ConstructorArguments.Length > 1)
+            {
+                if (attribute.ConstructorArguments[1].Value is int enumValue)
+                {
+                    settings.InvalidationType = enumValue switch
+                    {
+                        0 => "All",
+                        1 => "Pattern", 
+                        2 => "Related",
+                        _ => "All"
+                    };
+                }
+            }
+            
+            // 세 번째 인수: Pattern (string) 또는 RelatedTables (string[])
+            if (attribute.ConstructorArguments.Length > 2)
+            {
+                var thirdArg = attribute.ConstructorArguments[2];
+                if (thirdArg.Kind == TypedConstantKind.Array)
+                {
+                    // RelatedTables 배열
+                    settings.RelatedTables = ExtractStringArray(thirdArg);
+                }
+                else if (thirdArg.Value is string pattern)
+                {
+                    // Pattern 문자열
+                    settings.Pattern = pattern;
+                }
+            }
         }
 
-        // Named arguments
+        // Named arguments (property setters)
         foreach (var namedArg in attribute.NamedArguments)
         {
             switch (namedArg.Key)
@@ -172,13 +204,8 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
                             0 => "All",
                             1 => "Pattern", 
                             2 => "Related",
-                            3 => "Update",  // Update 추가
                             _ => "All"
                         };
-                    }
-                    else
-                    {
-                        settings.InvalidationType = namedArg.Value.Value?.ToString() ?? "All";
                     }
                     break;
                 case nameof(InvalidationSettings.Pattern):
