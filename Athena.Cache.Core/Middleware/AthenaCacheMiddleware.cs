@@ -1,5 +1,6 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -15,6 +16,7 @@ public class AthenaCacheMiddleware(
     IAthenaCache cache,
     ICacheKeyGenerator keyGenerator,
     ICacheInvalidator invalidator,
+    ICacheConfigurationRegistry configRegistry,
     AthenaCacheOptions options,
     ILogger<AthenaCacheMiddleware> logger)
 {
@@ -98,7 +100,7 @@ public class AthenaCacheMiddleware(
                context.Items["AthenaCache.Disabled"] is true;
     }
 
-    private static CacheConfiguration? GetCacheConfiguration(HttpContext context)
+    private CacheConfiguration? GetCacheConfiguration(HttpContext context)
     {
         // 라우팅 정보에서 컨트롤러와 액션 이름 가져오기
         var routeData = context.GetRouteData();
@@ -115,8 +117,8 @@ public class AthenaCacheMiddleware(
         if (!controllerName.EndsWith("Controller"))
             controllerName += "Controller";
 
-        // Source Generator가 생성한 레지스트리에서 설정 조회
-        return Athena.Cache.Core.Generated.CacheConfigurationRegistry.GetConfiguration(controllerName, actionName);
+        // 주입된 레지스트리에서 설정 조회
+        return configRegistry.GetConfiguration(controllerName, actionName);
     }
 
     private async Task<string> GenerateCacheKeyAsync(HttpContext context, CacheConfiguration config)

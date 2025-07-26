@@ -53,7 +53,12 @@
 		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
 	</ItemGroup>
 
+	<!-- Source Generator를 패키지에 포함하여 사용자가 별도로 설치할 필요 없도록 함 -->
 	<ItemGroup>
-		<ProjectReference Include="..\Athena.Cache.SourceGenerator\Athena.Cache.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\Athena.Cache.SourceGenerator\Athena.Cache.SourceGenerator.csproj" 
+		                  OutputItemType="Analyzer" 
+		                  ReferenceOutputAssembly="false" 
+		                  PrivateAssets="all" />
 	</ItemGroup>
+
 </Project>

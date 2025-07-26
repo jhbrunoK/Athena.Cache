@@ -2,6 +2,8 @@
 using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Filters;
 using Athena.Cache.Core.Implementations;
+using Athena.Cache.Core.Interfaces;
+using Athena.Cache.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Athena.Cache.Core.Extensions;
@@ -24,6 +26,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(options);
         services.AddSingleton<ICacheKeyGenerator, DefaultCacheKeyGenerator>();
         services.AddSingleton<ICacheInvalidator, DefaultCacheInvalidator>();
+        
+        // Registry 등록 - Source Generator가 있으면 그것을 사용, 없으면 Reflection 백업
+        RegisterCacheConfigurationRegistry(services);
 
         return services;
     }
@@ -88,6 +93,37 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAthenaCache, TCacheProvider>();
 
         return services;
+    }
+
+    /// <summary>
+    /// 캐시 설정 레지스트리 등록
+    /// Source Generator가 생성한 구현체가 있으면 그것을 사용하고, 없으면 Reflection 백업 사용
+    /// </summary>
+    private static void RegisterCacheConfigurationRegistry(IServiceCollection services)
+    {
+        services.AddSingleton<ICacheConfigurationRegistry>(serviceProvider =>
+        {
+            // Source Generator가 생성한 구현체 탐지 시도
+            try
+            {
+                var generatedType = Type.GetType("Athena.Cache.Core.Generated.CacheConfigurationRegistry");
+                if (generatedType != null)
+                {
+                    var instance = Activator.CreateInstance(generatedType);
+                    if (instance is ICacheConfigurationRegistry registry)
+                    {
+                        return registry;
+                    }
+                }
+            }
+            catch
+            {
+                // Source Generator 구현체를 찾을 수 없음
+            }
+
+            // 백업으로 Reflection 기반 구현체 사용
+            return new ReflectionCacheConfigurationRegistry();
+        });
     }
 
     /// <summary>
