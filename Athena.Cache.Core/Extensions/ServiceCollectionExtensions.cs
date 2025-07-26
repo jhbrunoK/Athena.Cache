@@ -5,6 +5,7 @@ using Athena.Cache.Core.Implementations;
 using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace Athena.Cache.Core.Extensions;
 
@@ -106,7 +107,9 @@ public static class ServiceCollectionExtensions
             // Source Generator가 생성한 구현체 탐지 시도
             try
             {
-                var generatedType = Type.GetType("Athena.Cache.Core.Generated.CacheConfigurationRegistry");
+                // 현재 어셈블리에서 생성된 타입 찾기
+                var currentAssembly = typeof(ServiceCollectionExtensions).Assembly;
+                var generatedType = currentAssembly.GetType("Athena.Cache.Core.Generated.CacheConfigurationRegistry");
                 if (generatedType != null)
                 {
                     var instance = Activator.CreateInstance(generatedType);
@@ -115,10 +118,26 @@ public static class ServiceCollectionExtensions
                         return registry;
                     }
                 }
+                
+                // 다른 방법으로 시도 - 어셈블리 내 모든 타입 검색
+                var types = currentAssembly.GetTypes();
+                var generatedRegistryType = types.FirstOrDefault(t => 
+                    t.Name == "CacheConfigurationRegistry" && 
+                    t.Namespace == "Athena.Cache.Core.Generated");
+                
+                if (generatedRegistryType != null)
+                {
+                    var instance = Activator.CreateInstance(generatedRegistryType);
+                    if (instance is ICacheConfigurationRegistry registry)
+                    {
+                        return registry;
+                    }
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                // Source Generator 구현체를 찾을 수 없음
+                // 디버깅을 위해 예외 로그 (프로덕션에서는 제거)
+                System.Diagnostics.Debug.WriteLine($"Source Generator registry detection failed: {ex.Message}");
             }
 
             // 백업으로 Reflection 기반 구현체 사용

@@ -13,7 +13,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Entity Framework ����
+// Entity Framework 설정
 builder.Services.AddDbContext<SampleDbContext>(options =>
 {
     if (builder.Environment.IsDevelopment())
@@ -26,46 +26,31 @@ builder.Services.AddDbContext<SampleDbContext>(options =>
     }
 });
 
-// ���� ���� ���
+// 비즈니스 서비스 등록
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
-// Athena Cache ����
-if (builder.Environment.IsDevelopment())
-{
-    // ���� ȯ��: MemoryCache ���
-    builder.Services.AddAthenaCacheComplete(options =>
+// Athena Cache 설정 - Redis 테스트용
+builder.Services.AddAthenaCacheRedisComplete(
+    athena =>
     {
-        options.Namespace = "SampleApp_DEV";
-        options.VersionKey = "v1.0";
-        options.DefaultExpirationMinutes = 15;
-        options.Logging.LogCacheHitMiss = true;
-        options.Logging.LogInvalidation = true;
+        athena.Namespace = "SampleApp_REDIS_TEST";
+        athena.VersionKey = "v1.0";
+        athena.DefaultExpirationMinutes = 30;
+        athena.Logging.LogCacheHitMiss = true;
+        athena.Logging.LogInvalidation = true;
+        athena.Logging.LogKeyGeneration = true;
+    },
+    redis =>
+    {
+        redis.ConnectionString = "localhost:6379";
+        redis.DatabaseId = 2;
+        redis.KeyPrefix = "test";
     });
-}
-else
-{
-    // � ȯ��: Redis ���
-    builder.Services.AddAthenaCacheRedisComplete(
-        athena =>
-        {
-            athena.Namespace = "SampleApp_PROD";
-            athena.VersionKey = "v1.0";
-            athena.DefaultExpirationMinutes = 30;
-            athena.Logging.LogCacheHitMiss = true;
-            athena.Logging.LogInvalidation = true;
-        },
-        redis =>
-        {
-            redis.ConnectionString = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
-            redis.DatabaseId = 1;
-            redis.KeyPrefix = "sample";
-        });
-}
 
 var app = builder.Build();
 
-// ���� ȯ�濡�� ���� ������ �õ�
+// 개발 환경에서만 데이터 시딩
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
