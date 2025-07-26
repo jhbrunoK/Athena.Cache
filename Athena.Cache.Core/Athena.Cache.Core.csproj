@@ -53,8 +53,6 @@
 		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Athena.Cache.SourceGenerator\Athena.Cache.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-	</ItemGroup>
+	<!-- Source Generator는 실제 Controllers가 있는 프로젝트에서만 참조 -->
 
 </Project>

@@ -3,9 +3,11 @@ using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Filters;
 using Athena.Cache.Core.Implementations;
 using Athena.Cache.Core.Interfaces;
+using Athena.Cache.Core.Models;
 using Athena.Cache.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using System.Reflection;
 
 namespace Athena.Cache.Core.Extensions;
 
@@ -113,9 +115,10 @@ public static class ServiceCollectionExtensions
                 if (generatedType != null)
                 {
                     var instance = Activator.CreateInstance(generatedType);
-                    if (instance is ICacheConfigurationRegistry registry)
+                    if (instance != null)
                     {
-                        return registry;
+                        // 생성된 클래스를 래핑하여 인터페이스 구현
+                        return new GeneratedRegistryWrapper(instance);
                     }
                 }
                 
@@ -128,9 +131,10 @@ public static class ServiceCollectionExtensions
                 if (generatedRegistryType != null)
                 {
                     var instance = Activator.CreateInstance(generatedRegistryType);
-                    if (instance is ICacheConfigurationRegistry registry)
+                    if (instance != null)
                     {
-                        return registry;
+                        // 생성된 클래스를 래핑하여 인터페이스 구현
+                        return new GeneratedRegistryWrapper(instance);
                     }
                 }
             }
@@ -174,5 +178,38 @@ public static class ServiceCollectionExtensions
             throw new InvalidOperationException(
                 $"다음 Athena Cache 서비스들이 등록되지 않았습니다: {string.Join(", ", missingServices)}");
         }
+    }
+}
+
+/// <summary>
+/// Source Generator로 생성된 클래스를 ICacheConfigurationRegistry 인터페이스로 래핑
+/// </summary>
+internal class GeneratedRegistryWrapper : ICacheConfigurationRegistry
+{
+    private readonly object _instance;
+    private readonly MethodInfo _getConfigurationMethod;
+    private readonly MethodInfo _getAllConfigurationsMethod;
+
+    public GeneratedRegistryWrapper(object instance)
+    {
+        _instance = instance;
+        var type = instance.GetType();
+        
+        _getConfigurationMethod = type.GetMethod("GetConfiguration", 
+            new[] { typeof(string), typeof(string) }) 
+            ?? throw new InvalidOperationException("GetConfiguration method not found");
+            
+        _getAllConfigurationsMethod = type.GetMethod("GetAllConfigurations") 
+            ?? throw new InvalidOperationException("GetAllConfigurations method not found");
+    }
+
+    public CacheConfiguration? GetConfiguration(string controllerName, string actionName)
+    {
+        return (CacheConfiguration?)_getConfigurationMethod.Invoke(_instance, new object[] { controllerName, actionName });
+    }
+
+    public IReadOnlyDictionary<string, CacheConfiguration> GetAllConfigurations()
+    {
+        return (IReadOnlyDictionary<string, CacheConfiguration>)_getAllConfigurationsMethod.Invoke(_instance, null)!;
     }
 }
