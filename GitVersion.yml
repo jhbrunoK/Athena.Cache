@@ -78,31 +78,4 @@ ignore:
 
 merge-message-formats: {}
 
-# 개별 라이브러리 태그 패턴 지원
 tag-pre-release-weight: 60000
-
-# Semantic versioning for different package types
-semantic-versioning:
-  # Core 라이브러리는 더 자주 변경
-  core:
-    major-version-bump-message: 'BREAKING CHANGE.*core|feat\(core\)!:'
-    minor-version-bump-message: 'feat\(core\):'
-    patch-version-bump-message: 'fix\(core\):'
-  
-  # Redis 구현체는 안정적
-  redis:
-    major-version-bump-message: 'BREAKING CHANGE.*redis|feat\(redis\)!:'
-    minor-version-bump-message: 'feat\(redis\):'
-    patch-version-bump-message: 'fix\(redis\):'
-  
-  # Source Generator
-  generator:
-    major-version-bump-message: 'BREAKING CHANGE.*generator|feat\(generator\)!:'
-    minor-version-bump-message: 'feat\(generator\):'
-    patch-version-bump-message: 'fix\(generator\):'
-  
-  # Analytics
-  analytics:
-    major-version-bump-message: 'BREAKING CHANGE.*analytics|feat\(analytics\)!:'
-    minor-version-bump-message: 'feat\(analytics\):'
-    patch-version-bump-message: 'fix\(analytics\):'
