@@ -104,24 +104,34 @@ jobs:
           6.0.x
           8.0.x
     
-    - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v1.1.1
-      with:
-        versionSpec: '5.x'
-    
-    - name: Determine Version with GitVersion
-      uses: gittools/actions/gitversion/execute@v1.1.1
-      with:
-        useConfigFile: true
-        configFilePath: GitVersion.yml
-    
-    - name: Display GitVersion outputs
+    - name: Extract Version from Tag
+      id: version
       run: |
-        echo "Major: ${{ env.GitVersion_Major }}"
-        echo "Minor: ${{ env.GitVersion_Minor }}"
-        echo "Patch: ${{ env.GitVersion_Patch }}"
-        echo "NuGetVersion: ${{ env.GitVersion_NuGetVersion }}"
-        echo "AssemblySemVer: ${{ env.GitVersion_AssemblySemVer }}"
+        TAG=${GITHUB_REF#refs/tags/}
+        echo "Tag: $TAG"
+        
+        # 태그에서 버전 추출
+        if [[ $TAG == core-v* ]]; then
+          VERSION=${TAG#core-v}
+        elif [[ $TAG == redis-v* ]]; then
+          VERSION=${TAG#redis-v}
+        elif [[ $TAG == generator-v* ]]; then
+          VERSION=${TAG#generator-v}
+        elif [[ $TAG == analytics-v* ]]; then
+          VERSION=${TAG#analytics-v}
+        elif [[ $TAG == v* ]]; then
+          VERSION=${TAG#v}
+        else
+          VERSION="1.0.0"
+        fi
+        
+        echo "Extracted version: $VERSION"
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Display Version
+      run: |
+        echo "Version: ${{ steps.version.outputs.version }}"
     
     - name: Restore dependencies
       run: dotnet restore
