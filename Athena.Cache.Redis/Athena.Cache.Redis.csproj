@@ -9,9 +9,30 @@
     <IsPackable>true</IsPackable>
     <PackageId>Athena.Cache.Redis</PackageId>
     <Description>Redis provider for Athena.Cache with distributed caching capabilities and connection management</Description>
+    <Authors>Bruno Kim</Authors>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
+    <PackageTags>cache;caching;redis;aspnetcore;distributed;performance;invalidation</PackageTags>
   </PropertyGroup>
 
-  <!-- 패키지 파일들은 Directory.Build.props에서 자동 관리 -->
+  <!-- 패키지에 포함할 파일들 -->
+  <ItemGroup>
+    <None Include="..\icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
@@ -22,16 +43,5 @@
     <ProjectReference Include="..\Athena.Cache.Core\Athena.Cache.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="C:\Users\junghyunkim\source\repos\Athena.Cache\icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\junghyunkim\source\repos\Athena.Cache\LICENSE.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\junghyunkim\source\repos\Athena.Cache\README.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
 </Project>

@@ -9,9 +9,30 @@
     <IsPackable>true</IsPackable>
     <PackageId>Athena.Cache.Analytics</PackageId>
     <Description>Analytics and monitoring capabilities for Athena.Cache with real-time dashboards and performance insights</Description>
+    <Authors>Bruno Kim</Authors>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
+    <PackageTags>cache;caching;analytics;monitoring;dashboard;performance;aspnetcore</PackageTags>
   </PropertyGroup>
 
-  <!-- 패키지 파일들은 Directory.Build.props에서 자동 관리 -->
+  <!-- 패키지에 포함할 파일들 -->
+  <ItemGroup>
+    <None Include="..\icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
@@ -26,16 +47,5 @@
     <ProjectReference Include="..\Athena.Cache.Core\Athena.Cache.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="C:\Users\junghyunkim\source\repos\Athena.Cache\icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\junghyunkim\source\repos\Athena.Cache\LICENSE.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="README.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
 </Project>
