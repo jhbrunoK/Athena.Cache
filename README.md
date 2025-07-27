@@ -293,6 +293,18 @@ dotnet test --filter Category=Integration
 [CacheInvalidateOn("Users", InvalidationType.Related, "Orders", "Profiles")]
 ```
 
+## 📦 **추가 패키지**
+
+```bash
+# Source Generator (선택적 - Core에 포함되지만 독립 설치 가능)
+dotnet add package Athena.Cache.SourceGenerator
+
+# 분석 및 모니터링 (선택적)
+dotnet add package Athena.Cache.Analytics
+```
+
+> **📋 릴리즈 정보**: 자세한 릴리즈 프로세스와 버전 관리 전략은 [RELEASE.md](RELEASE.md)를 참조하세요.
+
 ## 🤝 기여하기
 
 1. 저장소 포크

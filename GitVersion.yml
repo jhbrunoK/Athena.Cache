@@ -1,0 +1,108 @@
+mode: MainLine
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatchTag
+assembly-informational-format: '{InformationalVersion}'
+tag-prefix: '[vV]'
+continuous-delivery-fallback-tag: ci
+major-version-bump-message: '\+semver:\s?(breaking|major)'
+minor-version-bump-message: '\+semver:\s?(feature|minor)'
+patch-version-bump-message: '\+semver:\s?(fix|patch)'
+no-bump-message: '\+semver:\s?(none|skip)'
+legacy-semver-padding: 4
+build-metadata-padding: 4
+commits-since-version-source-padding: 4
+
+branches:
+  main:
+    regex: ^main$
+    mode: ContinuousDelivery
+    tag: ''
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: true
+    pre-release-weight: 55000
+  
+  develop:
+    regex: ^dev(elop)?(ment)?$
+    mode: ContinuousDeployment
+    tag: alpha
+    increment: Minor
+    prevent-increment-of-merged-branch-version: false
+    track-merge-target: true
+    tracks-release-branches: true
+    is-release-branch: false
+    is-mainline: false
+    pre-release-weight: 0
+  
+  feature:
+    regex: ^features?[/-]
+    mode: ContinuousDeployment
+    tag: alpha
+    increment: Minor
+    prevent-increment-of-merged-branch-version: false
+    track-merge-target: false
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: false
+    pre-release-weight: 30000
+  
+  bugfix:
+    regex: ^(bugfix(es)?|hotfix(es)?)[/-]
+    mode: ContinuousDeployment
+    tag: beta
+    increment: Patch
+    prevent-increment-of-merged-branch-version: false
+    track-merge-target: false
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: false
+    pre-release-weight: 30000
+  
+  release:
+    regex: ^releases?[/-]
+    mode: ContinuousDeployment
+    tag: rc
+    increment: None
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    tracks-release-branches: false
+    is-release-branch: true
+    is-mainline: false
+    pre-release-weight: 30000
+
+ignore:
+  sha: []
+
+merge-message-formats: {}
+
+# 개별 라이브러리 태그 패턴 지원
+tag-pre-release-weight: 60000
+
+# Semantic versioning for different package types
+semantic-versioning:
+  # Core 라이브러리는 더 자주 변경
+  core:
+    major-version-bump-message: 'BREAKING CHANGE.*core|feat\(core\)!:'
+    minor-version-bump-message: 'feat\(core\):'
+    patch-version-bump-message: 'fix\(core\):'
+  
+  # Redis 구현체는 안정적
+  redis:
+    major-version-bump-message: 'BREAKING CHANGE.*redis|feat\(redis\)!:'
+    minor-version-bump-message: 'feat\(redis\):'
+    patch-version-bump-message: 'fix\(redis\):'
+  
+  # Source Generator
+  generator:
+    major-version-bump-message: 'BREAKING CHANGE.*generator|feat\(generator\)!:'
+    minor-version-bump-message: 'feat\(generator\):'
+    patch-version-bump-message: 'fix\(generator\):'
+  
+  # Analytics
+  analytics:
+    major-version-bump-message: 'BREAKING CHANGE.*analytics|feat\(analytics\)!:'
+    minor-version-bump-message: 'feat\(analytics\):'
+    patch-version-bump-message: 'fix\(analytics\):'

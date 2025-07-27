@@ -1,0 +1,103 @@
+<!-- Directory.Build.props - 모든 프로젝트의 공통 속성 정의 -->
+<Project>
+  
+  <!-- 공통 프로젝트 속성 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+  </PropertyGroup>
+
+  <!-- GitVersion 통합 - 자동 버전 계산 -->
+  <PropertyGroup Condition="'$(UseGitVersioning)' != 'false'">
+    <!-- GitVersion이 제공하는 속성들 사용 -->
+    <Version Condition="'$(GitVersion_NuGetVersion)' != ''">$(GitVersion_NuGetVersion)</Version>
+    <AssemblyVersion Condition="'$(GitVersion_AssemblySemVer)' != ''">$(GitVersion_AssemblySemVer)</AssemblyVersion>
+    <FileVersion Condition="'$(GitVersion_AssemblySemFileVer)' != ''">$(GitVersion_AssemblySemFileVer)</FileVersion>
+    <InformationalVersion Condition="'$(GitVersion_InformationalVersion)' != ''">$(GitVersion_InformationalVersion)</InformationalVersion>
+  </PropertyGroup>
+
+  <!-- 개발 환경용 기본 버전 (GitVersion 없을 때) -->
+  <PropertyGroup Condition="'$(GitVersion_NuGetVersion)' == ''">
+    <Version>1.1.0-dev</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
+    <InformationalVersion>1.1.0-dev</InformationalVersion>
+  </PropertyGroup>
+
+  <!-- NuGet 패키지 공통 메타데이터 -->
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Bruno Kim</Authors>
+    <Company>Athena Cache</Company>
+    <Copyright>Copyright © Bruno Kim $([System.DateTime]::Now.Year)</Copyright>
+    <Description>Smart caching library for ASP.NET Core with automatic query parameter key generation and table-based cache invalidation</Description>
+    <PackageTags>cache;caching;aspnetcore;redis;performance;invalidation;memcache;source-generator</PackageTags>
+    <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- 패키지에 포함할 공통 파일들 -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)icon.png" Condition="Exists('$(MSBuildThisFileDirectory)icon.png')">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)README.md" Condition="Exists('$(MSBuildThisFileDirectory)README.md')">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)LICENSE.txt" Condition="Exists('$(MSBuildThisFileDirectory)LICENSE.txt')">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <!-- 소스 링크 지원 -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+  </ItemGroup>
+
+  <!-- 공통 어셈블리 속성 -->
+  <PropertyGroup>
+    <Product>Athena Cache</Product>
+    <AssemblyTitle>$(MSBuildProjectName)</AssemblyTitle>
+    <AssemblyDescription>$(Description)</AssemblyDescription>
+    <AssemblyCompany>$(Company)</AssemblyCompany>
+    <AssemblyProduct>$(Product)</AssemblyProduct>
+    <AssemblyCopyright>$(Copyright)</AssemblyCopyright>
+  </PropertyGroup>
+
+  <!-- 디버그 심볼 설정 -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <!-- 특정 프로젝트 제외 -->
+  <PropertyGroup Condition="$(MSBuildProjectName.Contains('Sample')) Or $(MSBuildProjectName.Contains('Tests'))">
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+</Project>

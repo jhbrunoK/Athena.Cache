@@ -1,0 +1,378 @@
+name: Smart Release
+
+on:
+  push:
+    tags:
+      - 'core-v*'      # Athena.Cache.Core만 릴리즈
+      - 'redis-v*'     # Athena.Cache.Redis만 릴리즈  
+      - 'generator-v*' # Athena.Cache.SourceGenerator만 릴리즈
+      - 'analytics-v*' # Athena.Cache.Analytics만 릴리즈
+      - 'v*'           # 모든 패키지 통합 릴리즈
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  NuGetDirectory: ${{ github.workspace}}/nuget
+
+jobs:
+  determine-scope:
+    name: Determine Release Scope
+    runs-on: ubuntu-latest
+    outputs:
+      release-core: ${{ steps.scope.outputs.core }}
+      release-redis: ${{ steps.scope.outputs.redis }}
+      release-generator: ${{ steps.scope.outputs.generator }}
+      release-analytics: ${{ steps.scope.outputs.analytics }}
+      version-core: ${{ steps.scope.outputs.version-core }}
+      version-redis: ${{ steps.scope.outputs.version-redis }}
+      version-generator: ${{ steps.scope.outputs.version-generator }}
+      version-analytics: ${{ steps.scope.outputs.version-analytics }}
+      is-unified-release: ${{ steps.scope.outputs.unified }}
+      release-version: ${{ steps.scope.outputs.release-version }}
+    
+    steps:
+    - name: Determine release scope and versions
+      id: scope
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        echo "Processing tag: $TAG"
+        
+        # 기본값 설정
+        echo "core=false" >> $GITHUB_OUTPUT
+        echo "redis=false" >> $GITHUB_OUTPUT
+        echo "generator=false" >> $GITHUB_OUTPUT
+        echo "analytics=false" >> $GITHUB_OUTPUT
+        echo "unified=false" >> $GITHUB_OUTPUT
+        
+        if [[ $TAG == core-v* ]]; then
+          echo "=== Core 개별 릴리즈 ==="
+          echo "core=true" >> $GITHUB_OUTPUT
+          echo "version-core=${TAG#core-v}" >> $GITHUB_OUTPUT
+          echo "release-version=${TAG#core-v}" >> $GITHUB_OUTPUT
+          
+        elif [[ $TAG == redis-v* ]]; then
+          echo "=== Redis 개별 릴리즈 ==="
+          echo "redis=true" >> $GITHUB_OUTPUT
+          echo "version-redis=${TAG#redis-v}" >> $GITHUB_OUTPUT
+          echo "release-version=${TAG#redis-v}" >> $GITHUB_OUTPUT
+          
+        elif [[ $TAG == generator-v* ]]; then
+          echo "=== SourceGenerator 개별 릴리즈 ==="
+          echo "generator=true" >> $GITHUB_OUTPUT
+          echo "version-generator=${TAG#generator-v}" >> $GITHUB_OUTPUT
+          echo "release-version=${TAG#generator-v}" >> $GITHUB_OUTPUT
+          
+        elif [[ $TAG == analytics-v* ]]; then
+          echo "=== Analytics 개별 릴리즈 ==="
+          echo "analytics=true" >> $GITHUB_OUTPUT
+          echo "version-analytics=${TAG#analytics-v}" >> $GITHUB_OUTPUT
+          echo "release-version=${TAG#analytics-v}" >> $GITHUB_OUTPUT
+          
+        elif [[ $TAG == v* ]]; then
+          echo "=== 통합 릴리즈 - 모든 패키지 ==="
+          VERSION=${TAG#v}
+          echo "core=true" >> $GITHUB_OUTPUT
+          echo "redis=true" >> $GITHUB_OUTPUT
+          echo "generator=true" >> $GITHUB_OUTPUT
+          echo "analytics=true" >> $GITHUB_OUTPUT
+          echo "unified=true" >> $GITHUB_OUTPUT
+          echo "version-core=$VERSION" >> $GITHUB_OUTPUT
+          echo "version-redis=$VERSION" >> $GITHUB_OUTPUT
+          echo "version-generator=$VERSION" >> $GITHUB_OUTPUT
+          echo "version-analytics=$VERSION" >> $GITHUB_OUTPUT
+          echo "release-version=$VERSION" >> $GITHUB_OUTPUT
+          
+        else
+          echo "❌ 알 수 없는 태그 형식: $TAG"
+          exit 1
+        fi
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: determine-scope
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # GitVersion을 위해 전체 히스토리 필요
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+          6.0.x
+          8.0.x
+    
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v1.1.1
+      with:
+        versionSpec: '5.x'
+    
+    - name: Determine Version with GitVersion
+      uses: gittools/actions/gitversion/execute@v1.1.1
+      with:
+        useConfigFile: true
+        configFilePath: GitVersion.yml
+    
+    - name: Display GitVersion outputs
+      run: |
+        echo "Major: ${{ env.GitVersion_Major }}"
+        echo "Minor: ${{ env.GitVersion_Minor }}"
+        echo "Patch: ${{ env.GitVersion_Patch }}"
+        echo "NuGetVersion: ${{ env.GitVersion_NuGetVersion }}"
+        echo "AssemblySemVer: ${{ env.GitVersion_AssemblySemVer }}"
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
+    
+    - name: Run tests
+      run: dotnet test --no-build --configuration Release --verbosity normal
+    
+    - name: Create NuGet directory
+      run: mkdir -p ${{ env.NuGetDirectory }}
+
+  release-core:
+    name: Release Athena.Cache.Core
+    runs-on: ubuntu-latest
+    needs: [determine-scope, build-and-test]
+    if: needs.determine-scope.outputs.release-core == 'true'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Pack Athena.Cache.Core
+      run: |
+        dotnet pack Athena.Cache.Core/Athena.Cache.Core.csproj \
+          --configuration Release \
+          --output ${{ env.NuGetDirectory }} \
+          -p:Version=${{ needs.determine-scope.outputs.version-core }} \
+          -p:PackageReleaseNotes="v${{ needs.determine-scope.outputs.version-core }}: Core library updates with Source Generator integration"
+    
+    - name: Publish Core to NuGet
+      run: |
+        dotnet nuget push ${{ env.NuGetDirectory }}/Athena.Cache.Core.*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+  release-redis:
+    name: Release Athena.Cache.Redis
+    runs-on: ubuntu-latest
+    needs: [determine-scope, build-and-test]
+    if: needs.determine-scope.outputs.release-redis == 'true'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Pack Athena.Cache.Redis
+      run: |
+        dotnet pack Athena.Cache.Redis/Athena.Cache.Redis.csproj \
+          --configuration Release \
+          --output ${{ env.NuGetDirectory }} \
+          -p:Version=${{ needs.determine-scope.outputs.version-redis }} \
+          -p:PackageReleaseNotes="v${{ needs.determine-scope.outputs.version-redis }}: Redis provider updates and improvements"
+    
+    - name: Publish Redis to NuGet
+      run: |
+        dotnet nuget push ${{ env.NuGetDirectory }}/Athena.Cache.Redis.*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+  release-generator:
+    name: Release Athena.Cache.SourceGenerator
+    runs-on: ubuntu-latest
+    needs: [determine-scope, build-and-test]
+    if: needs.determine-scope.outputs.release-generator == 'true'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Pack Athena.Cache.SourceGenerator
+      run: |
+        dotnet pack Athena.Cache.SourceGenerator/Athena.Cache.SourceGenerator.csproj \
+          --configuration Release \
+          --output ${{ env.NuGetDirectory }} \
+          -p:Version=${{ needs.determine-scope.outputs.version-generator }} \
+          -p:PackageReleaseNotes="v${{ needs.determine-scope.outputs.version-generator }}: Source Generator for compile-time cache configuration"
+    
+    - name: Publish SourceGenerator to NuGet
+      run: |
+        dotnet nuget push ${{ env.NuGetDirectory }}/Athena.Cache.SourceGenerator.*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+  release-analytics:
+    name: Release Athena.Cache.Analytics
+    runs-on: ubuntu-latest
+    needs: [determine-scope, build-and-test]
+    if: needs.determine-scope.outputs.release-analytics == 'true'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Pack Athena.Cache.Analytics
+      run: |
+        dotnet pack Athena.Cache.Analytics/Athena.Cache.Analytics.csproj \
+          --configuration Release \
+          --output ${{ env.NuGetDirectory }} \
+          -p:Version=${{ needs.determine-scope.outputs.version-analytics }} \
+          -p:PackageReleaseNotes="v${{ needs.determine-scope.outputs.version-analytics }}: Cache analytics and monitoring capabilities"
+    
+    - name: Publish Analytics to NuGet
+      run: |
+        dotnet nuget push ${{ env.NuGetDirectory }}/Athena.Cache.Analytics.*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+  create-github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [determine-scope, build-and-test, release-core, release-redis, release-generator, release-analytics]
+    if: always() && !failure() && !cancelled()
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Generate Release Notes
+      id: release-notes
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        VERSION=${{ needs.determine-scope.outputs.release-version }}
+        
+        if [[ "${{ needs.determine-scope.outputs.is-unified-release }}" == "true" ]]; then
+          TITLE="🚀 Athena Cache v$VERSION - Unified Release"
+          BODY="## 📦 통합 릴리즈 v$VERSION
+
+        이 릴리즈에서는 모든 Athena Cache 패키지가 버전 $VERSION 으로 업데이트됩니다.
+
+        ### 📋 포함된 패키지
+        - ✅ **Athena.Cache.Core** v$VERSION
+        - ✅ **Athena.Cache.Redis** v$VERSION  
+        - ✅ **Athena.Cache.SourceGenerator** v$VERSION
+        - ✅ **Athena.Cache.Analytics** v$VERSION
+
+        ### 🎯 주요 변경사항
+        - 🛠️ Source Generator 통합으로 컴파일 타임 최적화
+        - 🚀 런타임 성능 개선 (Reflection → Generated Code)
+        - 🔧 자동 캐시 설정 탐지 시스템
+        - 🛡️ AOT 호환성 지원
+
+        ### 📖 설치 방법
+        \`\`\`bash
+        # 핵심 패키지 (Source Generator 포함)
+        dotnet add package Athena.Cache.Core
+
+        # Redis 지원
+        dotnet add package Athena.Cache.Redis
+
+        # 분석 도구 (선택사항)
+        dotnet add package Athena.Cache.Analytics
+        \`\`\`"
+        
+        elif [[ $TAG == core-v* ]]; then
+          TITLE="🔧 Athena.Cache.Core v$VERSION"
+          BODY="## 📦 Core 라이브러리 업데이트
+
+        ### ✨ 새로운 기능
+        - Source Generator 통합
+        - 런타임 성능 최적화
+        - 자동 캐시 설정 탐지
+
+        ### 📖 설치/업데이트
+        \`\`\`bash
+        dotnet add package Athena.Cache.Core --version $VERSION
+        \`\`\`"
+        
+        elif [[ $TAG == redis-v* ]]; then
+          TITLE="🔴 Athena.Cache.Redis v$VERSION"
+          BODY="## 📦 Redis 프로바이더 업데이트
+
+        ### 🔧 개선사항
+        - Redis 연결 안정성 향상
+        - 성능 최적화
+
+        ### 📖 설치/업데이트
+        \`\`\`bash
+        dotnet add package Athena.Cache.Redis --version $VERSION
+        \`\`\`"
+        
+        elif [[ $TAG == generator-v* ]]; then
+          TITLE="⚡ Athena.Cache.SourceGenerator v$VERSION"
+          BODY="## 📦 Source Generator 릴리즈
+
+        ### ✨ 기능
+        - 컴파일 타임 캐시 설정 자동 생성
+        - AOT 호환성 지원
+        - 런타임 Reflection 제거
+
+        ### 📖 설치
+        \`\`\`bash
+        dotnet add package Athena.Cache.SourceGenerator --version $VERSION
+        \`\`\`"
+        
+        elif [[ $TAG == analytics-v* ]]; then
+          TITLE="📊 Athena.Cache.Analytics v$VERSION"
+          BODY="## 📦 Analytics 모듈 업데이트
+
+        ### ✨ 기능
+        - 캐시 성능 모니터링
+        - 사용 패턴 분석
+        - 실시간 대시보드
+
+        ### 📖 설치
+        \`\`\`bash
+        dotnet add package Athena.Cache.Analytics --version $VERSION
+        \`\`\`"
+        fi
+        
+        # GitHub Actions에서 멀티라인 문자열 처리
+        echo "RELEASE_TITLE=$TITLE" >> $GITHUB_ENV
+        echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+        echo "$BODY" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: ${{ env.RELEASE_TITLE }}
+        body: ${{ env.RELEASE_BODY }}
+        draft: false
+        prerelease: false
