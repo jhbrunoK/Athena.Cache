@@ -4,7 +4,7 @@
 [![NuGet Core](https://img.shields.io/nuget/v/Athena.Cache.Core.svg)](https://www.nuget.org/packages/Athena.Cache.Core/)
 [![Downloads](https://img.shields.io/nuget/dt/Athena.Cache.Core.svg)](https://www.nuget.org/packages/Athena.Cache.Core/)
 [![NuGet Redis](https://img.shields.io/nuget/v/Athena.Cache.Redis.svg)](https://www.nuget.org/packages/Athena.Cache.Redis/)
-[![Downloads](https://img.shields.io/nuget/dt/Athena.Cache.Core.svg)](https://www.nuget.org/packages/Athena.Cache.Redis/)
+[![Downloads](https://img.shields.io/nuget/dt/Athena.Cache.Redis.svg)](https://www.nuget.org/packages/Athena.Cache.Redis/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Smart caching library for ASP.NET Core with automatic query parameter key generation and table-based cache invalidation.**
