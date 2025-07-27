@@ -9,7 +9,7 @@
 
 		<!-- Package Info -->
 		<PackageId>Athena.Cache.Core</PackageId>
-		<Version>1.0.0</Version>
+		<Version>1.1.0</Version>
 		<Authors>Bruno Kim</Authors>
 		<Description>Smart caching library for ASP.NET Core with automatic query parameter key generation and table-based cache invalidation</Description>
 		<PackageTags>cache;caching;aspnetcore;redis;performance;invalidation;memcache</PackageTags>
