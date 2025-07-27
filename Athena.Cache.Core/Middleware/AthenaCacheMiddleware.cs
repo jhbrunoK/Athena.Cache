@@ -1,7 +1,9 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace Athena.Cache.Core.Middleware;
 
@@ -13,6 +15,8 @@ public class AthenaCacheMiddleware(
     RequestDelegate next,
     IAthenaCache cache,
     ICacheKeyGenerator keyGenerator,
+    ICacheInvalidator invalidator,
+    ICacheConfigurationRegistry configRegistry,
     AthenaCacheOptions options,
     ILogger<AthenaCacheMiddleware> logger)
 {
@@ -96,15 +100,25 @@ public class AthenaCacheMiddleware(
                context.Items["AthenaCache.Disabled"] is true;
     }
 
-    private static CacheConfiguration? GetCacheConfiguration(HttpContext context)
+    private CacheConfiguration? GetCacheConfiguration(HttpContext context)
     {
-        if (context.Items.TryGetValue("AthenaCache.Config", out var configObj) &&
-            configObj is CacheConfiguration config)
-        {
-            return config;
-        }
+        // 라우팅 정보에서 컨트롤러와 액션 이름 가져오기
+        var routeData = context.GetRouteData();
+        if (routeData?.Values == null)
+            return null;
 
-        return null;
+        var controllerName = routeData.Values["controller"]?.ToString();
+        var actionName = routeData.Values["action"]?.ToString();
+
+        if (string.IsNullOrEmpty(controllerName) || string.IsNullOrEmpty(actionName))
+            return null;
+
+        // Controller 접미사 추가 (필요한 경우)
+        if (!controllerName.EndsWith("Controller"))
+            controllerName += "Controller";
+
+        // 주입된 레지스트리에서 설정 조회
+        return configRegistry.GetConfiguration(controllerName, actionName);
     }
 
     private async Task<string> GenerateCacheKeyAsync(HttpContext context, CacheConfiguration config)
@@ -214,6 +228,17 @@ public class AthenaCacheMiddleware(
 
                 // 캐시에 저장
                 await cache.SetAsync(cacheKey, cachedResponse, expiration);
+
+                // 테이블 추적 설정
+                if (config.InvalidationRules.Any())
+                {
+                    var tablesToTrack = config.InvalidationRules
+                        .Select(rule => rule.TableName)
+                        .Distinct()
+                        .ToArray();
+                    
+                    await invalidator.TrackCacheKeyAsync(tablesToTrack, cacheKey);
+                }
 
                 if (options.Logging.LogCacheHitMiss)
                 {

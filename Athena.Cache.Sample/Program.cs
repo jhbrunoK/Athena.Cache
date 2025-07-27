@@ -13,7 +13,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Entity Framework ¼³Á¤
+// Entity Framework ì„¤ì •
 builder.Services.AddDbContext<SampleDbContext>(options =>
 {
     if (builder.Environment.IsDevelopment())
@@ -26,46 +26,42 @@ builder.Services.AddDbContext<SampleDbContext>(options =>
     }
 });
 
-// »ùÇÃ ¼­ºñ½º µî·Ï
+// ë¹„ì¦ˆë‹ˆìŠ¤ ì„œë¹„ìŠ¤ ë“±ë¡
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
-// Athena Cache ¼³Á¤
-if (builder.Environment.IsDevelopment())
-{
-    // °³¹ß È¯°æ: MemoryCache »ç¿ë
-    builder.Services.AddAthenaCacheComplete(options =>
+// Athena Cache ì„¤ì • - Redis í…ŒìŠ¤íŠ¸ìš©
+//builder.Services.AddAthenaCacheRedisComplete(
+//    athena =>
+//    {
+//        athena.Namespace = "SampleApp_REDIS_TEST";
+//        athena.VersionKey = "v1.0";
+//        athena.DefaultExpirationMinutes = 30;
+//        athena.Logging.LogCacheHitMiss = true;
+//        athena.Logging.LogInvalidation = true;
+//        athena.Logging.LogKeyGeneration = true;
+//    },
+//    redis =>
+//    {
+//        redis.ConnectionString = "localhost:6379";
+//        redis.DatabaseId = 2;
+//        redis.KeyPrefix = "test";
+//    });
+
+builder.Services.AddAthenaCacheComplete(
+    athena =>
     {
-        options.Namespace = "SampleApp_DEV";
-        options.VersionKey = "v1.0";
-        options.DefaultExpirationMinutes = 15;
-        options.Logging.LogCacheHitMiss = true;
-        options.Logging.LogInvalidation = true;
+        athena.Namespace = "SampleApp_REDIS_TEST";
+        athena.VersionKey = "v1.0";
+        athena.DefaultExpirationMinutes = 30;
+        athena.Logging.LogCacheHitMiss = true;
+        athena.Logging.LogInvalidation = true;
+        athena.Logging.LogKeyGeneration = true;
     });
-}
-else
-{
-    // ¿î¿µ È¯°æ: Redis »ç¿ë
-    builder.Services.AddAthenaCacheRedisComplete(
-        athena =>
-        {
-            athena.Namespace = "SampleApp_PROD";
-            athena.VersionKey = "v1.0";
-            athena.DefaultExpirationMinutes = 30;
-            athena.Logging.LogCacheHitMiss = true;
-            athena.Logging.LogInvalidation = true;
-        },
-        redis =>
-        {
-            redis.ConnectionString = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
-            redis.DatabaseId = 1;
-            redis.KeyPrefix = "sample";
-        });
-}
 
 var app = builder.Build();
 
-// °³¹ß È¯°æ¿¡¼­ »ùÇÃ µ¥ÀÌÅÍ ½Ãµå
+// ê°œë°œ í™˜ê²½ì—ì„œë§Œ ë°ì´í„° ì‹œë”©
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
@@ -83,6 +79,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+// Athena Cache ë¯¸ë“¤ì›¨ì–´ ì¶”ê°€
+app.UseAthenaCache();
 
 app.MapControllers();
 

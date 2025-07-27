@@ -5,14 +5,9 @@ namespace Athena.Cache.Analytics.Data;
 /// <summary>
 /// 캐시 분석 데이터베이스 컨텍스트
 /// </summary>
-public class CacheAnalyticsDbContext : DbContext
+public class CacheAnalyticsDbContext(DbContextOptions<CacheAnalyticsDbContext> options) : DbContext(options)
 {
     public DbSet<CacheEventEntity> CacheEvents { get; set; }
-
-    public CacheAnalyticsDbContext(DbContextOptions<CacheAnalyticsDbContext> options)
-        : base(options)
-    {
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -8,17 +8,9 @@ namespace Athena.Cache.Sample.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController : ControllerBase
+public class OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
+    : ControllerBase
 {
-    private readonly IOrderService _orderService;
-    private readonly ILogger<OrdersController> _logger;
-
-    public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
-    {
-        _orderService = orderService;
-        _logger = logger;
-    }
-
     /// <summary>
     /// 주문 목록 조회 (Orders, Users 테이블과 연관)
     /// </summary>
@@ -30,10 +22,10 @@ public class OrdersController : ControllerBase
         [FromQuery] int? userId = null,
         [FromQuery] decimal? minAmount = null)
     {
-        _logger.LogInformation("GetOrders called with userId: {UserId}, minAmount: {MinAmount}",
+        logger.LogInformation("GetOrders called with userId: {UserId}, minAmount: {MinAmount}",
             userId, minAmount);
 
-        var orders = await _orderService.GetOrdersAsync(userId, minAmount);
+        var orders = await orderService.GetOrdersAsync(userId, minAmount);
         return Ok(orders);
     }
 
@@ -46,7 +38,7 @@ public class OrdersController : ControllerBase
     [CacheInvalidateOn("Users")]
     public async Task<ActionResult<OrderDto>> GetOrder(int id)
     {
-        var order = await _orderService.GetOrderByIdAsync(id);
+        var order = await orderService.GetOrderByIdAsync(id);
         if (order == null)
         {
             return NotFound();
@@ -66,7 +58,7 @@ public class OrdersController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var createdOrder = await _orderService.CreateOrderAsync(order);
+        var createdOrder = await orderService.CreateOrderAsync(order);
         return CreatedAtAction(nameof(GetOrder), new { id = createdOrder.Id }, createdOrder);
     }
 
@@ -76,7 +68,7 @@ public class OrdersController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteOrder(int id)
     {
-        var deleted = await _orderService.DeleteOrderAsync(id);
+        var deleted = await orderService.DeleteOrderAsync(id);
         if (!deleted)
         {
             return NotFound();
