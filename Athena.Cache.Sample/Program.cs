@@ -31,7 +31,24 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
 // Athena Cache 설정 - Redis 테스트용
-builder.Services.AddAthenaCacheRedisComplete(
+//builder.Services.AddAthenaCacheRedisComplete(
+//    athena =>
+//    {
+//        athena.Namespace = "SampleApp_REDIS_TEST";
+//        athena.VersionKey = "v1.0";
+//        athena.DefaultExpirationMinutes = 30;
+//        athena.Logging.LogCacheHitMiss = true;
+//        athena.Logging.LogInvalidation = true;
+//        athena.Logging.LogKeyGeneration = true;
+//    },
+//    redis =>
+//    {
+//        redis.ConnectionString = "localhost:6379";
+//        redis.DatabaseId = 2;
+//        redis.KeyPrefix = "test";
+//    });
+
+builder.Services.AddAthenaCacheComplete(
     athena =>
     {
         athena.Namespace = "SampleApp_REDIS_TEST";
@@ -40,12 +57,6 @@ builder.Services.AddAthenaCacheRedisComplete(
         athena.Logging.LogCacheHitMiss = true;
         athena.Logging.LogInvalidation = true;
         athena.Logging.LogKeyGeneration = true;
-    },
-    redis =>
-    {
-        redis.ConnectionString = "localhost:6379";
-        redis.DatabaseId = 2;
-        redis.KeyPrefix = "test";
     });
 
 var app = builder.Build();

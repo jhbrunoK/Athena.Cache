@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Athena.Cache.Core.Models;
 
 namespace Athena.Cache.Core.Interfaces;

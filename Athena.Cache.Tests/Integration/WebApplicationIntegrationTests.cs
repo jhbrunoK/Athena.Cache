@@ -5,7 +5,6 @@ using Athena.Cache.Core.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Athena.Cache.Core.Abstractions;
 using Microsoft.AspNetCore.TestHost;
 
 namespace Athena.Cache.Tests.Integration;

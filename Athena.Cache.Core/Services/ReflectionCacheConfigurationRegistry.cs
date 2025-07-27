@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Athena.Cache.Core.Attributes;
-using Athena.Cache.Core.Enums;
 using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -104,14 +100,14 @@ public class ReflectionCacheConfigurationRegistry : ICacheConfigurationRegistry
             ExpirationMinutes = cacheAttr?.ExpirationMinutes ?? -1,
             CustomKeyPrefix = cacheAttr?.CustomKeyPrefix,
             MaxRelatedDepth = cacheAttr?.MaxRelatedDepth ?? -1,
-            AdditionalKeyParameters = cacheAttr?.AdditionalKeyParameters ?? new string[0],
-            ExcludeParameters = cacheAttr?.ExcludeParameters ?? new string[0],
+            AdditionalKeyParameters = cacheAttr?.AdditionalKeyParameters ?? [],
+            ExcludeParameters = cacheAttr?.ExcludeParameters ?? [],
             InvalidationRules = invalidationAttrs.Select(attr => new TableInvalidationRule
             {
                 TableName = attr.TableName,
                 InvalidationType = attr.InvalidationType,
                 Pattern = attr.Pattern,
-                RelatedTables = attr.RelatedTables ?? new string[0],
+                RelatedTables = attr.RelatedTables ?? [],
                 MaxDepth = attr.MaxDepth
             }).ToList()
         };

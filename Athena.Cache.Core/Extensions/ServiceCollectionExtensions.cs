@@ -6,7 +6,6 @@ using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
 using Athena.Cache.Core.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 using System.Reflection;
 
 namespace Athena.Cache.Core.Extensions;
@@ -195,8 +194,8 @@ internal class GeneratedRegistryWrapper : ICacheConfigurationRegistry
         _instance = instance;
         var type = instance.GetType();
         
-        _getConfigurationMethod = type.GetMethod("GetConfiguration", 
-            new[] { typeof(string), typeof(string) }) 
+        _getConfigurationMethod = type.GetMethod("GetConfiguration",
+                                      [typeof(string), typeof(string)]) 
             ?? throw new InvalidOperationException("GetConfiguration method not found");
             
         _getAllConfigurationsMethod = type.GetMethod("GetAllConfigurations") 
@@ -205,7 +204,7 @@ internal class GeneratedRegistryWrapper : ICacheConfigurationRegistry
 
     public CacheConfiguration? GetConfiguration(string controllerName, string actionName)
     {
-        return (CacheConfiguration?)_getConfigurationMethod.Invoke(_instance, new object[] { controllerName, actionName });
+        return (CacheConfiguration?)_getConfigurationMethod.Invoke(_instance, [controllerName, actionName]);
     }
 
     public IReadOnlyDictionary<string, CacheConfiguration> GetAllConfigurations()
