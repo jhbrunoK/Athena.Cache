@@ -26,4 +26,16 @@
     <ProjectReference Include="..\Athena.Cache.Core\Athena.Cache.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="C:\Users\junghyunkim\source\repos\Athena.Cache\icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="C:\Users\junghyunkim\source\repos\Athena.Cache\LICENSE.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
