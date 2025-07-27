@@ -4,20 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Athena.Cache.Sample.Services;
 
-public class OrderService : IOrderService
+public class OrderService(SampleDbContext context, ILogger<OrderService> logger) : IOrderService
 {
-    private readonly SampleDbContext _context;
-    private readonly ILogger<OrderService> _logger;
-
-    public OrderService(SampleDbContext context, ILogger<OrderService> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
+    private readonly ILogger<OrderService> _logger = logger;
 
     public async Task<IEnumerable<OrderDto>> GetOrdersAsync(int? userId = null, decimal? minAmount = null)
     {
-        var query = _context.Orders.Include(o => o.User).AsQueryable();
+        var query = context.Orders.Include(o => o.User).AsQueryable();
 
         if (userId.HasValue)
         {
@@ -45,7 +38,7 @@ public class OrderService : IOrderService
 
     public async Task<OrderDto?> GetOrderByIdAsync(int id)
     {
-        var order = await _context.Orders
+        var order = await context.Orders
             .Include(o => o.User)
             .FirstOrDefaultAsync(o => o.Id == id);
 
@@ -63,10 +56,10 @@ public class OrderService : IOrderService
 
     public async Task<OrderDto> CreateOrderAsync(Order order)
     {
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync();
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
 
-        var user = await _context.Users.FindAsync(order.UserId);
+        var user = await context.Users.FindAsync(order.UserId);
 
         return new OrderDto
         {
@@ -80,11 +73,11 @@ public class OrderService : IOrderService
 
     public async Task<bool> DeleteOrderAsync(int id)
     {
-        var order = await _context.Orders.FindAsync(id);
+        var order = await context.Orders.FindAsync(id);
         if (order == null) return false;
 
-        _context.Orders.Remove(order);
-        await _context.SaveChangesAsync();
+        context.Orders.Remove(order);
+        await context.SaveChangesAsync();
 
         return true;
     }

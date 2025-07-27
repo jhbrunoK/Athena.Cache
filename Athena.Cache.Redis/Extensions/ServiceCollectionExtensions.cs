@@ -1,7 +1,6 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Extensions;
-using Athena.Cache.Core.Implementations;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
@@ -20,15 +19,12 @@ public static class ServiceCollectionExtensions
         Action<AthenaCacheOptions>? configureAthena = null,
         Action<RedisCacheOptions>? configureRedis = null)
     {
-        // Athena 캐시 옵션 설정
-        var athenaOptions = new AthenaCacheOptions();
-        configureAthena?.Invoke(athenaOptions);
+        // 기본 Athena Cache 서비스 등록 (ICacheConfigurationRegistry 포함)
+        services.AddAthenaCache(configureAthena);
 
         // Redis 캐시 옵션 설정
         var redisOptions = new RedisCacheOptions();
         configureRedis?.Invoke(redisOptions);
-
-        services.AddSingleton(athenaOptions);
         services.AddSingleton(redisOptions);
 
         // Redis 연결 등록
@@ -43,9 +39,7 @@ public static class ServiceCollectionExtensions
             return ConnectionMultiplexer.Connect(configuration);
         });
 
-        // Athena 캐시 구성 요소 등록
-        services.AddSingleton<ICacheKeyGenerator, DefaultCacheKeyGenerator>();
-        services.AddSingleton<ICacheInvalidator, DefaultCacheInvalidator>();
+        // Redis 구현체로 재등록
         services.AddSingleton<IAthenaCache, RedisCacheProvider>();
 
         return services;

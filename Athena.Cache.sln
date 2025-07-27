@@ -26,6 +26,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{03C24C82-D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Analytics", "Athena.Cache.Analytics\Athena.Cache.Analytics.csproj", "{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.SourceGenerator", "Athena.Cache.SourceGenerator\Athena.Cache.SourceGenerator.csproj", "{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -62,6 +68,7 @@ Global
 		{94A5A735-5BB3-4FB5-88A5-0FDF105F936B} = {3FAA31C9-A0B7-48AB-BEBF-0AB91478D8A8}
 		{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4} = {CE8B05B8-5445-4B13-9EBB-486392B9E29C}
 		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
+		{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FA0453E9-B173-4B9B-A314-A78075A9F0BA}

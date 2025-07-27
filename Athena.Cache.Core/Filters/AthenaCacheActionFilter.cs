@@ -98,8 +98,8 @@ public class AthenaCacheActionFilter(ILogger<AthenaCacheActionFilter> logger) : 
             Enabled = cacheAttribute?.Enabled ?? true,
             ExpirationMinutes = cacheAttribute?.ExpirationMinutes ?? -1,
             MaxRelatedDepth = cacheAttribute?.MaxRelatedDepth ?? -1,
-            AdditionalKeyParameters = cacheAttribute?.AdditionalKeyParameters ?? Array.Empty<string>(),
-            ExcludeParameters = cacheAttribute?.ExcludeParameters ?? Array.Empty<string>(),
+            AdditionalKeyParameters = cacheAttribute?.AdditionalKeyParameters ?? [],
+            ExcludeParameters = cacheAttribute?.ExcludeParameters ?? [],
             CustomKeyPrefix = cacheAttribute?.CustomKeyPrefix,
             InvalidationRules = invalidationAttributes.Select(attr => new TableInvalidationRule
             {

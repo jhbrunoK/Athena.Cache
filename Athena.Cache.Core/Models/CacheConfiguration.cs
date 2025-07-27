@@ -10,8 +10,8 @@ public class CacheConfiguration
     public bool Enabled { get; set; } = true;
     public int ExpirationMinutes { get; set; } = -1;
     public int MaxRelatedDepth { get; set; } = -1;
-    public string[] AdditionalKeyParameters { get; set; } = Array.Empty<string>();
-    public string[] ExcludeParameters { get; set; } = Array.Empty<string>();
+    public string[] AdditionalKeyParameters { get; set; } = [];
+    public string[] ExcludeParameters { get; set; } = [];
     public string? CustomKeyPrefix { get; set; }
-    public List<TableInvalidationRule> InvalidationRules { get; set; } = new();
+    public List<TableInvalidationRule> InvalidationRules { get; set; } = [];
 }
