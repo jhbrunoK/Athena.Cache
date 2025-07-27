@@ -278,11 +278,12 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
         sb.AppendLine("// Debug: Found " + controllers.Count + " controllers");
         sb.AppendLine("using System;");
         sb.AppendLine("using System.Collections.Generic;");
-        sb.AppendLine("using Athena.Cache.Core.Models;");
-        sb.AppendLine("using Athena.Cache.Core.Enums;");
-        // sb.AppendLine("using Athena.Cache.Core.Interfaces;"); // 인터페이스 참조 제거
         sb.AppendLine();
         sb.AppendLine("namespace Athena.Cache.Core.Generated;");
+        sb.AppendLine();
+        
+        // 필요한 클래스들을 직접 정의
+        GenerateRequiredClasses(sb);
         sb.AppendLine();
         sb.AppendLine("/// <summary>");
         sb.AppendLine("/// Compile-time generated cache configuration registry");
@@ -386,6 +387,56 @@ public class AthenaCacheSourceGenerator : IIncrementalGenerator
         {
             sb.AppendLine($"{indent}{propertyName} = new string[] {{ {string.Join(", ", values.Select(v => $"\"{v}\""))} }},");
         }
+    }
+
+    private static void GenerateRequiredClasses(StringBuilder sb)
+    {
+        // InvalidationType enum
+        sb.AppendLine("/// <summary>");
+        sb.AppendLine("/// 캐시 무효화 타입");
+        sb.AppendLine("/// </summary>");
+        sb.AppendLine("public enum InvalidationType");
+        sb.AppendLine("{");
+        sb.AppendLine("    /// <summary>연관된 모든 캐시 삭제</summary>");
+        sb.AppendLine("    All,");
+        sb.AppendLine("    /// <summary>패턴에 맞는 캐시만 삭제</summary>");
+        sb.AppendLine("    Pattern,");
+        sb.AppendLine("    /// <summary>연관 테이블까지 캐시 삭제</summary>");
+        sb.AppendLine("    Related");
+        sb.AppendLine("}");
+        sb.AppendLine();
+
+        // TableInvalidationRule class
+        sb.AppendLine("/// <summary>");
+        sb.AppendLine("/// 테이블 무효화 규칙");
+        sb.AppendLine("/// </summary>");
+        sb.AppendLine("public class TableInvalidationRule");
+        sb.AppendLine("{");
+        sb.AppendLine("    public string TableName { get; set; } = string.Empty;");
+        sb.AppendLine("    public InvalidationType InvalidationType { get; set; } = InvalidationType.All;");
+        sb.AppendLine("    public string? Pattern { get; set; }");
+        sb.AppendLine("    public string[] RelatedTables { get; set; } = [];");
+        sb.AppendLine("    public int MaxDepth { get; set; } = -1;");
+        sb.AppendLine("}");
+        sb.AppendLine();
+
+        // CacheConfiguration class
+        sb.AppendLine("/// <summary>");
+        sb.AppendLine("/// 캐시 설정 정보");
+        sb.AppendLine("/// </summary>");
+        sb.AppendLine("public class CacheConfiguration");
+        sb.AppendLine("{");
+        sb.AppendLine("    public string Controller { get; set; } = string.Empty;");
+        sb.AppendLine("    public string Action { get; set; } = string.Empty;");
+        sb.AppendLine("    public bool Enabled { get; set; } = true;");
+        sb.AppendLine("    public int ExpirationMinutes { get; set; } = -1;");
+        sb.AppendLine("    public string? CustomKeyPrefix { get; set; }");
+        sb.AppendLine("    public int MaxRelatedDepth { get; set; } = -1;");
+        sb.AppendLine("    public string[] AdditionalKeyParameters { get; set; } = [];");
+        sb.AppendLine("    public string[] ExcludeParameters { get; set; } = [];");
+        sb.AppendLine("    public List<TableInvalidationRule> InvalidationRules { get; set; } = [];");
+        sb.AppendLine("}");
+        sb.AppendLine();
     }
 }
 

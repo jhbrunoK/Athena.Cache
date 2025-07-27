@@ -121,7 +121,7 @@ public class AthenaCacheMiddleware(
         return configRegistry.GetConfiguration(controllerName, actionName);
     }
 
-    private async Task<string> GenerateCacheKeyAsync(HttpContext context, CacheConfiguration config)
+    private Task<string> GenerateCacheKeyAsync(HttpContext context, CacheConfiguration config)
     {
         try
         {
@@ -156,13 +156,13 @@ public class AthenaCacheMiddleware(
                     cacheKey, config.Controller, config.Action);
             }
 
-            return cacheKey;
+            return Task.FromResult(cacheKey);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to generate cache key for {Controller}.{Action}",
                 config.Controller, config.Action);
-            return string.Empty;
+            return Task.FromResult(string.Empty);
         }
     }
 
