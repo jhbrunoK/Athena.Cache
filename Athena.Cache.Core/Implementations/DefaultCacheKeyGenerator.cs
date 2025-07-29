@@ -157,8 +157,8 @@ public class DefaultCacheKeyGenerator : ICacheKeyGenerator
             WriteIndented = false
         });
 
-        // XxHash64 해싱 (성능 최적화)
-        return ComputeXxHash64(json);
+        // XxHash3 해싱 (최신 성능 최적화)
+        return ComputeXxHash3(json);
     }
 
     /// <summary>
@@ -193,12 +193,12 @@ public class DefaultCacheKeyGenerator : ICacheKeyGenerator
     }
 
     /// <summary>
-    /// XxHash64 해시 계산 (고성능 해시 함수)
+    /// XxHash3 해시 계산 (최신 고성능 해시 함수)
     /// </summary>
-    private static string ComputeXxHash64(string input)
+    private static string ComputeXxHash3(string input)
     {
         var inputBytes = Encoding.UTF8.GetBytes(input);
-        var hashValue = XxHash64.HashToUInt64(inputBytes);
+        var hashValue = XxHash3.HashToUInt64(inputBytes);
         
         // Base36 인코딩으로 짧고 안전한 문자열 생성
         return ConvertToBase36(hashValue);

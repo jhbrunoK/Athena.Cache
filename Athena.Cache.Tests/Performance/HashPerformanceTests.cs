@@ -9,12 +9,12 @@ using System.Text;
 namespace Athena.Cache.Tests.Performance;
 
 /// <summary>
-/// SHA256 vs XxHash64 성능 비교 테스트
+/// SHA256 vs XxHash3 성능 비교 테스트
 /// </summary>
 public class HashPerformanceTests
 {
     [Fact]
-    public async Task XxHash64_vs_SHA256_HashingPerformance()
+    public async Task XxHash3_vs_SHA256_HashingPerformance()
     {
         // Arrange
         const int iterations = 10000;
@@ -31,14 +31,14 @@ public class HashPerformanceTests
         {
             Console.WriteLine($"\n=== 입력 크기: {input.Length} bytes ===");
             
-            // XxHash64 성능 측정
+            // XxHash3 성능 측정
             var stopwatch = Stopwatch.StartNew();
             ulong xxHashResult = 0;
             
             for (int i = 0; i < iterations; i++)
             {
                 var inputBytes = Encoding.UTF8.GetBytes(input);
-                xxHashResult = XxHash64.HashToUInt64(inputBytes);
+                xxHashResult = XxHash3.HashToUInt64(inputBytes);
             }
             
             var xxHashTime = stopwatch.ElapsedMilliseconds;
@@ -56,18 +56,18 @@ public class HashPerformanceTests
             var sha256Time = stopwatch.ElapsedMilliseconds;
 
             // 결과 출력
-            Console.WriteLine($"XxHash64: {xxHashTime}ms (결과: {xxHashResult})");
+            Console.WriteLine($"XxHash3: {xxHashTime}ms (결과: {xxHashResult})");
             Console.WriteLine($"SHA256: {sha256Time}ms (결과: {Convert.ToHexString(sha256Result)[..16]}...)");
             Console.WriteLine($"성능 향상: {(double)sha256Time / xxHashTime:F1}x 빠름");
             
-            // 성능 검증 - 전체적으로 XxHash64가 더 빠르거나 비슷해야 함 (작은 데이터에서는 초기화 오버헤드로 인해 차이가 적을 수 있음)
+            // 성능 검증 - 전체적으로 XxHash3가 더 빠르거나 비슷해야 함 (작은 데이터에서는 초기화 오버헤드로 인해 차이가 적을 수 있음)
             if (input.Length > 100) // 큰 데이터에서만 엄격한 성능 검증
             {
-                xxHashTime.Should().BeLessThan(sha256Time, "XxHash64가 SHA256보다 빨라야 함 (큰 데이터)");
+                xxHashTime.Should().BeLessThan(sha256Time, "XxHash3가 SHA256보다 빨라야 함 (큰 데이터)");
             }
             else
             {
-                xxHashTime.Should().BeLessThanOrEqualTo(sha256Time * 2, "XxHash64가 SHA256보다 2배 이상 느리지 않아야 함 (작은 데이터)");
+                xxHashTime.Should().BeLessThanOrEqualTo(sha256Time * 2, "XxHash3가 SHA256보다 2배 이상 느리지 않아야 함 (작은 데이터)");
             }
         }
     }
@@ -83,7 +83,7 @@ public class HashPerformanceTests
             VersionKey = "v2.0"
         };
         
-        // XxHash64 기반 키 생성기 (새 구현)
+        // XxHash3 기반 키 생성기 (새 구현)
         var newKeyGenerator = new DefaultCacheKeyGenerator(options);
         
         var testParameters = new Dictionary<string, object?>[]
@@ -118,7 +118,7 @@ public class HashPerformanceTests
             generatedKeys.Should().HaveCount(1, "같은 파라미터는 같은 키를 생성해야 함");
             
             // 결과 출력
-            Console.WriteLine($"XxHash64 + 캐싱: {newTime}ms");
+            Console.WriteLine($"XxHash3 + 캐싱: {newTime}ms");
             Console.WriteLine($"평균 시간/키: {(double)newTime / iterations:F4}ms");
             Console.WriteLine($"생성된 키: {generatedKeys.First()}");
         }
