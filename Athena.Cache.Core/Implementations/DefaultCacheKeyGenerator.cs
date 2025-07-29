@@ -1,23 +1,36 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
-using System.Security.Cryptography;
+using System.Collections.Concurrent;
+using System.IO.Hashing;
 using System.Text;
 using System.Text.Json;
 
 namespace Athena.Cache.Core.Implementations;
 
 /// <summary>
-/// 기본 캐시 키 생성기 구현
+/// 기본 캐시 키 생성기 구현 (키 캐싱 포함)
 /// </summary>
 public class DefaultCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGenerator
 {
+    // LRU 캐시로 자주 사용되는 키 저장 (메모리 효율적)
+    private readonly ConcurrentDictionary<string, string> _keyCache = new();
+    private const int MaxCacheSize = 1000; // 최대 캐시 크기
     /// <summary>
-    /// API 요청 기반 캐시 키 생성
+    /// API 요청 기반 캐시 키 생성 (키 캐싱 포함)
     /// {Namespace}_{Version}_{Controller}_{Action}_{ParameterHash}
     /// 예: MyApp_PROD_v1.2_UsersController_GetUsers_ABC123
     /// </summary>
     public string GenerateKey(string controller, string action, IDictionary<string, object?>? parameters = null)
     {
+        // 캐시 키 조회를 위한 요청 식별자 생성
+        var requestId = $"{controller}:{action}:{GenerateParameterHash(parameters)}";
+        
+        // 키 캐시 확인
+        if (_keyCache.TryGetValue(requestId, out var cachedKey))
+        {
+            return cachedKey;
+        }
+
         var keyParts = new List<string>();
 
         // 네임스페이스 추가
@@ -41,14 +54,22 @@ public class DefaultCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGen
         // 액션명 추가
         keyParts.Add(action);
 
-        // 파라미터 해시 추가
+        // 파라미터 해시 추가 (이미 계산됨)
         var parameterHash = GenerateParameterHash(parameters);
         if (!string.IsNullOrEmpty(parameterHash))
         {
             keyParts.Add(parameterHash);
         }
 
-        return string.Join(options.KeySeparator, keyParts);
+        var finalKey = string.Join(options.KeySeparator, keyParts);
+        
+        // 키 캐시에 저장 (크기 제한)
+        if (_keyCache.Count < MaxCacheSize)
+        {
+            _keyCache.TryAdd(requestId, finalKey);
+        }
+
+        return finalKey;
     }
 
     /// <summary>
@@ -85,7 +106,7 @@ public class DefaultCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGen
     /// 1. null/빈 값 제거
     /// 2. 키 알파벳 순 정렬
     /// 3. JSON 직렬화
-    /// 4. SHA256 해싱
+    /// 4. XxHash64 해싱 (고성능)
     /// </summary>
     public string GenerateParameterHash(IDictionary<string, object?>? parameters)
     {
@@ -112,8 +133,8 @@ public class DefaultCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGen
             WriteIndented = false
         });
 
-        // SHA256 해싱
-        return ComputeSha256Hash(json);
+        // XxHash64 해싱 (성능 최적화)
+        return ComputeXxHash64(json);
     }
 
     /// <summary>
@@ -148,17 +169,32 @@ public class DefaultCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGen
     }
 
     /// <summary>
-    /// SHA256 해시 계산
+    /// XxHash64 해시 계산 (고성능 해시 함수)
     /// </summary>
-    private static string ComputeSha256Hash(string input)
+    private static string ComputeXxHash64(string input)
     {
         var inputBytes = Encoding.UTF8.GetBytes(input);
-        var hashBytes = SHA256.HashData(inputBytes);
+        var hashValue = XxHash64.HashToUInt64(inputBytes);
+        
+        // Base36 인코딩으로 짧고 안전한 문자열 생성
+        return ConvertToBase36(hashValue);
+    }
 
-        // Base64URL 인코딩 (URL 안전한 문자만 사용)
-        return Convert.ToBase64String(hashBytes)
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .TrimEnd('='); // 패딩 제거
+    /// <summary>
+    /// UInt64를 Base36 문자열로 변환 (0-9, a-z 사용)
+    /// </summary>
+    private static string ConvertToBase36(ulong value)
+    {
+        const string chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+        if (value == 0) return "0";
+
+        var result = new StringBuilder();
+        while (value > 0)
+        {
+            result.Insert(0, chars[(int)(value % 36)]);
+            value /= 36;
+        }
+        
+        return result.ToString();
     }
 }
