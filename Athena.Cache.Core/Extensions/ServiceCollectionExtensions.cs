@@ -1,4 +1,5 @@
 ﻿using Athena.Cache.Core.Abstractions;
+using Athena.Cache.Core.Analytics;
 using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Diagnostics;
 using Athena.Cache.Core.Filters;
@@ -6,6 +7,8 @@ using Athena.Cache.Core.Implementations;
 using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
 using Athena.Cache.Core.ObjectPools;
+using Athena.Cache.Core.Observability;
+using Athena.Cache.Core.Resilience;
 using Athena.Cache.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.ObjectPool;
@@ -38,6 +41,30 @@ public static class ServiceCollectionExtensions
         
         // 성능 모니터링 서비스 등록
         services.AddSingleton<CachePerformanceMonitor>();
+        
+        // OpenTelemetry 메트릭 시스템 등록
+        services.AddSingleton<AthenaCacheMetrics>();
+        
+        // 헬스 모니터링 시스템 등록
+        services.AddSingleton<CacheHealthMonitor>();
+        
+        // 분석 엔진 등록
+        services.AddSingleton<CacheOptimizationAnalyzer>();
+        
+        // Circuit Breaker 등록
+        services.AddSingleton(provider =>
+        {
+            var circuitBreakerOptions = new CacheCircuitBreakerOptions
+            {
+                FailureThreshold = options.CircuitBreaker?.FailureThreshold ?? 5,
+                Timeout = options.CircuitBreaker?.Timeout ?? TimeSpan.FromMinutes(1),
+                HealthCheckInterval = options.CircuitBreaker?.HealthCheckInterval ?? TimeSpan.FromSeconds(30),
+                MetricRetentionPeriod = options.CircuitBreaker?.MetricRetentionPeriod ?? TimeSpan.FromHours(1)
+            };
+            
+            var logger = provider.GetRequiredService<ILogger<CacheCircuitBreaker>>();
+            return new CacheCircuitBreaker(circuitBreakerOptions, logger);
+        });
         
         // Registry 등록 - Source Generator가 있으면 그것을 사용, 없으면 Reflection 백업
         RegisterCacheConfigurationRegistry(services);

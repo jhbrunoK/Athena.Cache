@@ -12,4 +12,6 @@ public class CacheStatistics
     public long TotalRequests => HitCount + MissCount;
     public TimeSpan Uptime { get; set; }
     public long MemoryUsage { get; set; } // bytes
+    public long ItemCount { get; set; }
+    public DateTime LastCleanup { get; set; }
 }

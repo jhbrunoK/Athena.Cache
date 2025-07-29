@@ -98,6 +98,8 @@ public class PerformanceMeasurement : IDisposable
         _stopwatch = Stopwatch.StartNew();
     }
     
+    public TimeSpan Elapsed => _stopwatch.Elapsed;
+    
     public void Dispose()
     {
         _stopwatch.Stop();
