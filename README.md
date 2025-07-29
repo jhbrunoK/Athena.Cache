@@ -1,6 +1,7 @@
 ﻿# 🏛️ Athena.Cache
 
 [![CI](https://github.com/jhbrunoK/Athena.Cache/actions/workflows/ci.yml/badge.svg)](https://github.com/jhbrunoK/Athena.Cache/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/jhbrunoK/Athena.Cache/graph/badge.svg)](https://codecov.io/gh/jhbrunoK/Athena.Cache)
 [![NuGet Core](https://img.shields.io/nuget/v/Athena.Cache.Core.svg)](https://www.nuget.org/packages/Athena.Cache.Core/)
 [![Downloads](https://img.shields.io/nuget/dt/Athena.Cache.Core.svg)](https://www.nuget.org/packages/Athena.Cache.Core/)
 [![NuGet Redis](https://img.shields.io/nuget/v/Athena.Cache.Redis.svg)](https://www.nuget.org/packages/Athena.Cache.Redis/)

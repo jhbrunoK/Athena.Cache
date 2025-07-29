@@ -19,21 +19,7 @@
 		<PackageTags>cache;caching;aspnetcore;redis;performance;invalidation;memcache;source-generator</PackageTags>
 	</PropertyGroup>
 
-	<!-- 패키지에 포함할 파일들 -->
-	<ItemGroup>
-		<None Include="..\icon.png">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Include="..\README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Include="..\LICENSE.txt">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-	</ItemGroup>
+	<!-- 패키지 파일들은 Directory.Build.props에서 자동 관리 -->
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
