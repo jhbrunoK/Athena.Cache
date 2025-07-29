@@ -1,9 +1,13 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Diagnostics;
 using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
+using Athena.Cache.Core.ObjectPools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using System.Buffers;
+using System.Text;
 
 namespace Athena.Cache.Core.Middleware;
 
@@ -18,6 +22,8 @@ public class AthenaCacheMiddleware(
     ICacheInvalidator invalidator,
     ICacheConfigurationRegistry configRegistry,
     AthenaCacheOptions options,
+    CachedResponsePool responsePool,
+    CachePerformanceMonitor performanceMonitor,
     ILogger<AthenaCacheMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
@@ -25,14 +31,14 @@ public class AthenaCacheMiddleware(
         // GET 요청만 캐싱 (POST, PUT, DELETE 등은 제외)
         if (!IsGetRequest(context))
         {
-            await next(context);
+            await next(context).ConfigureAwait(false);
             return;
         }
 
         // 캐시 비활성화 체크
         if (IsCacheDisabled(context))
         {
-            await next(context);
+            await next(context).ConfigureAwait(false);
             return;
         }
 
@@ -42,29 +48,36 @@ public class AthenaCacheMiddleware(
             var cacheConfig = GetCacheConfiguration(context);
             if (cacheConfig == null || !cacheConfig.Enabled)
             {
-                await next(context);
+                await next(context).ConfigureAwait(false);
                 return;
             }
 
             // 캐시 키 생성
-            var cacheKey = await GenerateCacheKeyAsync(context, cacheConfig);
+            var cacheKey = await GenerateCacheKeyAsync(context, cacheConfig).ConfigureAwait(false);
             if (string.IsNullOrEmpty(cacheKey))
             {
-                await next(context);
+                await next(context).ConfigureAwait(false);
                 return;
             }
 
             // HttpContext에 생성된 키 저장 (Action Filter에서 사용)
             context.Items["AthenaCache.GeneratedKey"] = cacheKey;
 
-            // 캐시에서 응답 조회
-            var cachedResponse = await cache.GetAsync<CachedResponse>(cacheKey);
+            // 캐시에서 응답 조회 (성능 모니터링 포함)
+            using var cacheGetMeasurement = performanceMonitor.StartMeasurement("cache_get");
+            var cachedResponse = await cache.GetAsync<CachedResponse>(cacheKey).ConfigureAwait(false);
+            cacheGetMeasurement.Dispose();
+            
             if (cachedResponse != null)
             {
                 // 캐시 히트 - 바로 응답 반환
+                performanceMonitor.RecordCacheHit();
                 await WriteCachedResponseAsync(context, cachedResponse);
                 return;
             }
+            
+            // 캐시 미스 기록
+            performanceMonitor.RecordCacheMiss();
 
             // 캐시 미스 - 응답 캐싱
             await CacheResponseAsync(context, cacheKey, cacheConfig);
@@ -75,7 +88,7 @@ public class AthenaCacheMiddleware(
 
             if (options.ErrorHandling.SilentFallback)
             {
-                await next(context);
+                await next(context).ConfigureAwait(false);
 
                 if (options.ErrorHandling.CustomErrorHandler != null)
                 {
@@ -203,31 +216,46 @@ public class AthenaCacheMiddleware(
         try
         {
             // 다음 미들웨어 실행
-            await next(context);
+            await next(context).ConfigureAwait(false);
 
             // 성공 응답만 캐싱 (200-299)
             if (context.Response.StatusCode >= 200 && context.Response.StatusCode < 300)
             {
-                // 응답 내용 읽기
+                // 메모리 효율적인 응답 내용 읽기
                 responseBodyStream.Seek(0, SeekOrigin.Begin);
-                var responseContent = await new StreamReader(responseBodyStream).ReadToEndAsync();
+                var responseContent = await ReadStreamEfficientlyAsync(responseBodyStream).ConfigureAwait(false);
 
-                // 캐시에 저장할 응답 객체 생성
-                var cachedResponse = new CachedResponse
+                // Object Pool에서 캐시 응답 객체 가져오기
+                var cachedResponse = responsePool.Get();
+                try
                 {
-                    StatusCode = context.Response.StatusCode,
-                    ContentType = context.Response.ContentType ?? "application/json",
-                    Content = responseContent,
-                    Headers = context.Response.Headers
-                        .Where(h => IsCacheableHeader(h.Key))
-                        .ToDictionary(h => h.Key, h => h.Value.ToString())
-                };
+                    // 만료 시간 결정
+                    var expiration = DetermineExpiration(config);
+                    var expiresAt = DateTime.UtcNow.Add(expiration);
+                    
+                    // 객체 초기화
+                    cachedResponse.Initialize(
+                        context.Response.StatusCode,
+                        context.Response.ContentType ?? "application/json",
+                        responseContent,
+                        context.Response.Headers
+                            .Where(h => IsCacheableHeader(h.Key))
+                            .ToDictionary(h => h.Key, h => h.Value.ToString()),
+                        expiresAt
+                    );
 
-                // 만료 시간 결정
-                var expiration = DetermineExpiration(config);
-
-                // 캐시에 저장
-                await cache.SetAsync(cacheKey, cachedResponse, expiration);
+                    // 캐시에 저장 (성능 모니터링 포함)
+                    using var cacheSetMeasurement = performanceMonitor.StartMeasurement("cache_set");
+                    await cache.SetAsync(cacheKey, cachedResponse, expiration).ConfigureAwait(false);
+                    cacheSetMeasurement.Dispose();
+                }
+                catch
+                {
+                    // 예외 발생 시 객체를 풀에 반환
+                    responsePool.Return(cachedResponse);
+                    throw;
+                }
+                // 정상적으로 캐시에 저장된 경우 객체는 풀에 반환하지 않음 (캐시에서 사용 중)
 
                 // 테이블 추적 설정
                 if (config.InvalidationRules.Any())
@@ -237,7 +265,7 @@ public class AthenaCacheMiddleware(
                         .Distinct()
                         .ToArray();
                     
-                    await invalidator.TrackCacheKeyAsync(tablesToTrack, cacheKey);
+                    await invalidator.TrackCacheKeyAsync(tablesToTrack, cacheKey).ConfigureAwait(false);
                 }
 
                 if (options.Logging.LogCacheHitMiss)
@@ -252,7 +280,7 @@ public class AthenaCacheMiddleware(
 
             // 원본 스트림으로 응답 복사
             responseBodyStream.Seek(0, SeekOrigin.Begin);
-            await responseBodyStream.CopyToAsync(originalBodyStream);
+            await responseBodyStream.CopyToAsync(originalBodyStream).ConfigureAwait(false);
         }
         finally
         {
@@ -270,15 +298,48 @@ public class AthenaCacheMiddleware(
         return TimeSpan.FromMinutes(options.DefaultExpirationMinutes);
     }
 
+    // 컴파일타임 최적화: 캐시하면 안 되는 헤더들을 HashSet으로 미리 정의
+    private static readonly HashSet<string> ExcludeHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "set-cookie", "authorization", "www-authenticate",
+        "proxy-authenticate", "connection", "upgrade",
+        "transfer-encoding", "content-encoding"
+    };
+
     private static bool IsCacheableHeader(string headerName)
     {
-        // 캐시하면 안 되는 헤더들 제외
-        var excludeHeaders = new[]
-        {
-            "set-cookie", "authorization", "www-authenticate",
-            "proxy-authenticate", "connection", "upgrade"
-        };
+        return !ExcludeHeaders.Contains(headerName);
+    }
 
-        return !excludeHeaders.Contains(headerName.ToLower());
+    /// <summary>
+    /// 메모리 효율적인 스트림 읽기 (ArrayPool 사용)
+    /// </summary>
+    private static async Task<string> ReadStreamEfficientlyAsync(Stream stream)
+    {
+        if (stream.Length == 0)
+            return string.Empty;
+
+        // ArrayPool을 사용해서 메모리 할당 최소화
+        var bufferSize = (int)Math.Min(stream.Length, 8192); // 최대 8KB 버퍼
+        var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+        
+        try
+        {
+            using var memoryStream = new MemoryStream((int)stream.Length);
+            int bytesRead;
+            
+            while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, bufferSize)).ConfigureAwait(false)) > 0)
+            {
+                await memoryStream.WriteAsync(buffer.AsMemory(0, bytesRead)).ConfigureAwait(false);
+            }
+            
+            // Span을 사용해서 효율적인 문자열 변환
+            var bytes = memoryStream.ToArray();
+            return Encoding.UTF8.GetString(bytes.AsSpan());
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 }

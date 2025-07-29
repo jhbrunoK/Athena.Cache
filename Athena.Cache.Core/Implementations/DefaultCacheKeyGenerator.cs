@@ -10,25 +10,38 @@ namespace Athena.Cache.Core.Implementations;
 /// <summary>
 /// 기본 캐시 키 생성기 구현 (키 캐싱 포함)
 /// </summary>
-public class DefaultCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGenerator
+public class DefaultCacheKeyGenerator : ICacheKeyGenerator
 {
+    private readonly AthenaCacheOptions options;
+    
+    public DefaultCacheKeyGenerator(AthenaCacheOptions options)
+    {
+        this.options = options;
+        
+        // ConcurrentDictionary 최적화: 동시성 수준 설정
+        _keyCache = new ConcurrentDictionary<string, string>(
+            concurrencyLevel: Environment.ProcessorCount * 2, // CPU 코어 수의 2배
+            capacity: MaxCacheSize // 초기 용량 설정
+        );
+    }
     // LRU 캐시로 자주 사용되는 키 저장 (메모리 효율적)
-    private readonly ConcurrentDictionary<string, string> _keyCache = new();
+    private readonly ConcurrentDictionary<string, string> _keyCache;
     private const int MaxCacheSize = 1000; // 최대 캐시 크기
+    private long _cacheCount = 0; // 캐시 아이템 수 추적 (Interlocked로 접근)
     /// <summary>
-    /// API 요청 기반 캐시 키 생성 (키 캐싱 포함)
+    /// API 요청 기반 캐시 키 생성 (키 캐싱 포함) - 비동기 최적화 버전
     /// {Namespace}_{Version}_{Controller}_{Action}_{ParameterHash}
     /// 예: MyApp_PROD_v1.2_UsersController_GetUsers_ABC123
     /// </summary>
-    public string GenerateKey(string controller, string action, IDictionary<string, object?>? parameters = null)
+    public ValueTask<string> GenerateKeyAsync(string controller, string action, IDictionary<string, object?>? parameters = null)
     {
         // 캐시 키 조회를 위한 요청 식별자 생성
         var requestId = $"{controller}:{action}:{GenerateParameterHash(parameters)}";
         
-        // 키 캐시 확인
+        // 키 캐시 확인 (동기적으로 빠르게 처리)
         if (_keyCache.TryGetValue(requestId, out var cachedKey))
         {
-            return cachedKey;
+            return new ValueTask<string>(cachedKey);
         }
 
         var keyParts = new List<string>();
@@ -63,13 +76,24 @@ public class DefaultCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGen
 
         var finalKey = string.Join(options.KeySeparator, keyParts);
         
-        // 키 캐시에 저장 (크기 제한)
-        if (_keyCache.Count < MaxCacheSize)
+        // 키 캐시에 저장 (크기 제한) - Lock-free 최적화
+        if (Interlocked.Read(ref _cacheCount) < MaxCacheSize)
         {
-            _keyCache.TryAdd(requestId, finalKey);
+            if (_keyCache.TryAdd(requestId, finalKey))
+            {
+                Interlocked.Increment(ref _cacheCount);
+            }
         }
 
-        return finalKey;
+        return new ValueTask<string>(finalKey);
+    }
+    
+    /// <summary>
+    /// 동기 버전 유지 (하위 호환성)
+    /// </summary>
+    public string GenerateKey(string controller, string action, IDictionary<string, object?>? parameters = null)
+    {
+        return GenerateKeyAsync(controller, action, parameters).GetAwaiter().GetResult();
     }
 
     /// <summary>

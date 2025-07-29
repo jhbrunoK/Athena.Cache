@@ -1,11 +1,14 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Diagnostics;
 using Athena.Cache.Core.Filters;
 using Athena.Cache.Core.Implementations;
 using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
+using Athena.Cache.Core.ObjectPools;
 using Athena.Cache.Core.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.ObjectPool;
 using System.Reflection;
 
 namespace Athena.Cache.Core.Extensions;
@@ -28,6 +31,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(options);
         services.AddSingleton<ICacheKeyGenerator, DefaultCacheKeyGenerator>();
         services.AddSingleton<ICacheInvalidator, DefaultCacheInvalidator>();
+        
+        // Object Pool 서비스 등록 (성능 최적화)
+        services.AddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
+        services.AddSingleton<CachedResponsePool>();
+        
+        // 성능 모니터링 서비스 등록
+        services.AddSingleton<CachePerformanceMonitor>();
         
         // Registry 등록 - Source Generator가 있으면 그것을 사용, 없으면 Reflection 백업
         RegisterCacheConfigurationRegistry(services);
