@@ -11,25 +11,13 @@ namespace Athena.Cache.Monitoring.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/cache/monitoring")]
-public class CacheMonitoringController : ControllerBase
+public class CacheMonitoringController(
+    ICacheMetricsCollector metricsCollector,
+    ICacheHealthChecker healthChecker,
+    ICacheAlertService alertService,
+    ILogger<CacheMonitoringController> logger)
+    : ControllerBase
 {
-    private readonly ICacheMetricsCollector _metricsCollector;
-    private readonly ICacheHealthChecker _healthChecker;
-    private readonly ICacheAlertService _alertService;
-    private readonly ILogger<CacheMonitoringController> _logger;
-
-    public CacheMonitoringController(
-        ICacheMetricsCollector metricsCollector,
-        ICacheHealthChecker healthChecker,
-        ICacheAlertService alertService,
-        ILogger<CacheMonitoringController> logger)
-    {
-        _metricsCollector = metricsCollector;
-        _healthChecker = healthChecker;
-        _alertService = alertService;
-        _logger = logger;
-    }
-
     /// <summary>
     /// 현재 캐시 메트릭 조회
     /// </summary>
@@ -38,12 +26,12 @@ public class CacheMonitoringController : ControllerBase
     {
         try
         {
-            var metrics = await _metricsCollector.CollectMetricsAsync();
+            var metrics = await metricsCollector.CollectMetricsAsync();
             return Ok(metrics);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get current metrics");
+            logger.LogError(ex, "Failed to get current metrics");
             return StatusCode(500, new { error = "Failed to retrieve metrics" });
         }
     }
@@ -62,7 +50,7 @@ public class CacheMonitoringController : ControllerBase
             var start = startTime ?? DateTime.UtcNow.AddHours(-1);
             var end = endTime ?? DateTime.UtcNow;
 
-            var history = await _metricsCollector.GetMetricsHistoryAsync(start, end);
+            var history = await metricsCollector.GetMetricsHistoryAsync(start, end);
 
             // 간격이 지정된 경우 데이터 샘플링
             if (intervalMinutes.HasValue && intervalMinutes.Value > 0)
@@ -75,7 +63,7 @@ public class CacheMonitoringController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get metrics history");
+            logger.LogError(ex, "Failed to get metrics history");
             return StatusCode(500, new { error = "Failed to retrieve metrics history" });
         }
     }
@@ -88,12 +76,12 @@ public class CacheMonitoringController : ControllerBase
     {
         try
         {
-            var health = await _healthChecker.CheckHealthAsync();
+            var health = await healthChecker.CheckHealthAsync();
             return Ok(health);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get health status");
+            logger.LogError(ex, "Failed to get health status");
             return StatusCode(500, new { error = "Failed to retrieve health status" });
         }
     }
@@ -106,12 +94,12 @@ public class CacheMonitoringController : ControllerBase
     {
         try
         {
-            var result = await _healthChecker.CheckComponentHealthAsync(component);
+            var result = await healthChecker.CheckComponentHealthAsync(component);
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get component health for {Component}", component);
+            logger.LogError(ex, "Failed to get component health for {Component}", component);
             return StatusCode(500, new { error = $"Failed to check {component} health" });
         }
     }
@@ -124,8 +112,8 @@ public class CacheMonitoringController : ControllerBase
     {
         try
         {
-            var metrics = await _metricsCollector.CollectMetricsAsync();
-            var health = await _healthChecker.CheckHealthAsync();
+            var metrics = await metricsCollector.CollectMetricsAsync();
+            var health = await healthChecker.CheckHealthAsync();
 
             var summary = new
             {
@@ -154,7 +142,7 @@ public class CacheMonitoringController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get dashboard summary");
+            logger.LogError(ex, "Failed to get dashboard summary");
             return StatusCode(500, new { error = "Failed to retrieve dashboard summary" });
         }
     }
@@ -175,7 +163,7 @@ public class CacheMonitoringController : ControllerBase
                 Component = request?.Component ?? "Monitoring"
             };
 
-            await _alertService.SendAlertAsync(alert);
+            await alertService.SendAlertAsync(alert);
 
             return Ok(new
             {
@@ -186,20 +174,9 @@ public class CacheMonitoringController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send test alert");
+            logger.LogError(ex, "Failed to send test alert");
             return StatusCode(500, new { error = "Failed to send test alert" });
         }
-    }
-
-    /// <summary>
-    /// 테스트 알림 요청 모델
-    /// </summary>
-    public class TestAlertRequest
-    {
-        public AlertLevel Level { get; set; } = AlertLevel.Info;
-        public string Title { get; set; } = "Test Alert";
-        public string Message { get; set; } = "Test message";
-        public string Component { get; set; } = "Monitoring";
     }
 
     /// <summary>
@@ -261,4 +238,15 @@ public class CacheMonitoringController : ControllerBase
 
         return sampled;
     }
+}
+
+/// <summary>
+/// 테스트 알림 요청 모델
+/// </summary>
+public class TestAlertRequest
+{
+    public AlertLevel Level { get; set; } = AlertLevel.Info;
+    public string Title { get; set; } = "Test Alert";
+    public string Message { get; set; } = "Test message";
+    public string Component { get; set; } = "Monitoring";
 }

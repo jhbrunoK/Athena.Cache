@@ -25,9 +25,8 @@ public static class CacheMonitoringExtendedServiceCollectionExtensions
         // 기본 모니터링 서비스 등록
         services.AddAthenaCacheMonitoring(configure);
 
-        // Redis 전용 메트릭 수집기로 교체
-        services.RemoveAll<ICacheMetricsCollector>();
-        services.AddSingleton<ICacheMetricsCollector, RedisCacheMetricsCollector>();
+        // Redis 전용 메트릭 수집기로 교체 (사용자가 이미 등록했다면 유지)
+        services.Replace(ServiceDescriptor.Singleton<ICacheMetricsCollector, RedisCacheMetricsCollector>());
 
         return services;
     }
@@ -43,24 +42,23 @@ public static class CacheMonitoringExtendedServiceCollectionExtensions
         services.AddAthenaCacheMonitoring(configure);
 
         // SignalR 서비스 등록
-        services.AddSignalR();
+        services.TryAddSignalR();
 
-        // SignalR 기반 알림 서비스로 교체
-        services.AddSingleton<CacheAlertService>(); // 기본 구현체를 별도 등록
-        services.AddSingleton<ICacheAlertService>(provider =>
+        services.AddKeyedSingleton<ICacheAlertService, CacheAlertService>("base");
+        services.Replace(ServiceDescriptor.Singleton<ICacheAlertService>(provider =>
         {
-            var baseService = provider.GetRequiredService<CacheAlertService>();
+            var baseService = provider.GetRequiredKeyedService<ICacheAlertService>("base");
             var hubContext = provider.GetRequiredService<IHubContext<CacheMonitoringHub>>();
             var logger = provider.GetRequiredService<ILogger<SignalRCacheAlertService>>();
 
             return new SignalRCacheAlertService(baseService, hubContext, logger);
-        });
+        }));
 
         return services;
     }
 
     /// <summary>
-    /// 완전한 모니터링 스택 등록 (Redis + SignalR + API)
+    /// 완전한 모니터링 스택 등록 (Redis + SignalR)
     /// </summary>
     public static IServiceCollection AddCompleteCacheMonitoring(
         this IServiceCollection services,
@@ -71,7 +69,7 @@ public static class CacheMonitoringExtendedServiceCollectionExtensions
 
         // 실시간 모니터링
         services.AddRealTimeCacheMonitoring();
-            
+
         return services;
     }
 }

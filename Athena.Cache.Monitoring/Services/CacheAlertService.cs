@@ -1,5 +1,6 @@
 ﻿using Athena.Cache.Monitoring.Enums;
 using Athena.Cache.Monitoring.Interfaces;
+using Athena.Cache.Monitoring.Managers;
 using Athena.Cache.Monitoring.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,7 +14,8 @@ namespace Athena.Cache.Monitoring.Services;
 /// </summary>
 public class CacheAlertService(
     ILogger<CacheAlertService> logger,
-    IOptions<CacheMonitoringOptions> options)
+    IOptions<CacheMonitoringOptions> options,
+    AlertChannelManager channelManager)
     : ICacheAlertService
 {
     private readonly CacheMonitoringOptions _options = options.Value;
@@ -38,15 +40,11 @@ public class CacheAlertService(
 
             _lastAlertTimes[alertKey] = DateTime.UtcNow;
 
-            logger.LogWarning("Cache Alert: [{Level}] {Title} - {Message}",
-                alert.Level, alert.Title, alert.Message);
-
             // 이벤트 발생
             AlertRaised?.Invoke(this, alert);
 
-            // 실제 구현에서는 여기서 다양한 알림 채널로 전송
-            // - 이메일, Slack, Teams, SMS 등
-            await NotifyChannelsAsync(alert);
+            // 모든 채널로 알림 전송
+            await channelManager.SendToAllChannelsAsync(alert);
         }
         catch (Exception ex)
         {
@@ -69,7 +67,8 @@ public class CacheAlertService(
             {
                 Level = level,
                 Title = "Low Cache Hit Ratio",
-                Message = $"Cache hit ratio is {metrics.HitRatio:P1}, below threshold of {_options.Thresholds.MinHitRatio:P1}",
+                Message =
+                    $"Cache hit ratio is {metrics.HitRatio:P1}, below threshold of {_options.Thresholds.MinHitRatio:P1}",
                 Component = "Performance",
                 Data = new Dictionary<string, object>
                 {
@@ -90,7 +89,8 @@ public class CacheAlertService(
             {
                 Level = level,
                 Title = "High Response Time",
-                Message = $"Average response time is {metrics.AverageResponseTimeMs:F1}ms, above threshold of {_options.Thresholds.MaxResponseTimeMs}ms",
+                Message =
+                    $"Average response time is {metrics.AverageResponseTimeMs:F1}ms, above threshold of {_options.Thresholds.MaxResponseTimeMs}ms",
                 Component = "Performance",
                 Data = new Dictionary<string, object>
                 {
@@ -111,7 +111,8 @@ public class CacheAlertService(
             {
                 Level = level,
                 Title = "High Memory Usage",
-                Message = $"Memory usage is {metrics.MemoryUsageMB}MB, above threshold of {_options.Thresholds.MaxMemoryUsageMB}MB",
+                Message =
+                    $"Memory usage is {metrics.MemoryUsageMB}MB, above threshold of {_options.Thresholds.MaxMemoryUsageMB}MB",
                 Component = "Memory",
                 Data = new Dictionary<string, object>
                 {
@@ -132,7 +133,8 @@ public class CacheAlertService(
             {
                 Level = level,
                 Title = "High Error Rate",
-                Message = $"Error rate is {metrics.ErrorRate:P1}, above threshold of {_options.Thresholds.MaxErrorRate:P1}",
+                Message =
+                    $"Error rate is {metrics.ErrorRate:P1}, above threshold of {_options.Thresholds.MaxErrorRate:P1}",
                 Component = "Reliability",
                 Data = new Dictionary<string, object>
                 {
@@ -147,14 +149,5 @@ public class CacheAlertService(
         {
             await SendAlertAsync(alert);
         }
-    }
-
-    private async Task NotifyChannelsAsync(CacheAlert alert)
-    {
-        // 실제 구현에서는 설정된 알림 채널로 전송
-        // 예: Slack, Email, SMS, Teams 등
-        await Task.Delay(10); // 시뮬레이션
-
-        logger.LogInformation("Alert sent to notification channels: {AlertId}", alert.Id);
     }
 }
