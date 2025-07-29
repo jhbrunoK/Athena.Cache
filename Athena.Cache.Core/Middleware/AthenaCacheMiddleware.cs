@@ -24,7 +24,8 @@ public class AthenaCacheMiddleware(
     AthenaCacheOptions options,
     CachedResponsePool responsePool,
     CachePerformanceMonitor performanceMonitor,
-    ILogger<AthenaCacheMiddleware> logger)
+    ILogger<AthenaCacheMiddleware> logger,
+    IIntelligentCacheManager? intelligentCacheManager = null)
 {
     public async Task InvokeAsync(HttpContext context)
     {
@@ -72,12 +73,25 @@ public class AthenaCacheMiddleware(
             {
                 // 캐시 히트 - 바로 응답 반환
                 performanceMonitor.RecordCacheHit();
+                
+                // 지능형 캐시 관리자에 접근 기록
+                if (intelligentCacheManager != null)
+                {
+                    await intelligentCacheManager.RecordCacheAccessAsync(cacheKey, CacheAccessType.Hit).ConfigureAwait(false);
+                }
+                
                 await WriteCachedResponseAsync(context, cachedResponse);
                 return;
             }
             
             // 캐시 미스 기록
             performanceMonitor.RecordCacheMiss();
+            
+            // 지능형 캐시 관리자에 미스 기록
+            if (intelligentCacheManager != null)
+            {
+                await intelligentCacheManager.RecordCacheAccessAsync(cacheKey, CacheAccessType.Miss).ConfigureAwait(false);
+            }
 
             // 캐시 미스 - 응답 캐싱
             await CacheResponseAsync(context, cacheKey, cacheConfig);
@@ -229,8 +243,10 @@ public class AthenaCacheMiddleware(
                 var cachedResponse = responsePool.Get();
                 try
                 {
-                    // 만료 시간 결정
-                    var expiration = DetermineExpiration(config);
+                    // 만료 시간 결정 (지능형 관리자 우선)
+                    var expiration = intelligentCacheManager != null
+                        ? await intelligentCacheManager.CalculateAdaptiveTtlAsync(cacheKey).ConfigureAwait(false)
+                        : DetermineExpiration(config);
                     var expiresAt = DateTime.UtcNow.Add(expiration);
                     
                     // 객체 초기화
@@ -248,6 +264,12 @@ public class AthenaCacheMiddleware(
                     using var cacheSetMeasurement = performanceMonitor.StartMeasurement("cache_set");
                     await cache.SetAsync(cacheKey, cachedResponse, expiration).ConfigureAwait(false);
                     cacheSetMeasurement.Dispose();
+                    
+                    // 지능형 캐시 관리자에 설정 기록
+                    if (intelligentCacheManager != null)
+                    {
+                        await intelligentCacheManager.RecordCacheAccessAsync(cacheKey, CacheAccessType.Set).ConfigureAwait(false);
+                    }
                 }
                 catch
                 {
