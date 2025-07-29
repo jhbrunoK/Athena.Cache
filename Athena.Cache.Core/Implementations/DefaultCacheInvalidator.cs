@@ -247,4 +247,143 @@ public class DefaultCacheInvalidator(
         var set = await cache.GetAsync<HashSet<string>>(trackingKey, cancellationToken);
         return set?.AsEnumerable();
     }
+
+    /// <summary>
+    /// 여러 테이블을 배치로 무효화 (성능 최적화)
+    /// </summary>
+    public async Task InvalidateBatchAsync(IEnumerable<string> tableNames, CancellationToken cancellationToken = default)
+    {
+        if (tableNames == null) return;
+
+        var tables = tableNames.ToList();
+        if (tables.Count == 0) return;
+
+        try
+        {
+            var startTime = DateTime.UtcNow;
+            
+            // 모든 테이블의 추적 키들을 동시에 조회
+            var trackingTasks = tables.Select(tableName => GetTrackedKeysAsync(tableName, cancellationToken));
+            var allTrackedKeysResults = await Task.WhenAll(trackingTasks);
+            
+            // 중복 제거하여 무효화할 키 목록 생성
+            var keysToInvalidate = allTrackedKeysResults
+                .SelectMany(keys => keys)
+                .Distinct()
+                .ToList();
+
+            if (keysToInvalidate.Count == 0)
+            {
+                if (options.Logging.LogInvalidation)
+                {
+                    logger.LogInformation("No cached keys found for tables '{Tables}'", string.Join(", ", tables));
+                }
+                return;
+            }
+
+            // 배치로 키들을 무효화 (병렬 처리)
+            var batchSize = Math.Min(50, Environment.ProcessorCount * 2); // CPU 코어 수에 따른 배치 크기
+            var batches = keysToInvalidate
+                .Select((key, index) => new { key, index })
+                .GroupBy(x => x.index / batchSize)
+                .Select(g => g.Select(x => x.key).ToList())
+                .ToList();
+
+            var invalidatedCount = 0;
+            foreach (var batch in batches)
+            {
+                var batchTasks = batch.Select(async key =>
+                {
+                    try
+                    {
+                        await cache.RemoveAsync(key, cancellationToken);
+                        return 1;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Failed to invalidate cache key '{CacheKey}'", key);
+                        return 0;
+                    }
+                });
+                
+                var batchResults = await Task.WhenAll(batchTasks);
+                invalidatedCount += batchResults.Sum();
+            }
+
+            // 테이블 추적 키들도 정리
+            var trackingKeyTasks = tables.Select(tableName => 
+                cache.RemoveAsync(keyGenerator.GenerateTableTrackingKey(tableName), cancellationToken));
+            await Task.WhenAll(trackingKeyTasks);
+
+            var elapsed = DateTime.UtcNow - startTime;
+
+            if (options.Logging.LogInvalidation)
+            {
+                logger.LogInformation(
+                    "Batch invalidated {InvalidatedCount} cache keys for {TableCount} tables in {ElapsedMs}ms",
+                    invalidatedCount, tables.Count, elapsed.TotalMilliseconds);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during batch invalidation for tables '{Tables}'", string.Join(", ", tables));
+            
+            if (!options.ErrorHandling.SilentFallback)
+            {
+                throw;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 여러 패턴을 배치로 무효화 (성능 최적화)
+    /// </summary>
+    public async Task InvalidateByPatternBatchAsync(IEnumerable<string> patterns, CancellationToken cancellationToken = default)
+    {
+        if (patterns == null) return;
+
+        var patternList = patterns.ToList();
+        if (patternList.Count == 0) return;
+
+        try
+        {
+            var startTime = DateTime.UtcNow;
+            
+            // 모든 패턴에 대해 병렬로 무효화 실행
+            var invalidationTasks = patternList.Select(async pattern =>
+            {
+                try
+                {
+                    await cache.RemoveByPatternAsync(pattern, cancellationToken);
+                    return 1;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to invalidate cache keys with pattern '{Pattern}'", pattern);
+                    return 0;
+                }
+            });
+
+            var results = await Task.WhenAll(invalidationTasks);
+            var successCount = results.Sum();
+            
+            var elapsed = DateTime.UtcNow - startTime;
+
+            if (options.Logging.LogInvalidation)
+            {
+                logger.LogInformation(
+                    "Batch pattern invalidation completed: {SuccessCount}/{TotalCount} patterns processed in {ElapsedMs}ms",
+                    successCount, patternList.Count, elapsed.TotalMilliseconds);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during batch pattern invalidation");
+            
+            if (!options.ErrorHandling.SilentFallback)
+            {
+                throw;
+            }
+        }
+    }
 }

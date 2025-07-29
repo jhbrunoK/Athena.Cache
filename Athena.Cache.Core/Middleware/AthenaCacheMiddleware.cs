@@ -1,9 +1,15 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Diagnostics;
 using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
+using Athena.Cache.Core.ObjectPools;
+using Athena.Cache.Core.Observability;
+using Athena.Cache.Core.Resilience;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using System.Buffers;
+using System.Text;
 
 namespace Athena.Cache.Core.Middleware;
 
@@ -18,64 +24,131 @@ public class AthenaCacheMiddleware(
     ICacheInvalidator invalidator,
     ICacheConfigurationRegistry configRegistry,
     AthenaCacheOptions options,
-    ILogger<AthenaCacheMiddleware> logger)
+    CachedResponsePool responsePool,
+    CachePerformanceMonitor performanceMonitor,
+    AthenaCacheMetrics metrics,
+    CacheHealthMonitor healthMonitor,
+    CacheCircuitBreaker circuitBreaker,
+    ILogger<AthenaCacheMiddleware> logger,
+    IIntelligentCacheManager? intelligentCacheManager = null)
 {
     public async Task InvokeAsync(HttpContext context)
     {
         // GET 요청만 캐싱 (POST, PUT, DELETE 등은 제외)
         if (!IsGetRequest(context))
         {
-            await next(context);
+            await next(context).ConfigureAwait(false);
             return;
         }
 
         // 캐시 비활성화 체크
         if (IsCacheDisabled(context))
         {
-            await next(context);
+            await next(context).ConfigureAwait(false);
             return;
         }
 
+        using var activity = AthenaCacheMetrics.StartActivity("athena_cache.middleware.invoke");
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
         try
         {
             // 캐시 설정 가져오기
             var cacheConfig = GetCacheConfiguration(context);
             if (cacheConfig == null || !cacheConfig.Enabled)
             {
-                await next(context);
+                await next(context).ConfigureAwait(false);
                 return;
             }
 
             // 캐시 키 생성
-            var cacheKey = await GenerateCacheKeyAsync(context, cacheConfig);
+            var cacheKey = await GenerateCacheKeyAsync(context, cacheConfig).ConfigureAwait(false);
             if (string.IsNullOrEmpty(cacheKey))
             {
-                await next(context);
+                await next(context).ConfigureAwait(false);
                 return;
             }
 
             // HttpContext에 생성된 키 저장 (Action Filter에서 사용)
             context.Items["AthenaCache.GeneratedKey"] = cacheKey;
 
-            // 캐시에서 응답 조회
-            var cachedResponse = await cache.GetAsync<CachedResponse>(cacheKey);
+            // Circuit Breaker를 통해 캐시 조회 실행
+            var cachedResponse = await circuitBreaker.ExecuteAsync(
+                "cache_get",
+                async () =>
+                {
+                    using var cacheGetMeasurement = performanceMonitor.StartMeasurement("cache_get");
+                    var result = await cache.GetAsync<CachedResponse>(cacheKey).ConfigureAwait(false);
+                    
+                    // OpenTelemetry 메트릭 기록
+                    metrics.RecordOperationDuration(cacheGetMeasurement.Elapsed, "get", "middleware");
+                    if (result != null && !string.IsNullOrEmpty(result.Content))
+                    {
+                        metrics.RecordValueSize(System.Text.Encoding.UTF8.GetByteCount(result.Content), "cached_response");
+                    }
+                    
+                    return result;
+                },
+                fallback: async () => 
+                {
+                    logger.LogWarning("Cache circuit breaker open, bypassing cache for key: {CacheKey}", cacheKey);
+                    return null;
+                }).ConfigureAwait(false);
+            
             if (cachedResponse != null)
             {
-                // 캐시 히트 - 바로 응답 반환
+                // 캐시 히트 기록
+                performanceMonitor.RecordCacheHit();
+                healthMonitor.RecordCacheHit();
+                metrics.RecordCacheHit("middleware", ExtractKeyPattern(cacheKey));
+                
+                // 지능형 캐시 관리자에 접근 기록
+                if (intelligentCacheManager != null)
+                {
+                    await intelligentCacheManager.RecordCacheAccessAsync(cacheKey, CacheAccessType.Hit).ConfigureAwait(false);
+                }
+                
+                stopwatch.Stop();
+                metrics.RecordOperationDuration(stopwatch.Elapsed, "cache_hit", "middleware");
+                activity?.SetTag("cache.result", "hit");
+                
                 await WriteCachedResponseAsync(context, cachedResponse);
                 return;
             }
+            
+            // 캐시 미스 기록
+            performanceMonitor.RecordCacheMiss();
+            healthMonitor.RecordCacheMiss();
+            metrics.RecordCacheMiss("middleware", ExtractKeyPattern(cacheKey));
+            
+            // 지능형 캐시 관리자에 미스 기록
+            if (intelligentCacheManager != null)
+            {
+                await intelligentCacheManager.RecordCacheAccessAsync(cacheKey, CacheAccessType.Miss).ConfigureAwait(false);
+            }
 
+            activity?.SetTag("cache.result", "miss");
+            
             // 캐시 미스 - 응답 캐싱
             await CacheResponseAsync(context, cacheKey, cacheConfig);
+            
+            stopwatch.Stop();
+            metrics.RecordOperationDuration(stopwatch.Elapsed, "cache_miss", "middleware");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error in AthenaCacheMiddleware");
+            stopwatch.Stop();
+            
+            // 에러 메트릭 기록
+            healthMonitor.RecordError("middleware", ex);
+            metrics.RecordCacheError("middleware", ex.GetType().Name, ex.Message);
+            AthenaCacheMetrics.RecordException(activity, ex);
+            
+            logger.LogError(ex, "Error in AthenaCacheMiddleware for path: {Path}", context.Request.Path);
 
             if (options.ErrorHandling.SilentFallback)
             {
-                await next(context);
+                await next(context).ConfigureAwait(false);
 
                 if (options.ErrorHandling.CustomErrorHandler != null)
                 {
@@ -203,31 +276,70 @@ public class AthenaCacheMiddleware(
         try
         {
             // 다음 미들웨어 실행
-            await next(context);
+            await next(context).ConfigureAwait(false);
 
             // 성공 응답만 캐싱 (200-299)
             if (context.Response.StatusCode >= 200 && context.Response.StatusCode < 300)
             {
-                // 응답 내용 읽기
+                // 메모리 효율적인 응답 내용 읽기
                 responseBodyStream.Seek(0, SeekOrigin.Begin);
-                var responseContent = await new StreamReader(responseBodyStream).ReadToEndAsync();
+                var responseContent = await ReadStreamEfficientlyAsync(responseBodyStream).ConfigureAwait(false);
 
-                // 캐시에 저장할 응답 객체 생성
-                var cachedResponse = new CachedResponse
+                // Object Pool에서 캐시 응답 객체 가져오기
+                var cachedResponse = responsePool.Get();
+                try
                 {
-                    StatusCode = context.Response.StatusCode,
-                    ContentType = context.Response.ContentType ?? "application/json",
-                    Content = responseContent,
-                    Headers = context.Response.Headers
-                        .Where(h => IsCacheableHeader(h.Key))
-                        .ToDictionary(h => h.Key, h => h.Value.ToString())
-                };
+                    // 만료 시간 결정 (지능형 관리자 우선)
+                    var expiration = intelligentCacheManager != null
+                        ? await intelligentCacheManager.CalculateAdaptiveTtlAsync(cacheKey).ConfigureAwait(false)
+                        : DetermineExpiration(config);
+                    var expiresAt = DateTime.UtcNow.Add(expiration);
+                    
+                    // 객체 초기화
+                    cachedResponse.Initialize(
+                        context.Response.StatusCode,
+                        context.Response.ContentType ?? "application/json",
+                        responseContent,
+                        context.Response.Headers
+                            .Where(h => IsCacheableHeader(h.Key))
+                            .ToDictionary(h => h.Key, h => h.Value.ToString()),
+                        expiresAt
+                    );
 
-                // 만료 시간 결정
-                var expiration = DetermineExpiration(config);
-
-                // 캐시에 저장
-                await cache.SetAsync(cacheKey, cachedResponse, expiration);
+                    // Circuit Breaker를 통해 캐시 저장 실행
+                    await circuitBreaker.ExecuteAsync(
+                        "cache_set",
+                        async () =>
+                        {
+                            using var cacheSetMeasurement = performanceMonitor.StartMeasurement("cache_set");
+                            await cache.SetAsync(cacheKey, cachedResponse, expiration).ConfigureAwait(false);
+                            
+                            // OpenTelemetry 메트릭 기록
+                            metrics.RecordOperationDuration(cacheSetMeasurement.Elapsed, "set", "middleware");
+                            metrics.RecordKeySize(System.Text.Encoding.UTF8.GetByteCount(cacheKey), ExtractKeyPattern(cacheKey));
+                            metrics.RecordValueSize(System.Text.Encoding.UTF8.GetByteCount(responseContent), "cached_response");
+                            
+                            return Task.CompletedTask;
+                        },
+                        fallback: async () =>
+                        {
+                            logger.LogWarning("Cache circuit breaker open, unable to cache response for key: {CacheKey}", cacheKey);
+                            return Task.CompletedTask;
+                        }).ConfigureAwait(false);
+                    
+                    // 지능형 캐시 관리자에 설정 기록
+                    if (intelligentCacheManager != null)
+                    {
+                        await intelligentCacheManager.RecordCacheAccessAsync(cacheKey, CacheAccessType.Set).ConfigureAwait(false);
+                    }
+                }
+                catch
+                {
+                    // 예외 발생 시 객체를 풀에 반환
+                    responsePool.Return(cachedResponse);
+                    throw;
+                }
+                // 정상적으로 캐시에 저장된 경우 객체는 풀에 반환하지 않음 (캐시에서 사용 중)
 
                 // 테이블 추적 설정
                 if (config.InvalidationRules.Any())
@@ -237,7 +349,7 @@ public class AthenaCacheMiddleware(
                         .Distinct()
                         .ToArray();
                     
-                    await invalidator.TrackCacheKeyAsync(tablesToTrack, cacheKey);
+                    await invalidator.TrackCacheKeyAsync(tablesToTrack, cacheKey).ConfigureAwait(false);
                 }
 
                 if (options.Logging.LogCacheHitMiss)
@@ -252,7 +364,7 @@ public class AthenaCacheMiddleware(
 
             // 원본 스트림으로 응답 복사
             responseBodyStream.Seek(0, SeekOrigin.Begin);
-            await responseBodyStream.CopyToAsync(originalBodyStream);
+            await responseBodyStream.CopyToAsync(originalBodyStream).ConfigureAwait(false);
         }
         finally
         {
@@ -270,15 +382,66 @@ public class AthenaCacheMiddleware(
         return TimeSpan.FromMinutes(options.DefaultExpirationMinutes);
     }
 
+    // 컴파일타임 최적화: 캐시하면 안 되는 헤더들을 HashSet으로 미리 정의
+    private static readonly HashSet<string> ExcludeHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "set-cookie", "authorization", "www-authenticate",
+        "proxy-authenticate", "connection", "upgrade",
+        "transfer-encoding", "content-encoding"
+    };
+
     private static bool IsCacheableHeader(string headerName)
     {
-        // 캐시하면 안 되는 헤더들 제외
-        var excludeHeaders = new[]
-        {
-            "set-cookie", "authorization", "www-authenticate",
-            "proxy-authenticate", "connection", "upgrade"
-        };
+        return !ExcludeHeaders.Contains(headerName);
+    }
 
-        return !excludeHeaders.Contains(headerName.ToLower());
+    /// <summary>
+    /// 메모리 효율적인 스트림 읽기 (ArrayPool 사용)
+    /// </summary>
+    private static async Task<string> ReadStreamEfficientlyAsync(Stream stream)
+    {
+        if (stream.Length == 0)
+            return string.Empty;
+
+        // ArrayPool을 사용해서 메모리 할당 최소화
+        var bufferSize = (int)Math.Min(stream.Length, 8192); // 최대 8KB 버퍼
+        var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+        
+        try
+        {
+            using var memoryStream = new MemoryStream((int)stream.Length);
+            int bytesRead;
+            
+            while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, bufferSize)).ConfigureAwait(false)) > 0)
+            {
+                await memoryStream.WriteAsync(buffer.AsMemory(0, bytesRead)).ConfigureAwait(false);
+            }
+            
+            // Span을 사용해서 효율적인 문자열 변환
+            var bytes = memoryStream.ToArray();
+            return Encoding.UTF8.GetString(bytes.AsSpan());
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    /// <summary>
+    /// 캐시 키에서 패턴 추출 (메트릭 라벨링용)
+    /// </summary>
+    private static string ExtractKeyPattern(string cacheKey)
+    {
+        if (string.IsNullOrEmpty(cacheKey))
+            return "unknown";
+
+        // 키 형태: "Controller:Action:Hash" 에서 "Controller:Action" 부분 추출
+        var parts = cacheKey.Split(':');
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0]}:{parts[1]}";
+        }
+
+        return "unknown";
     }
 }
