@@ -1,5 +1,6 @@
 using System.Diagnostics.Metrics;
 using System.Diagnostics;
+using Athena.Cache.Core.Abstractions;
 
 namespace Athena.Cache.Core.Observability;
 
@@ -258,10 +259,11 @@ public class AthenaCacheMetrics : IDisposable
 }
 
 /// <summary>
-/// 캐시 성능 통계 스냅샷
+/// 캐시 성능 통계 스냅샷 - ICacheMetrics 구현
 /// </summary>
-public class CachePerformanceSnapshot
+public class CachePerformanceSnapshot : ICacheMetrics
 {
+    public DateTime Timestamp { get; init; } = DateTime.UtcNow;
     public long TotalHits { get; init; }
     public long TotalMisses { get; init; }
     public double HitRatio { get; init; }
@@ -271,5 +273,10 @@ public class CachePerformanceSnapshot
     public long ItemCount { get; init; }
     public long HotKeysCount { get; init; }
     public TimeSpan AverageOperationDuration { get; init; }
+    
+    // ICacheMetrics 인터페이스 구현
+    public double AverageResponseTimeMs => AverageOperationDuration.TotalMilliseconds;
+    
+    // 하위 호환성을 위한 속성 유지
     public DateTime SnapshotTime { get; init; } = DateTime.UtcNow;
 }
