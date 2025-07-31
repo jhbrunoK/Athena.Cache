@@ -1,5 +1,4 @@
 using Athena.Cache.Core.Extensions;
-using Athena.Cache.Redis.Extensions;
 using Athena.Cache.Sample.Data;
 using Athena.Cache.Sample.Services;
 using Microsoft.EntityFrameworkCore;

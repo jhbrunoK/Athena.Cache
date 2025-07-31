@@ -1,6 +1,5 @@
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Observability;
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace Athena.Cache.Core.Analytics;
@@ -89,13 +88,13 @@ public class CacheOptimizationAnalyzer : IDisposable
                 Title = "Low Cache Hit Rate Detected",
                 Description = $"Current hit rate is {snapshot.HitRatio:P1}, which is below optimal threshold of 70%",
                 Impact = EstimateHitRateImpact(snapshot.HitRatio),
-                Suggestions = new[]
-                {
+                Suggestions =
+                [
                     "Consider increasing cache TTL for frequently accessed data",
                     "Review cache key patterns for better cache locality",
                     "Implement cache warming for predictable access patterns",
                     "Analyze and optimize cache eviction policies"
-                },
+                ],
                 Metrics = new Dictionary<string, object>
                 {
                     { "current_hit_rate", snapshot.HitRatio },
@@ -120,13 +119,13 @@ public class CacheOptimizationAnalyzer : IDisposable
                     Title = "Significant Hit Rate Degradation",
                     Description = $"Hit rate dropped from {historicalAvg:P1} to {recentAvg:P1}",
                     Impact = $"Estimated {(historicalAvg - recentAvg) * 100:F0}% performance impact",
-                    Suggestions = new[]
-                    {
+                    Suggestions =
+                    [
                         "Investigate recent changes in data access patterns",
                         "Check for memory pressure causing premature evictions",
                         "Review recent application deployments or configuration changes",
                         "Consider emergency cache warming to restore performance"
-                    }
+                    ]
                 });
             }
         }
@@ -151,13 +150,13 @@ public class CacheOptimizationAnalyzer : IDisposable
                 Title = "High Memory Usage",
                 Description = $"Cache is using {memoryMB:F0}MB of memory",
                 Impact = "High memory usage may impact system performance",
-                Suggestions = new[]
-                {
+                Suggestions =
+                [
                     "Implement more aggressive cache eviction policies",
                     "Reduce TTL for less critical cached data",
                     "Consider compressing cached values",
                     "Review cache size limits and adjust accordingly"
-                },
+                ],
                 Metrics = new Dictionary<string, object>
                 {
                     { "memory_usage_mb", memoryMB },
@@ -179,13 +178,13 @@ public class CacheOptimizationAnalyzer : IDisposable
                     Title = "Memory Usage Increasing Trend",
                     Description = "Memory usage is consistently increasing",
                     Impact = "Potential memory leak or cache configuration issue",
-                    Suggestions = new[]
-                    {
+                    Suggestions =
+                    [
                         "Monitor for memory leaks in cached objects",
                         "Review cache expiration policies",
                         "Implement periodic cache cleanup",
                         "Consider implementing cache size limits"
-                    }
+                    ]
                 });
             }
         }
@@ -195,7 +194,7 @@ public class CacheOptimizationAnalyzer : IDisposable
 
     private async Task<IEnumerable<OptimizationRecommendation>> AnalyzeHotKeysAsync()
     {
-        if (_intelligentCacheManager == null) return Array.Empty<OptimizationRecommendation>();
+        if (_intelligentCacheManager == null) return [];
         
         var recommendations = new List<OptimizationRecommendation>();
         
@@ -216,13 +215,13 @@ public class CacheOptimizationAnalyzer : IDisposable
                     Title = "Multiple Hot Keys Detected",
                     Description = $"Detected {hotKeyList.Count} hot keys with average access rate of {avgAccessRate:F1}/min",
                     Impact = "Hot keys may cause cache contention and uneven load distribution",
-                    Suggestions = new[]
-                    {
+                    Suggestions =
+                    [
                         "Consider implementing cache warming for hot keys",
                         "Extend TTL for frequently accessed hot keys",
                         "Implement key sharding for extremely hot keys",
                         "Monitor for thundering herd patterns"
-                    },
+                    ],
                     Metrics = new Dictionary<string, object>
                     {
                         { "hot_keys_count", hotKeyList.Count },
@@ -243,13 +242,13 @@ public class CacheOptimizationAnalyzer : IDisposable
                     Title = "Extremely Hot Keys Detected",
                     Description = $"Found {extremelyHotKeys.Count} keys with >100 accesses/minute",
                     Impact = "Extremely hot keys can become performance bottlenecks",
-                    Suggestions = new[]
-                    {
+                    Suggestions =
+                    [
                         "Implement local caching layer for extremely hot keys",
                         "Consider read replicas or CDN for hot data",
                         "Review data access patterns for optimization opportunities",
                         "Implement circuit breaker pattern for hot key protection"
-                    },
+                    ],
                     Metrics = new Dictionary<string, object>
                     {
                         { "extreme_hot_keys", extremelyHotKeys.Select(k => new { k.Key, k.AccessRate }).ToArray() }
@@ -285,13 +284,13 @@ public class CacheOptimizationAnalyzer : IDisposable
                 Title = "Performance Degradation Trend",
                 Description = "Cache performance has been declining over time",
                 Impact = $"Performance declined by {((historicalPerformance - recentPerformance) / historicalPerformance * 100):F1}%",
-                Suggestions = new[]
-                {
+                Suggestions =
+                [
                     "Investigate root cause of performance decline",
                     "Review recent configuration changes",
                     "Check for resource constraints (CPU, memory, network)",
                     "Consider performance tuning or hardware upgrades"
-                }
+                ]
             });
         }
 
@@ -317,13 +316,13 @@ public class CacheOptimizationAnalyzer : IDisposable
                 Title = "Increasing Error Rate",
                 Description = "Cache error rate has significantly increased",
                 Impact = "High error rates can impact application reliability",
-                Suggestions = new[]
-                {
+                Suggestions =
+                [
                     "Investigate error logs for root cause analysis",
                     "Check cache backend connectivity and health",
                     "Review error handling and retry policies",
                     "Consider implementing circuit breaker patterns"
-                },
+                ],
                 Metrics = new Dictionary<string, object>
                 {
                     { "recent_error_rate", recentErrors },
@@ -434,7 +433,7 @@ public class OptimizationReport
 {
     public DateTime GeneratedAt { get; init; }
     public CachePerformanceSnapshot CurrentSnapshot { get; init; } = new();
-    public OptimizationRecommendation[] Recommendations { get; init; } = Array.Empty<OptimizationRecommendation>();
+    public OptimizationRecommendation[] Recommendations { get; init; } = [];
     public string Summary { get; init; } = string.Empty;
 }
 
@@ -445,7 +444,7 @@ public class OptimizationRecommendation
     public string Title { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public string Impact { get; init; } = string.Empty;
-    public string[] Suggestions { get; init; } = Array.Empty<string>();
+    public string[] Suggestions { get; init; } = [];
     public Dictionary<string, object>? Metrics { get; init; }
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }

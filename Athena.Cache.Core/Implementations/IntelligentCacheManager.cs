@@ -1,8 +1,6 @@
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 
 namespace Athena.Cache.Core.Implementations;
 
@@ -208,7 +206,7 @@ public class IntelligentCacheManager : IIntelligentCacheManager, IDisposable
             CacheEvictionPolicy.TTL => GetExpiredKeys(maxItems),
             CacheEvictionPolicy.Random => GetRandomKeys(maxItems),
             CacheEvictionPolicy.FIFO => GetFifoKeys(maxItems),
-            _ => Enumerable.Empty<string>()
+            _ => []
         };
 
         var evictedCount = 0;

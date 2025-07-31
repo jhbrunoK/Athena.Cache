@@ -84,7 +84,7 @@ public class AthenaCacheMiddleware(
                     metrics.RecordOperationDuration(cacheGetMeasurement.Elapsed, "get", "middleware");
                     if (result != null && !string.IsNullOrEmpty(result.Content))
                     {
-                        metrics.RecordValueSize(System.Text.Encoding.UTF8.GetByteCount(result.Content), "cached_response");
+                        metrics.RecordValueSize(Encoding.UTF8.GetByteCount(result.Content), "cached_response");
                     }
                     
                     return result;
@@ -316,8 +316,8 @@ public class AthenaCacheMiddleware(
                             
                             // OpenTelemetry 메트릭 기록
                             metrics.RecordOperationDuration(cacheSetMeasurement.Elapsed, "set", "middleware");
-                            metrics.RecordKeySize(System.Text.Encoding.UTF8.GetByteCount(cacheKey), ExtractKeyPattern(cacheKey));
-                            metrics.RecordValueSize(System.Text.Encoding.UTF8.GetByteCount(responseContent), "cached_response");
+                            metrics.RecordKeySize(Encoding.UTF8.GetByteCount(cacheKey), ExtractKeyPattern(cacheKey));
+                            metrics.RecordValueSize(Encoding.UTF8.GetByteCount(responseContent), "cached_response");
                             
                             return Task.CompletedTask;
                         },

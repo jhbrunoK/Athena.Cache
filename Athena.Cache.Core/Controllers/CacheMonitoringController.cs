@@ -12,18 +12,13 @@ namespace Athena.Cache.Core.Controllers;
 [ApiController]
 [Route("api/athena-cache/monitoring")]
 [Authorize(Policy = "AthenaCacheMonitoring")] // 보안을 위한 인증 필요
-public class CacheMonitoringController : ControllerBase
+public class CacheMonitoringController(
+    CacheHealthMonitor healthMonitor,
+    ILogger<CacheMonitoringController> logger)
+    : ControllerBase
 {
-    private readonly CacheHealthMonitor _healthMonitor;
-    private readonly ILogger<CacheMonitoringController> _logger;
-
-    public CacheMonitoringController(
-        CacheHealthMonitor healthMonitor,
-        ILogger<CacheMonitoringController> logger)
-    {
-        _healthMonitor = healthMonitor ?? throw new ArgumentNullException(nameof(healthMonitor));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly CacheHealthMonitor _healthMonitor = healthMonitor ?? throw new ArgumentNullException(nameof(healthMonitor));
+    private readonly ILogger<CacheMonitoringController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// 전체 캐시 헬스 상태 조회 (기본 기능)

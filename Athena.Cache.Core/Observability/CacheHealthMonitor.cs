@@ -1,6 +1,5 @@
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace Athena.Cache.Core.Observability;
@@ -464,7 +463,7 @@ public class OverallHealthStatus
 {
     public HealthStatus Status { get; init; }
     public DateTime LastChecked { get; init; }
-    public HealthCheckResult[] HealthChecks { get; init; } = Array.Empty<HealthCheckResult>();
+    public HealthCheckResult[] HealthChecks { get; init; } = [];
     public string Summary { get; init; } = string.Empty;
 }
 

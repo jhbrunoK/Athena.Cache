@@ -29,7 +29,7 @@ public class MessagePackPerformanceTests
         public DateTime CreatedAt { get; set; }
         
         [Key(3)]
-        public List<string> Tags { get; set; } = new();
+        public List<string> Tags { get; set; } = [];
         
         [Key(4)]
         public Dictionary<string, object> Properties { get; set; } = new();
@@ -45,7 +45,7 @@ public class MessagePackPerformanceTests
             Id = 12345,
             Name = "Performance Test Data",
             CreatedAt = DateTime.UtcNow,
-            Tags = new List<string> { "performance", "test", "cache", "serialization" },
+            Tags = ["performance", "test", "cache", "serialization"],
             Properties = new Dictionary<string, object>
             {
                 { "category", "electronics" },
@@ -136,7 +136,7 @@ public class MessagePackPerformanceTests
                 Id = i,
                 Name = $"Test Item {i}",
                 CreatedAt = DateTime.UtcNow.AddMinutes(-i),
-                Tags = new List<string> { $"tag{i}", "performance", "test" },
+                Tags = [$"tag{i}", "performance", "test"],
                 Properties = new Dictionary<string, object>
                 {
                     { "index", i },

@@ -228,9 +228,9 @@ public class BasicFunctionalityTests
         var serviceProvider = services.BuildServiceProvider();
 
         // Act & Assert - 서비스가 등록되었는지 확인
-        var cache = serviceProvider.GetService<Athena.Cache.Core.Abstractions.IAthenaCache>();
-        var invalidator = serviceProvider.GetService<Athena.Cache.Core.Abstractions.ICacheInvalidator>();
-        var keyGenerator = serviceProvider.GetService<Athena.Cache.Core.Abstractions.ICacheKeyGenerator>();
+        var cache = serviceProvider.GetService<Core.Abstractions.IAthenaCache>();
+        var invalidator = serviceProvider.GetService<Core.Abstractions.ICacheInvalidator>();
+        var keyGenerator = serviceProvider.GetService<Core.Abstractions.ICacheKeyGenerator>();
 
         cache.Should().NotBeNull();
         invalidator.Should().NotBeNull();
@@ -247,8 +247,8 @@ public class BasicFunctionalityTests
         services.AddAthenaCacheComplete();
 
         var serviceProvider = services.BuildServiceProvider();
-        var cache = serviceProvider.GetRequiredService<Athena.Cache.Core.Abstractions.IAthenaCache>();
-        var invalidator = serviceProvider.GetRequiredService<Athena.Cache.Core.Abstractions.ICacheInvalidator>();
+        var cache = serviceProvider.GetRequiredService<Core.Abstractions.IAthenaCache>();
+        var invalidator = serviceProvider.GetRequiredService<Core.Abstractions.ICacheInvalidator>();
 
         // Act & Assert - 기본 캐시 작업
         var testKey = "test_key";
@@ -326,8 +326,8 @@ public class TestUserService
 public class TestUsersController(TestUserService userService) : Microsoft.AspNetCore.Mvc.ControllerBase
 {
     [Microsoft.AspNetCore.Mvc.HttpGet]
-    [Athena.Cache.Core.Attributes.AthenaCache(ExpirationMinutes = 10)]
-    [Athena.Cache.Core.Attributes.CacheInvalidateOn("Users")]
+    [Core.Attributes.AthenaCache(ExpirationMinutes = 10)]
+    [Core.Attributes.CacheInvalidateOn("Users")]
     public async Task<Microsoft.AspNetCore.Mvc.ActionResult<IEnumerable<TestUser>>> GetUsers(
         [Microsoft.AspNetCore.Mvc.FromQuery] int? minAge = null)
     {
@@ -336,8 +336,8 @@ public class TestUsersController(TestUserService userService) : Microsoft.AspNet
     }
 
     [Microsoft.AspNetCore.Mvc.HttpGet("{id}")]
-    [Athena.Cache.Core.Attributes.AthenaCache(ExpirationMinutes = 15)]
-    [Athena.Cache.Core.Attributes.CacheInvalidateOn("Users")]
+    [Core.Attributes.AthenaCache(ExpirationMinutes = 15)]
+    [Core.Attributes.CacheInvalidateOn("Users")]
     public async Task<Microsoft.AspNetCore.Mvc.ActionResult<TestUser>> GetUser(int id)
     {
         var user = await userService.GetUserByIdAsync(id);
@@ -362,12 +362,12 @@ public class TestUsersController(TestUserService userService) : Microsoft.AspNet
 [Microsoft.AspNetCore.Mvc.ApiController]
 [Microsoft.AspNetCore.Mvc.Route("api/[controller]")]
 public class TestCacheController(
-    Athena.Cache.Core.Abstractions.IAthenaCache cache,
-    Athena.Cache.Core.Abstractions.ICacheInvalidator invalidator)
+    Core.Abstractions.IAthenaCache cache,
+    Core.Abstractions.ICacheInvalidator invalidator)
     : Microsoft.AspNetCore.Mvc.ControllerBase
 {
     [Microsoft.AspNetCore.Mvc.HttpGet("statistics")]
-    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<Athena.Cache.Core.Abstractions.CacheStatistics>> GetStatistics()
+    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<Core.Abstractions.CacheStatistics>> GetStatistics()
     {
         var stats = await cache.GetStatisticsAsync();
         return Ok(stats);

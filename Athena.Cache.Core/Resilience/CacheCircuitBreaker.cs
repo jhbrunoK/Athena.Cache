@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace Athena.Cache.Core.Resilience;
@@ -407,13 +406,13 @@ public class CircuitBreakerStatistics
     public int FailureCount { get; init; }
     public DateTime LastFailureTime { get; init; }
     public DateTime LastSuccessTime { get; init; }
-    public OperationMetricSnapshot[] OperationMetrics { get; init; } = Array.Empty<OperationMetricSnapshot>();
+    public OperationMetricSnapshot[] OperationMetrics { get; init; } = [];
     public long TotalOperations { get; init; }
     public long TotalFailures { get; init; }
     public TimeSpan AverageResponseTime { get; init; }
 }
 
-public class OperationMetrics
+public class OperationMetrics(string operationName)
 {
     private readonly object _lock = new();
     private long _totalOperations = 0;
@@ -421,13 +420,8 @@ public class OperationMetrics
     private double _totalResponseTimeMs = 0;
     private DateTime _lastAccess = DateTime.UtcNow;
 
-    public string OperationName { get; }
+    public string OperationName { get; } = operationName;
     public DateTime LastAccess => _lastAccess;
-
-    public OperationMetrics(string operationName)
-    {
-        OperationName = operationName;
-    }
 
     public void RecordSuccess(TimeSpan responseTime)
     {

@@ -10,22 +10,17 @@ namespace Athena.Cache.Core.Implementations;
 /// <summary>
 /// 기본 캐시 키 생성기 구현 (키 캐싱 포함)
 /// </summary>
-public class DefaultCacheKeyGenerator : ICacheKeyGenerator
+public class DefaultCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGenerator
 {
-    private readonly AthenaCacheOptions options;
-    
-    public DefaultCacheKeyGenerator(AthenaCacheOptions options)
-    {
-        this.options = options;
-        
-        // ConcurrentDictionary 최적화: 동시성 수준 설정
-        _keyCache = new ConcurrentDictionary<string, string>(
-            concurrencyLevel: Environment.ProcessorCount * 2, // CPU 코어 수의 2배
-            capacity: MaxCacheSize // 초기 용량 설정
-        );
-    }
+    // ConcurrentDictionary 최적화: 동시성 수준 설정
+    // CPU 코어 수의 2배
+    // 초기 용량 설정
+
     // LRU 캐시로 자주 사용되는 키 저장 (메모리 효율적)
-    private readonly ConcurrentDictionary<string, string> _keyCache;
+    private readonly ConcurrentDictionary<string, string> _keyCache = new(
+        concurrencyLevel: Environment.ProcessorCount * 2, // CPU 코어 수의 2배
+        capacity: MaxCacheSize // 초기 용량 설정
+    );
     private const int MaxCacheSize = 1000; // 최대 캐시 크기
     private long _cacheCount = 0; // 캐시 아이템 수 추적 (Interlocked로 접근)
     /// <summary>

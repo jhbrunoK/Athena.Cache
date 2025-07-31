@@ -190,19 +190,12 @@ public class Phase4OptimizationTests
 /// <summary>
 /// 테스트용 서비스 프로바이더
 /// </summary>
-internal class TestServiceProvider : IServiceProvider
+internal class TestServiceProvider(ObjectPoolProvider poolProvider) : IServiceProvider
 {
-    private readonly ObjectPoolProvider _poolProvider;
-    
-    public TestServiceProvider(ObjectPoolProvider poolProvider)
-    {
-        _poolProvider = poolProvider;
-    }
-    
     public object? GetService(Type serviceType)
     {
         if (serviceType == typeof(ObjectPoolProvider))
-            return _poolProvider;
+            return poolProvider;
             
         return null;
     }
