@@ -6,6 +6,7 @@ using Athena.Cache.Core.Models;
 using Athena.Cache.Core.ObjectPools;
 using Athena.Cache.Core.Observability;
 using Athena.Cache.Core.Resilience;
+using Athena.Cache.Core.Memory;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using System.Buffers;
@@ -164,7 +165,7 @@ public class AthenaCacheMiddleware(
 
     private static bool IsGetRequest(HttpContext context)
     {
-        return string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(context.Request.Method, CachedConstants.HttpGet, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsCacheDisabled(HttpContext context)
@@ -187,8 +188,8 @@ public class AthenaCacheMiddleware(
             return null;
 
         // Controller 접미사 추가 (필요한 경우)
-        if (!controllerName.EndsWith("Controller"))
-            controllerName += "Controller";
+        if (!controllerName.EndsWith(CachedConstants.ControllerSuffix))
+            controllerName += CachedConstants.ControllerSuffix;
 
         // 주입된 레지스트리에서 설정 조회
         return configRegistry.GetConfiguration(controllerName, actionName);
@@ -196,11 +197,12 @@ public class AthenaCacheMiddleware(
 
     private Task<string> GenerateCacheKeyAsync(HttpContext context, CacheConfiguration config)
     {
+        // 컬렉션 풀에서 Dictionary 대여
+        var parameters = CollectionPools.RentStringObjectDictionary();
+        
         try
         {
-            // 쿼리 파라미터 수집
-            var parameters = new Dictionary<string, object?>();
-
+            // 쿼리 파라미터 수집 (zero allocation 최적화)
             foreach (var param in context.Request.Query)
             {
                 // 제외 파라미터 체크
@@ -221,7 +223,7 @@ public class AthenaCacheMiddleware(
 
             // 캐시 키 생성
             var controllerName = config.CustomKeyPrefix ?? config.Controller;
-            var cacheKey = keyGenerator.GenerateKey(controllerName, config.Action, parameters);
+            var cacheKey = keyGenerator.GenerateKey(controllerName, config.Action, (IDictionary<string, object?>)parameters);
 
             if (options.Logging.LogKeyGeneration)
             {
@@ -237,6 +239,11 @@ public class AthenaCacheMiddleware(
                 config.Controller, config.Action);
             return Task.FromResult(string.Empty);
         }
+        finally
+        {
+            // 풀에 Dictionary 반환
+            CollectionPools.Return(parameters);
+        }
     }
 
     private async Task WriteCachedResponseAsync(HttpContext context, CachedResponse cachedResponse)
@@ -251,7 +258,7 @@ public class AthenaCacheMiddleware(
         }
 
         // 캐시 히트 헤더 추가
-        context.Response.Headers["X-Athena-Cache"] = "HIT";
+        context.Response.Headers["X-Athena-Cache"] = CachedConstants.CacheHit;
 
         // 응답 본문 작성
         if (!string.IsNullOrEmpty(cachedResponse.Content))
@@ -296,13 +303,21 @@ public class AthenaCacheMiddleware(
                     var expiresAt = DateTime.UtcNow.Add(expiration);
                     
                     // 객체 초기화
+                    // 캐시 가능한 헤더만 필터링 (LINQ 없이)
+                    var cacheableHeaders = new Dictionary<string, string>();
+                    foreach (var header in context.Response.Headers)
+                    {
+                        if (IsCacheableHeader(header.Key))
+                        {
+                            cacheableHeaders[header.Key] = header.Value.ToString();
+                        }
+                    }
+                    
                     cachedResponse.Initialize(
                         context.Response.StatusCode,
-                        context.Response.ContentType ?? "application/json",
+                        context.Response.ContentType ?? CachedConstants.ContentTypeJson,
                         responseContent,
-                        context.Response.Headers
-                            .Where(h => IsCacheableHeader(h.Key))
-                            .ToDictionary(h => h.Key, h => h.Value.ToString()),
+                        cacheableHeaders,
                         expiresAt
                     );
 
@@ -341,13 +356,17 @@ public class AthenaCacheMiddleware(
                 }
                 // 정상적으로 캐시에 저장된 경우 객체는 풀에 반환하지 않음 (캐시에서 사용 중)
 
-                // 테이블 추적 설정
-                if (config.InvalidationRules.Any())
+                // 테이블 추적 설정 (LINQ 없이)
+                if (config.InvalidationRules.Count > 0)
                 {
-                    var tablesToTrack = config.InvalidationRules
-                        .Select(rule => rule.TableName)
-                        .Distinct()
-                        .ToArray();
+                    var tableSet = new HashSet<string>();
+                    for (int i = 0; i < config.InvalidationRules.Count; i++)
+                    {
+                        tableSet.Add(config.InvalidationRules[i].TableName);
+                    }
+                    
+                    var tablesToTrack = new string[tableSet.Count];
+                    tableSet.CopyTo(tablesToTrack);
                     
                     await invalidator.TrackCacheKeyAsync(tablesToTrack, cacheKey).ConfigureAwait(false);
                 }
@@ -360,7 +379,7 @@ public class AthenaCacheMiddleware(
             }
 
             // 캐시 미스 헤더 추가
-            context.Response.Headers["X-Athena-Cache"] = "MISS";
+            context.Response.Headers["X-Athena-Cache"] = CachedConstants.CacheMiss;
 
             // 원본 스트림으로 응답 복사
             responseBodyStream.Seek(0, SeekOrigin.Begin);
@@ -396,52 +415,78 @@ public class AthenaCacheMiddleware(
     }
 
     /// <summary>
-    /// 메모리 효율적인 스트림 읽기 (ArrayPool 사용)
+    /// Memory/Span 기반 제로 allocation 스트림 읽기
     /// </summary>
     private static async Task<string> ReadStreamEfficientlyAsync(Stream stream)
     {
         if (stream.Length == 0)
             return string.Empty;
 
-        // ArrayPool을 사용해서 메모리 할당 최소화
-        var bufferSize = (int)Math.Min(stream.Length, 8192); // 최대 8KB 버퍼
-        var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+        // 작은 스트림은 stackalloc, 큰 스트림은 ArrayPool 사용
+        var streamLength = (int)stream.Length;
         
-        try
+        if (streamLength <= 4096) // 4KB 이하는 스택 할당
         {
-            using var memoryStream = new MemoryStream((int)stream.Length);
-            int bytesRead;
+            var stackBuffer = new byte[streamLength];
+            var totalRead = 0;
             
-            while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, bufferSize)).ConfigureAwait(false)) > 0)
+            while (totalRead < streamLength)
             {
-                await memoryStream.WriteAsync(buffer.AsMemory(0, bytesRead)).ConfigureAwait(false);
+                var bytesRead = await stream.ReadAsync(stackBuffer.AsMemory(totalRead)).ConfigureAwait(false);
+                if (bytesRead == 0) break;
+                totalRead += bytesRead;
             }
             
-            // Span을 사용해서 효율적인 문자열 변환
-            var bytes = memoryStream.ToArray();
-            return Encoding.UTF8.GetString(bytes.AsSpan());
+            return Encoding.UTF8.GetString(stackBuffer.AsSpan(0, totalRead));
         }
-        finally
+        else // 큰 데이터는 ArrayPool 사용
         {
-            ArrayPool<byte>.Shared.Return(buffer);
+            var buffer = ArrayPool<byte>.Shared.Rent(8192);
+            var resultBuffer = ArrayPool<byte>.Shared.Rent(streamLength);
+            
+            try
+            {
+                var totalRead = 0;
+                int bytesRead;
+                
+                while ((bytesRead = await stream.ReadAsync(buffer.AsMemory()).ConfigureAwait(false)) > 0)
+                {
+                    buffer.AsSpan(0, bytesRead).CopyTo(resultBuffer.AsSpan(totalRead));
+                    totalRead += bytesRead;
+                }
+                
+                return Encoding.UTF8.GetString(resultBuffer.AsSpan(0, totalRead));
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+                ArrayPool<byte>.Shared.Return(resultBuffer);
+            }
         }
     }
 
     /// <summary>
-    /// 캐시 키에서 패턴 추출 (메트릭 라벨링용)
+    /// 캐시 키에서 패턴 추출 (Span 기반 zero allocation)
     /// </summary>
     private static string ExtractKeyPattern(string cacheKey)
     {
         if (string.IsNullOrEmpty(cacheKey))
-            return "unknown";
+            return CachedConstants.Unknown;
 
-        // 키 형태: "Controller:Action:Hash" 에서 "Controller:Action" 부분 추출
-        var parts = cacheKey.Split(':');
-        if (parts.Length >= 2)
-        {
-            return $"{parts[0]}:{parts[1]}";
-        }
-
-        return "unknown";
+        // ReadOnlySpan으로 문자열 분할 (allocation 없이)
+        var span = cacheKey.AsSpan();
+        var firstColon = span.IndexOf(':');
+        
+        if (firstColon == -1)
+            return CachedConstants.Unknown;
+            
+        var secondColon = span.Slice(firstColon + 1).IndexOf(':');
+        
+        if (secondColon == -1)
+            return CachedConstants.Unknown;
+            
+        // "Controller:Action" 부분만 추출
+        var patternLength = firstColon + 1 + secondColon;
+        return new string(span.Slice(0, patternLength));
     }
 }

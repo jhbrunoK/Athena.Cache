@@ -1,6 +1,8 @@
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Observability;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using Athena.Cache.Core.Memory;
 
 namespace Athena.Cache.Core.Analytics;
 
@@ -39,54 +41,65 @@ public class CacheOptimizationAnalyzer : IDisposable
     public async Task<OptimizationReport> GenerateOptimizationReportAsync()
     {
         var currentSnapshot = _healthMonitor.GetCurrentSnapshot();
-        var performanceHistory = _healthMonitor.GetPerformanceHistory(60).ToList();
         
-        var recommendations = new List<OptimizationRecommendation>();
+        // 성능 기록을 List로 변환하지 않고 직접 사용
+        var performanceHistory = _healthMonitor.GetPerformanceHistory(60);
         
-        // 1. Hit Rate 분석
-        recommendations.AddRange(await AnalyzeHitRateAsync(currentSnapshot, performanceHistory));
+        // 컬렉션 풀에서 대여
+        var recommendations = CollectionPools.RentOptimizationRecommendationList();
         
-        // 2. Memory Usage 분석
-        recommendations.AddRange(AnalyzeMemoryUsage(currentSnapshot, performanceHistory));
-        
-        // 3. Hot Key 분석
-        if (_intelligentCacheManager != null)
+        try
         {
-            recommendations.AddRange(await AnalyzeHotKeysAsync());
-        }
-        
-        // 4. Performance Trend 분석
-        recommendations.AddRange(AnalyzePerformanceTrends(performanceHistory));
-        
-        // 5. Error Pattern 분석
-        recommendations.AddRange(AnalyzeErrorPatterns(performanceHistory));
+            // 1. Hit Rate 분석
+            await AnalyzeHitRateAsync(currentSnapshot, performanceHistory, recommendations);
+            
+            // 2. Memory Usage 분석  
+            AnalyzeMemoryUsage(currentSnapshot, performanceHistory, recommendations);
+            
+            // 3. Hot Key 분석
+            if (_intelligentCacheManager != null)
+            {
+                await AnalyzeHotKeysAsync(recommendations);
+            }
+            
+            // 4. Performance Trend 분석
+            AnalyzePerformanceTrends(performanceHistory, recommendations);
+            
+            // 5. Error Pattern 분석
+            AnalyzeErrorPatterns(performanceHistory, recommendations);
 
-        return new OptimizationReport
+            return new OptimizationReport
+            {
+                GeneratedAt = DateTime.UtcNow,
+                CurrentSnapshot = currentSnapshot,
+                Recommendations = recommendations.OrderByDescending(r => r.Priority).ToArray(),
+                Summary = GenerateReportSummary(recommendations, currentSnapshot)
+            };
+        }
+        finally
         {
-            GeneratedAt = DateTime.UtcNow,
-            CurrentSnapshot = currentSnapshot,
-            Recommendations = recommendations.OrderByDescending(r => r.Priority).ToArray(),
-            Summary = GenerateReportSummary(recommendations, currentSnapshot)
-        };
+            // 풀로 반환
+            CollectionPools.Return(recommendations);
+        }
     }
 
-    private async Task<IEnumerable<OptimizationRecommendation>> AnalyzeHitRateAsync(
+    private async Task AnalyzeHitRateAsync(
         CachePerformanceSnapshot snapshot, 
-        List<CachePerformanceSnapshot> history)
+        IEnumerable<CachePerformanceSnapshot> history,
+        List<OptimizationRecommendation> recommendations)
     {
-        var recommendations = new List<OptimizationRecommendation>();
-        
         // Hit Rate가 낮은 경우
         if (snapshot.HitRatio < 0.7)
         {
-            var trend = CalculateHitRateTrend(history);
+            var historyList = history.ToList();
+            var trend = CalculateHitRateTrend(historyList);
             
             recommendations.Add(new OptimizationRecommendation
             {
                 Type = OptimizationType.HitRateImprovement,
                 Priority = OptimizationPriority.High,
-                Title = "Low Cache Hit Rate Detected",
-                Description = $"Current hit rate is {snapshot.HitRatio:P1}, which is below optimal threshold of 70%",
+                Title = HighPerformanceStringPool.InternWeakly("Low Cache Hit Rate Detected"),
+                Description = $"Current hit rate is {LazyCache.FormatPercentage(snapshot.HitRatio)}, which is below optimal threshold of 70%",
                 Impact = EstimateHitRateImpact(snapshot.HitRatio),
                 Suggestions =
                 [
@@ -95,20 +108,16 @@ public class CacheOptimizationAnalyzer : IDisposable
                     "Implement cache warming for predictable access patterns",
                     "Analyze and optimize cache eviction policies"
                 ],
-                Metrics = new Dictionary<string, object>
-                {
-                    { "current_hit_rate", snapshot.HitRatio },
-                    { "trend", trend },
-                    { "target_hit_rate", 0.8 }
-                }
+                Metrics = CreateMetrics(("current_hit_rate", snapshot.HitRatio), ("trend", trend), ("target_hit_rate", 0.8))
             });
         }
         
-        // Hit Rate가 급격히 감소하는 경우
-        if (history.Count >= 10)
+        // Hit Rate가 급격히 감소하는 경우 - LINQ 없이 최적화
+        var historyArray = history.ToArray(); // 한 번만 배열 변환
+        if (historyArray.Length >= 10)
         {
-            var recentAvg = history.Skip(history.Count - 5).Average(h => h.HitRatio);
-            var historicalAvg = history.Take(history.Count - 5).Average(h => h.HitRatio);
+            var recentAvg = CalculateAverageHitRatio(historyArray, historyArray.Length - 5, 5);
+            var historicalAvg = CalculateAverageHitRatio(historyArray, 0, historyArray.Length - 5);
             
             if (recentAvg < historicalAvg * 0.8) // 20% 이상 감소
             {
@@ -116,9 +125,9 @@ public class CacheOptimizationAnalyzer : IDisposable
                 {
                     Type = OptimizationType.PerformanceDegradation,
                     Priority = OptimizationPriority.Critical,
-                    Title = "Significant Hit Rate Degradation",
-                    Description = $"Hit rate dropped from {historicalAvg:P1} to {recentAvg:P1}",
-                    Impact = $"Estimated {(historicalAvg - recentAvg) * 100:F0}% performance impact",
+                    Title = HighPerformanceStringPool.InternWeakly("Significant Hit Rate Degradation"),
+                    Description = $"Hit rate dropped from {LazyCache.FormatPercentage(historicalAvg)} to {LazyCache.FormatPercentage(recentAvg)}",
+                    Impact = $"Estimated {MemoryUtils.DoubleToFixedString((historicalAvg - recentAvg) * 100, 0)}% performance impact",
                     Suggestions =
                     [
                         "Investigate recent changes in data access patterns",
@@ -129,26 +138,24 @@ public class CacheOptimizationAnalyzer : IDisposable
                 });
             }
         }
-
-        return recommendations;
     }
 
-    private IEnumerable<OptimizationRecommendation> AnalyzeMemoryUsage(
+    private void AnalyzeMemoryUsage(
         CachePerformanceSnapshot snapshot, 
-        List<CachePerformanceSnapshot> history)
+        IEnumerable<CachePerformanceSnapshot> history,
+        List<OptimizationRecommendation> recommendations)
     {
-        var recommendations = new List<OptimizationRecommendation>();
         
         // Memory usage가 높은 경우
-        var memoryMB = snapshot.MemoryUsageBytes / (1024.0 * 1024.0);
-        if (memoryMB > 1000) // 1GB 이상
+        var memorySizeStr = LazyCache.FormatByteSize(snapshot.MemoryUsageBytes);
+        if (snapshot.MemoryUsageBytes > 1_073_741_824) // 1GB 이상
         {
             recommendations.Add(new OptimizationRecommendation
             {
                 Type = OptimizationType.MemoryOptimization,
                 Priority = OptimizationPriority.Medium,
-                Title = "High Memory Usage",
-                Description = $"Cache is using {memoryMB:F0}MB of memory",
+                Title = HighPerformanceStringPool.InternWeakly("High Memory Usage"),
+                Description = $"Cache is using {memorySizeStr} of memory",
                 Impact = "High memory usage may impact system performance",
                 Suggestions =
                 [
@@ -157,25 +164,22 @@ public class CacheOptimizationAnalyzer : IDisposable
                     "Consider compressing cached values",
                     "Review cache size limits and adjust accordingly"
                 ],
-                Metrics = new Dictionary<string, object>
-                {
-                    { "memory_usage_mb", memoryMB },
-                    { "item_count", snapshot.ItemCount }
-                }
+                Metrics = CreateMetrics(("memory_usage_mb", snapshot.MemoryUsageBytes), ("item_count", snapshot.ItemCount))
             });
         }
         
         // Memory 사용량이 급증하는 경우
-        if (history.Count >= 5)
+        var historyArray = history.ToArray();
+        if (historyArray.Length >= 5)
         {
-            var memoryTrend = CalculateMemoryTrend(history);
+            var memoryTrend = CalculateMemoryTrend(historyArray.ToList());
             if (memoryTrend > 0.2) // 20% 이상 증가 트렌드
             {
                 recommendations.Add(new OptimizationRecommendation
                 {
                     Type = OptimizationType.MemoryLeak,
                     Priority = OptimizationPriority.High,
-                    Title = "Memory Usage Increasing Trend",
+                    Title = HighPerformanceStringPool.InternWeakly("Memory Usage Increasing Trend"),
                     Description = "Memory usage is consistently increasing",
                     Impact = "Potential memory leak or cache configuration issue",
                     Suggestions =
@@ -188,32 +192,41 @@ public class CacheOptimizationAnalyzer : IDisposable
                 });
             }
         }
-
-        return recommendations;
     }
 
-    private async Task<IEnumerable<OptimizationRecommendation>> AnalyzeHotKeysAsync()
+    private async Task AnalyzeHotKeysAsync(List<OptimizationRecommendation> recommendations)
     {
-        if (_intelligentCacheManager == null) return [];
-        
-        var recommendations = new List<OptimizationRecommendation>();
+        if (_intelligentCacheManager == null) return;
         
         try
         {
             var hotKeys = await _intelligentCacheManager.GetHotKeysAsync(20);
-            var hotKeyList = hotKeys.ToList();
+            var hotKeyArray = hotKeys.ToArray();  // 한 번만 배열 변환
             
-            if (hotKeyList.Count > 10) // 많은 Hot Key 감지
+            if (hotKeyArray.Length > 10) // 많은 Hot Key 감지
             {
-                var topHotKeys = hotKeyList.Take(5).ToList();
-                var avgAccessRate = topHotKeys.Average(k => k.AccessRate);
+                // Top 5 키들의 평균 계산 (LINQ 없이)
+                var topCount = Math.Min(5, hotKeyArray.Length);
+                double totalAccessRate = 0.0;
+                for (int i = 0; i < topCount; i++)
+                {
+                    totalAccessRate += hotKeyArray[i].AccessRate;
+                }
+                var avgAccessRate = totalAccessRate / topCount;
+                
+                // Top keys 배열 생성 (익명 객체 없이)
+                var topHotKeysArray = new object[topCount];
+                for (int i = 0; i < topCount; i++)
+                {
+                    topHotKeysArray[i] = $"{hotKeyArray[i].Key}({hotKeyArray[i].AccessRate:F1})";
+                }
                 
                 recommendations.Add(new OptimizationRecommendation
                 {
                     Type = OptimizationType.HotKeyOptimization,
                     Priority = OptimizationPriority.Medium,
-                    Title = "Multiple Hot Keys Detected",
-                    Description = $"Detected {hotKeyList.Count} hot keys with average access rate of {avgAccessRate:F1}/min",
+                    Title = HighPerformanceStringPool.InternWeakly("Multiple Hot Keys Detected"),
+                    Description = $"Detected {LazyCache.IntToString(hotKeyArray.Length)} hot keys with average access rate of {MemoryUtils.DoubleToFixedString(avgAccessRate, 1)}/min",
                     Impact = "Hot keys may cause cache contention and uneven load distribution",
                     Suggestions =
                     [
@@ -222,25 +235,31 @@ public class CacheOptimizationAnalyzer : IDisposable
                         "Implement key sharding for extremely hot keys",
                         "Monitor for thundering herd patterns"
                     ],
-                    Metrics = new Dictionary<string, object>
-                    {
-                        { "hot_keys_count", hotKeyList.Count },
-                        { "top_hot_keys", topHotKeys.Select(k => new { k.Key, k.AccessRate }).ToArray() },
-                        { "average_access_rate", avgAccessRate }
-                    }
+                    Metrics = CreateMetrics(
+                        ("hot_keys_count", hotKeyArray.Length), 
+                        ("top_hot_keys", topHotKeysArray), 
+                        ("average_access_rate", avgAccessRate))
                 });
             }
             
-            // 극도로 핫한 키 감지
-            var extremelyHotKeys = hotKeyList.Where(k => k.AccessRate > 100).ToList(); // 100회/분 이상
-            if (extremelyHotKeys.Any())
+            // 극도로 핫한 키 감지 (LINQ 없이)
+            var extremelyHotKeysList = new List<HotKeyInfo>();
+            for (int i = 0; i < hotKeyArray.Length; i++)
+            {
+                if (hotKeyArray[i].AccessRate > 100) // 100회/분 이상
+                {
+                    extremelyHotKeysList.Add(hotKeyArray[i]);
+                }
+            }
+            
+            if (extremelyHotKeysList.Count > 0)
             {
                 recommendations.Add(new OptimizationRecommendation
                 {
                     Type = OptimizationType.PerformanceBottleneck,
                     Priority = OptimizationPriority.High,  
-                    Title = "Extremely Hot Keys Detected",
-                    Description = $"Found {extremelyHotKeys.Count} keys with >100 accesses/minute",
+                    Title = HighPerformanceStringPool.InternWeakly("Extremely Hot Keys Detected"),
+                    Description = $"Found {LazyCache.IntToString(extremelyHotKeysList.Count)} keys with >100 accesses/minute",
                     Impact = "Extremely hot keys can become performance bottlenecks",
                     Suggestions =
                     [
@@ -249,10 +268,8 @@ public class CacheOptimizationAnalyzer : IDisposable
                         "Review data access patterns for optimization opportunities",
                         "Implement circuit breaker pattern for hot key protection"
                     ],
-                    Metrics = new Dictionary<string, object>
-                    {
-                        { "extreme_hot_keys", extremelyHotKeys.Select(k => new { k.Key, k.AccessRate }).ToArray() }
-                    }
+                    Metrics = CreateMetrics(("extreme_hot_keys", 
+                        CreateHotKeyDescriptions(extremelyHotKeysList)))
                 });
             }
         }
@@ -260,20 +277,18 @@ public class CacheOptimizationAnalyzer : IDisposable
         {
             _logger.LogWarning(ex, "Failed to analyze hot keys");
         }
-
-        return recommendations;
     }
 
-    private IEnumerable<OptimizationRecommendation> AnalyzePerformanceTrends(
-        List<CachePerformanceSnapshot> history)
+    private void AnalyzePerformanceTrends(
+        IEnumerable<CachePerformanceSnapshot> history,
+        List<OptimizationRecommendation> recommendations)
     {
-        var recommendations = new List<OptimizationRecommendation>();
-        
-        if (history.Count < 10) return recommendations;
+        var historyArray = history.ToArray();
+        if (historyArray.Length < 10) return;
 
-        // 성능 저하 트렌드 분석
-        var recentPerformance = history.Skip(history.Count - 5).Average(h => h.HitRatio);
-        var historicalPerformance = history.Take(history.Count - 5).Average(h => h.HitRatio);
+        // 성능 저하 트렌드 분석 (LINQ 없이)
+        var recentPerformance = CalculateAverageHitRatio(historyArray, historyArray.Length - 5, 5);
+        var historicalPerformance = CalculateAverageHitRatio(historyArray, 0, historyArray.Length - 5);
         
         if (recentPerformance < historicalPerformance * 0.9) // 10% 이상 성능 저하
         {
@@ -283,7 +298,7 @@ public class CacheOptimizationAnalyzer : IDisposable
                 Priority = OptimizationPriority.High,
                 Title = "Performance Degradation Trend",
                 Description = "Cache performance has been declining over time",
-                Impact = $"Performance declined by {((historicalPerformance - recentPerformance) / historicalPerformance * 100):F1}%",
+                Impact = $"Performance declined by {MemoryUtils.DoubleToFixedString(((historicalPerformance - recentPerformance) / historicalPerformance * 100), 1)}%",
                 Suggestions =
                 [
                     "Investigate root cause of performance decline",
@@ -294,18 +309,17 @@ public class CacheOptimizationAnalyzer : IDisposable
             });
         }
 
-        return recommendations;
     }
 
-    private IEnumerable<OptimizationRecommendation> AnalyzeErrorPatterns(
-        List<CachePerformanceSnapshot> history)
+    private void AnalyzeErrorPatterns(
+        IEnumerable<CachePerformanceSnapshot> history,
+        List<OptimizationRecommendation> recommendations)
     {
-        var recommendations = new List<OptimizationRecommendation>();
-        
-        if (history.Count < 5) return recommendations;
+        var historyArray = history.ToArray();
+        if (historyArray.Length < 5) return;
 
-        var recentErrors = history.Skip(history.Count - 5).Average(h => h.TotalErrors);
-        var historicalErrors = history.Take(history.Count - 5).Average(h => h.TotalErrors);
+        var recentErrors = CalculateAverageErrors(historyArray, historyArray.Length - 5, 5);
+        var historicalErrors = CalculateAverageErrors(historyArray, 0, historyArray.Length - 5);
         
         if (recentErrors > historicalErrors * 2 && recentErrors > 10) // 에러가 2배 이상 증가
         {
@@ -323,15 +337,9 @@ public class CacheOptimizationAnalyzer : IDisposable
                     "Review error handling and retry policies",
                     "Consider implementing circuit breaker patterns"
                 ],
-                Metrics = new Dictionary<string, object>
-                {
-                    { "recent_error_rate", recentErrors },
-                    { "historical_error_rate", historicalErrors }
-                }
+                Metrics = CreateMetrics(("recent_error_rate", recentErrors), ("historical_error_rate", historicalErrors))
             });
         }
-
-        return recommendations;
     }
 
     #endregion
@@ -342,8 +350,23 @@ public class CacheOptimizationAnalyzer : IDisposable
     {
         if (history.Count < 5) return 0;
         
-        var recent = history.Skip(history.Count - 5).Average(h => h.HitRatio);
-        var historical = history.Take(history.Count - 5).Average(h => h.HitRatio);
+        // 최근 5개 평균 계산 (LINQ 없이)
+        double recentSum = 0.0;
+        int recentStart = history.Count - 5;
+        for (int i = recentStart; i < history.Count; i++)
+        {
+            recentSum += history[i].HitRatio;
+        }
+        var recent = recentSum / 5;
+        
+        // 이전 데이터 평균 계산 (LINQ 없이)
+        double historicalSum = 0.0;
+        int historicalCount = history.Count - 5;
+        for (int i = 0; i < historicalCount; i++)
+        {
+            historicalSum += history[i].HitRatio;
+        }
+        var historical = historicalCount > 0 ? historicalSum / historicalCount : 0.0;
         
         return recent - historical;
     }
@@ -352,8 +375,23 @@ public class CacheOptimizationAnalyzer : IDisposable
     {
         if (history.Count < 5) return 0;
         
-        var recent = history.Skip(history.Count - 5).Average(h => h.MemoryUsageBytes);
-        var historical = history.Take(history.Count - 5).Average(h => h.MemoryUsageBytes);
+        // 최근 5개 평균 계산 (LINQ 없이)
+        double recentSum = 0.0;
+        int recentStart = history.Count - 5;
+        for (int i = recentStart; i < history.Count; i++)
+        {
+            recentSum += history[i].MemoryUsageBytes;
+        }
+        var recent = recentSum / 5;
+        
+        // 이전 데이터 평균 계산 (LINQ 없이)
+        double historicalSum = 0.0;
+        int historicalCount = history.Count - 5;
+        for (int i = 0; i < historicalCount; i++)
+        {
+            historicalSum += history[i].MemoryUsageBytes;
+        }
+        var historical = historicalCount > 0 ? historicalSum / historicalCount : 1.0;
         
         return (recent - historical) / Math.Max(historical, 1);
     }
@@ -364,16 +402,30 @@ public class CacheOptimizationAnalyzer : IDisposable
         var improvementPotential = optimalHitRate - currentHitRate;
         var estimatedSpeedupPercent = improvementPotential * 100;
         
-        return $"Improving hit rate could reduce response time by ~{estimatedSpeedupPercent:F0}%";
+        return $"Improving hit rate could reduce response time by ~{MemoryUtils.DoubleToFixedString(estimatedSpeedupPercent, 0)}%";
     }
 
     private string GenerateReportSummary(List<OptimizationRecommendation> recommendations, CachePerformanceSnapshot snapshot)
     {
-        var critical = recommendations.Count(r => r.Priority == OptimizationPriority.Critical);
-        var high = recommendations.Count(r => r.Priority == OptimizationPriority.High);
-        var medium = recommendations.Count(r => r.Priority == OptimizationPriority.Medium);
+        // 우선순위별 카운트 (LINQ 없이)
+        int critical = 0, high = 0, medium = 0;
+        for (int i = 0; i < recommendations.Count; i++)
+        {
+            switch (recommendations[i].Priority)
+            {
+                case OptimizationPriority.Critical:
+                    critical++;
+                    break;
+                case OptimizationPriority.High:
+                    high++;
+                    break;
+                case OptimizationPriority.Medium:
+                    medium++;
+                    break;
+            }
+        }
         
-        return $"Hit Rate: {snapshot.HitRatio:P1} | Memory: {snapshot.MemoryUsageBytes / (1024.0 * 1024.0):F0}MB | " +
+        return $"Hit Rate: {LazyCache.FormatPercentage(snapshot.HitRatio)} | Memory: {LazyCache.FormatByteSize(snapshot.MemoryUsageBytes)} | " +
                $"Recommendations: {critical} Critical, {high} High, {medium} Medium";
     }
 
@@ -387,21 +439,25 @@ public class CacheOptimizationAnalyzer : IDisposable
             {
                 var report = await GenerateOptimizationReportAsync();
                 
-                // 중요한 권고사항이 있으면 로그
-                var criticalRecommendations = report.Recommendations.Where(r => r.Priority == OptimizationPriority.Critical).ToArray();
-                if (criticalRecommendations.Any())
+                // 중요한 권고사항이 있으면 로그 (LINQ 없이)
+                var criticalRecommendations = FilterCriticalRecommendations(report.Recommendations);
+                if (criticalRecommendations.Length > 0)
                 {
                     _logger.LogWarning("Critical cache optimization recommendations: {Count} issues detected", 
                         criticalRecommendations.Length);
                     
-                    foreach (var rec in criticalRecommendations)
+                    for (int i = 0; i < criticalRecommendations.Length; i++)
                     {
+                        var rec = criticalRecommendations[i];
                         _logger.LogWarning("Critical: {Title} - {Description}", rec.Title, rec.Description);
                     }
                 }
                 
                 // 최근 권고사항 저장 (최대 100개)
-                _recommendations.Enqueue(report.Recommendations.FirstOrDefault() ?? new OptimizationRecommendation());
+                var firstRecommendation = report.Recommendations.Length > 0 
+                    ? report.Recommendations[0] 
+                    : new OptimizationRecommendation();
+                _recommendations.Enqueue(firstRecommendation);
                 while (_recommendations.Count > 100)
                 {
                     _recommendations.TryDequeue(out _);
@@ -412,6 +468,103 @@ public class CacheOptimizationAnalyzer : IDisposable
                 _logger.LogError(ex, "Error during cache optimization analysis");
             }
         });
+    }
+
+    /// <summary>
+    /// 메트릭 Dictionary를 효율적으로 생성하는 헬퍼 메서드
+    /// </summary>
+    private static Dictionary<string, object> CreateMetrics(params (string key, object value)[] metrics)
+    {
+        var dict = new Dictionary<string, object>(metrics.Length);
+        foreach (var (key, value) in metrics)
+        {
+            dict[key] = value;
+        }
+        return dict;
+    }
+
+    /// <summary>
+    /// 배열의 특정 범위에서 HitRatio 평균을 계산 (값 타입 최적화)
+    /// </summary>
+    private static double CalculateAverageHitRatio(CachePerformanceSnapshot[] array, int startIndex, int count)
+    {
+        if (count == 0) return 0.0;
+        
+        var actualCount = Math.Min(count, array.Length - startIndex);
+        if (actualCount <= 0) return 0.0;
+        
+        var span = array.AsSpan(startIndex, actualCount);
+        var values = new double[actualCount];
+        
+        for (int i = 0; i < actualCount; i++)
+        {
+            values[i] = span[i].HitRatio;
+        }
+        
+        return ValueTypeStatistics.CalculateAverage<double>(values);
+    }
+
+    /// <summary>
+    /// 배열의 특정 범위에서 에러 수 평균을 계산 (값 타입 최적화)
+    /// </summary>
+    private static double CalculateAverageErrors(CachePerformanceSnapshot[] array, int startIndex, int count)
+    {
+        if (count == 0) return 0.0;
+        
+        var actualCount = Math.Min(count, array.Length - startIndex);
+        if (actualCount <= 0) return 0.0;
+        
+        var span = array.AsSpan(startIndex, actualCount);
+        var values = new long[actualCount];
+        
+        for (int i = 0; i < actualCount; i++)
+        {
+            values[i] = span[i].TotalErrors;
+        }
+        
+        return ValueTypeStatistics.CalculateAverage<long>(values);
+    }
+
+    /// <summary>
+    /// HotKeyInfo 리스트를 설명 문자열 배열로 변환 (고성능 문자열 풀 사용)
+    /// </summary>
+    private static string[] CreateHotKeyDescriptions(List<HotKeyInfo> hotKeys)
+    {
+        var descriptions = new string[hotKeys.Count];
+        for (int i = 0; i < hotKeys.Count; i++)
+        {
+            // StringBuilder 풀 사용
+            var sb = HighPerformanceStringPool.RentStringBuilder(64);
+            try
+            {
+                sb.Append(hotKeys[i].Key);
+                sb.Append('(');
+                sb.Append(MemoryUtils.DoubleToFixedString(hotKeys[i].AccessRate, 1));
+                sb.Append(')');
+                descriptions[i] = sb.ToString();
+            }
+            finally
+            {
+                HighPerformanceStringPool.ReturnStringBuilder(sb, 64);
+            }
+        }
+        return descriptions;
+    }
+
+    /// <summary>
+    /// Critical 우선순위 권고사항만 필터링 (LINQ 없이)
+    /// </summary>
+    private static OptimizationRecommendation[] FilterCriticalRecommendations(OptimizationRecommendation[] recommendations)
+    {
+        var criticalList = new List<OptimizationRecommendation>();
+        for (int i = 0; i < recommendations.Length; i++)
+        {
+            if (recommendations[i].Priority == OptimizationPriority.Critical)
+            {
+                criticalList.Add(recommendations[i]);
+            }
+        }
+        return criticalList.ToArray();
     }
 
     #endregion

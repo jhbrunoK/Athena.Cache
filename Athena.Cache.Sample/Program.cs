@@ -1,4 +1,6 @@
 using Athena.Cache.Core.Extensions;
+using Athena.Cache.Core.Memory;
+using Athena.Cache.Redis.Extensions;
 using Athena.Cache.Sample.Data;
 using Athena.Cache.Sample.Services;
 using Microsoft.EntityFrameworkCore;
@@ -29,25 +31,11 @@ builder.Services.AddDbContext<SampleDbContext>(options =>
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
-// Athena Cache 설정 - Redis 테스트용
-//builder.Services.AddAthenaCacheRedisComplete(
-//    athena =>
-//    {
-//        athena.Namespace = "SampleApp_REDIS_TEST";
-//        athena.VersionKey = "v1.0";
-//        athena.DefaultExpirationMinutes = 30;
-//        athena.Logging.LogCacheHitMiss = true;
-//        athena.Logging.LogInvalidation = true;
-//        athena.Logging.LogKeyGeneration = true;
-//    },
-//    redis =>
-//    {
-//        redis.ConnectionString = "localhost:6379";
-//        redis.DatabaseId = 2;
-//        redis.KeyPrefix = "test";
-//    });
+// 제로 메모리 최적화 관련 서비스 등록
+builder.Services.AddSingleton<MemoryPressureManager>();
 
-builder.Services.AddAthenaCacheComplete(
+// Athena Cache 설정 - Redis 테스트용
+builder.Services.AddAthenaCacheRedisComplete(
     athena =>
     {
         athena.Namespace = "SampleApp_REDIS_TEST";
@@ -56,7 +44,24 @@ builder.Services.AddAthenaCacheComplete(
         athena.Logging.LogCacheHitMiss = true;
         athena.Logging.LogInvalidation = true;
         athena.Logging.LogKeyGeneration = true;
+    },
+    redis =>
+    {
+        redis.ConnectionString = "localhost:6379";
+        redis.DatabaseId = 2;
+        redis.KeyPrefix = "test";
     });
+
+//builder.Services.AddAthenaCacheComplete(
+//    athena =>
+//    {
+//        athena.Namespace = "SampleApp_REDIS_TEST";
+//        athena.VersionKey = "v1.0";
+//        athena.DefaultExpirationMinutes = 30;
+//        athena.Logging.LogCacheHitMiss = true;
+//        athena.Logging.LogInvalidation = true;
+//        athena.Logging.LogKeyGeneration = true;
+//    });
 
 var app = builder.Build();
 
