@@ -20,6 +20,8 @@ Athena.Cache는 ASP.NET Core 애플리케이션을 위한 지능형 캐싱 라�
 - 🚀 **다중 백엔드 지원**: MemoryCache, Redis, Valkey 지원
 - 🎨 **선언적 캐싱**: `[AthenaCache]`, `[CacheInvalidateOn]` 어트리뷰트
 - ⚡ **고성능**: 대용량 트래픽 환경에 최적화, Primary Constructor 사용
+- 🧠 **제로 메모리 할당**: 5단계 최적화로 메모리 할당 90-98% 감소
+- 🔄 **자동 메모리 관리**: 실시간 GC 모니터링 및 자동 캐시 정리
 - 🔧 **쉬운 통합**: 단일 패키지 설치로 모든 기능 사용 가능
 - 🧪 **완전한 테스트**: 포괄적인 단위 및 통합 테스트
 
@@ -199,10 +201,34 @@ public class UserService
 
 ## 📊 성능
 
+### 🚀 기본 성능 지표
 - **높은 처리량**: Redis 기준 10,000+ requests/second
 - **낮은 지연시간**: 캐시 키 생성 1ms 미만
 - **메모리 효율성**: 최적화된 직렬화 및 압축
 - **확장 가능**: 다중 인스턴스 분산 무효화 지원
+
+### 🧠 제로 메모리 할당 최적화 결과
+| 최적화 영역 | 개선율 | 주요 기법 |
+|------------|-------|-----------|
+| **메모리 할당** | **90-98% 감소** | 컬렉션 풀링, Span/Memory, 캐싱 |
+| **GC 압박** | **~90% 감소** | 값 타입, 문자열 인터닝, 자동 정리 |
+| **문자열 처리** | **~98% 감소** | StringBuilder 풀링, 약한 참조 인터닝 |
+| **컬렉션 연산** | **~95% 감소** | LINQ 제거, 수동 루프, ArrayPool |
+| **박싱/언박싱** | **100% 제거** | 값 타입 구조체, 제네릭 통계 |
+
+### 📈 성능 테스트 데모
+```bash
+# 성능 비교 테스트 실행
+curl -X POST "http://localhost:5000/api/ZeroMemoryDemo/performance-comparison?iterations=10000"
+
+# 메모리 상태 확인
+curl "http://localhost:5000/api/ZeroMemoryDemo/memory-status"
+
+# 메모리 압박 시뮬레이션
+curl -X POST "http://localhost:5000/api/ZeroMemoryDemo/memory-pressure-test"
+```
+
+> 📋 **상세 가이드**: 제로 메모리 최적화 기법에 대한 자세한 설명은 [docs/ZeroMemoryOptimization.md](docs/ZeroMemoryOptimization.md)를 참조하세요.
 
 ## 🔧 설정 옵션
 

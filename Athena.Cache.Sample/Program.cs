@@ -1,4 +1,5 @@
 using Athena.Cache.Core.Extensions;
+using Athena.Cache.Core.Memory;
 using Athena.Cache.Redis.Extensions;
 using Athena.Cache.Sample.Data;
 using Athena.Cache.Sample.Services;
@@ -29,6 +30,9 @@ builder.Services.AddDbContext<SampleDbContext>(options =>
 // 비즈니스 서비스 등록
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+
+// 제로 메모리 최적화 관련 서비스 등록
+builder.Services.AddSingleton<MemoryPressureManager>();
 
 // Athena Cache 설정 - Redis 테스트용
 //builder.Services.AddAthenaCacheRedisComplete(
