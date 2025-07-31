@@ -202,19 +202,49 @@ public class AthenaCacheMiddleware(
         
         try
         {
-            // 쿼리 파라미터 수집 (zero allocation 최적화)
-            foreach (var param in context.Request.Query)
+            // 1. 라우트 파라미터 수집 (최우선)
+            var routeData = context.GetRouteData();
+            if (routeData?.Values != null)
             {
-                // 제외 파라미터 체크
-                if (config.ExcludeParameters.Contains(param.Key, StringComparer.OrdinalIgnoreCase))
-                    continue;
+                foreach (var routeValue in routeData.Values)
+                {
+                    var key = routeValue.Key;
+                    
+                    // 시스템 파라미터 제외 (controller, action은 이미 캐시 키에 포함됨)
+                    if (IsSystemParameter(key))
+                        continue;
+                        
+                    // 제외 파라미터 체크
+                    if (config.ExcludeParameters.Contains(key, StringComparer.OrdinalIgnoreCase))
+                        continue;
 
-                parameters[param.Key] = param.Value.ToString();
+                    parameters[key] = routeValue.Value;
+                }
             }
 
-            // 추가 파라미터 포함
+            // 2. 쿼리 파라미터 수집 (라우트 파라미터가 없는 경우만)
+            foreach (var param in context.Request.Query)
+            {
+                var key = param.Key;
+                
+                // 이미 라우트 파라미터로 추가된 경우 스킵 (라우트 파라미터 우선)
+                if (parameters.ContainsKey(key))
+                    continue;
+                    
+                // 제외 파라미터 체크
+                if (config.ExcludeParameters.Contains(key, StringComparer.OrdinalIgnoreCase))
+                    continue;
+
+                parameters[key] = param.Value.ToString();
+            }
+
+            // 3. 추가 파라미터 포함 (가장 낮은 우선순위)
             foreach (var additionalParam in config.AdditionalKeyParameters)
             {
+                // 이미 추가된 경우 스킵
+                if (parameters.ContainsKey(additionalParam))
+                    continue;
+                    
                 if (context.Items.TryGetValue(additionalParam, out var value))
                 {
                     parameters[additionalParam] = value;
@@ -227,8 +257,10 @@ public class AthenaCacheMiddleware(
 
             if (options.Logging.LogKeyGeneration)
             {
-                logger.LogDebug("Generated cache key: {CacheKey} for {Controller}.{Action}",
-                    cacheKey, config.Controller, config.Action);
+                // LINQ 없이 파라미터 문자열 생성 (zero allocation 최적화)
+                var parameterString = BuildParameterString(parameters);
+                logger.LogDebug("Generated cache key: {CacheKey} for {Controller}.{Action} with parameters: {Parameters}",
+                    cacheKey, config.Controller, config.Action, parameterString);
             }
 
             return Task.FromResult(cacheKey);
@@ -243,6 +275,49 @@ public class AthenaCacheMiddleware(
         {
             // 풀에 Dictionary 반환
             CollectionPools.Return(parameters);
+        }
+    }
+
+    /// <summary>
+    /// 시스템 파라미터 여부 확인 (캐시 키에서 제외)
+    /// </summary>
+    private static bool IsSystemParameter(string parameterName)
+    {
+        return string.Equals(parameterName, "controller", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(parameterName, "action", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// LINQ 없이 파라미터 문자열 생성 (zero allocation 최적화)
+    /// </summary>
+    private static string BuildParameterString(IDictionary<string, object?> parameters)
+    {
+        if (parameters.Count == 0)
+            return string.Empty;
+
+        var sb = HighPerformanceStringPool.RentStringBuilder(parameters.Count * 20);
+        try
+        {
+            var isFirst = true;
+            foreach (var kvp in parameters)
+            {
+                if (!isFirst)
+                {
+                    sb.Append(", ");
+                }
+                
+                sb.Append(kvp.Key);
+                sb.Append('=');
+                sb.Append(kvp.Value?.ToString() ?? "null");
+                
+                isFirst = false;
+            }
+            
+            return sb.ToString();
+        }
+        finally
+        {
+            HighPerformanceStringPool.ReturnStringBuilder(sb, parameters.Count * 20);
         }
     }
 
