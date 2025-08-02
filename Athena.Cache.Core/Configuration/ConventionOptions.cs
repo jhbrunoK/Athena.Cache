@@ -14,6 +14,15 @@ public class ConventionOptions
     /// <summary>Humanizer 라이브러리 사용</summary>
     public bool UseHumanizer { get; set; } = false;
 
-    /// <summary>커스텀 복수형 변환 함수</summary>
+    /// <summary>커스텀 복수형 변환 함수 (단일 테이블)</summary>
     public Func<string, string>? CustomPluralizer { get; set; }
+
+    /// <summary>커스텀 다중 테이블 추론 함수</summary>
+    public Func<string, string[]>? CustomMultiTableInferrer { get; set; }
+
+    /// <summary>컨트롤러별 테이블 매핑 사전 (컨트롤러명 → 테이블명 배열)</summary>
+    public Dictionary<string, string[]> ControllerTableMappings { get; set; } = new();
+
+    /// <summary>Convention 기반 추론에서 제외할 컨트롤러명 목록</summary>
+    public HashSet<string> ExcludedControllers { get; set; } = new();
 }

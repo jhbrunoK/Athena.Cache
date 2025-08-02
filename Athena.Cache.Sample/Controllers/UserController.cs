@@ -11,11 +11,10 @@ namespace Athena.Cache.Sample.Controllers;
 public class UsersController(IUserService userService, ILogger<UsersController> logger) : ControllerBase
 {
     /// <summary>
-    /// 사용자 목록 조회 (캐시 적용 + Users 테이블 변경 시 무효화)
+    /// 사용자 목록 조회 (캐시 적용 + Convention 기반 Users 테이블 변경 시 무효화)
     /// </summary>
     [HttpGet]
     [AthenaCache(ExpirationMinutes = 30)]
-    [CacheInvalidateOn("Users")]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers(
         [FromQuery] string? searchName = null,
         [FromQuery] int? minAge = null,
@@ -29,11 +28,10 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     }
 
     /// <summary>
-    /// 특정 사용자 조회 (캐시 적용 + Users, Orders 테이블 변경 시 무효화)
+    /// 특정 사용자 조회 (캐시 적용 + Convention 기반 Users + 명시적 Orders 테이블 변경 시 무효화)
     /// </summary>
     [HttpGet("{id}")]
     [AthenaCache(ExpirationMinutes = 60)]
-    [CacheInvalidateOn("Users")]
     [CacheInvalidateOn("Orders", InvalidationType.Pattern, "User_*")]
     public async Task<ActionResult<UserDto>> GetUser(int id)
     {
@@ -49,7 +47,7 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     }
 
     /// <summary>
-    /// 사용자 생성 (캐시 무효화 없음 - 새 데이터)
+    /// 사용자 생성 (Convention 기반 Users 테이블 무효화)
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<UserDto>> CreateUser([FromBody] User user)
@@ -64,9 +62,10 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     }
 
     /// <summary>
-    /// 사용자 업데이트 (캐시 무효화 - Users 테이블 변경)
+    /// 사용자 업데이트 (Convention 기반 Users + 명시적 Orders 테이블 무효화)
     /// </summary>
     [HttpPut("{id}")]
+    [CacheInvalidateOn("Orders", InvalidationType.Pattern, "User_*")]
     public async Task<ActionResult<UserDto>> UpdateUser(int id, [FromBody] User user)
     {
         if (!ModelState.IsValid)
@@ -80,14 +79,14 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
             return NotFound();
         }
 
-        // Users 테이블 변경으로 캐시 무효화 트리거 됨
         return Ok(updatedUser);
     }
 
     /// <summary>
-    /// 사용자 삭제 (캐시 무효화 - Users, Orders 테이블 변경)
+    /// 사용자 삭제 (Convention 기반 Users + 명시적 Orders 테이블 무효화)
     /// </summary>
     [HttpDelete("{id}")]
+    [CacheInvalidateOn("Orders", InvalidationType.Related, "Users")]
     public async Task<ActionResult> DeleteUser(int id)
     {
         var deleted = await userService.DeleteUserAsync(id);
@@ -96,7 +95,6 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
             return NotFound();
         }
 
-        // Users 테이블 변경으로 캐시 무효화 트리거 됨
         return NoContent();
     }
 

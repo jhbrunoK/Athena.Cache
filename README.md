@@ -17,6 +17,7 @@ Athena.Cache는 ASP.NET Core 애플리케이션을 위한 지능형 캐싱 라�
 - 🎯 **Source Generator**: 컴파일 타임에 캐시 설정 자동 생성, AOT 호환
 - 🔑 **자동 캐시 키 생성**: 쿼리 파라미터 → SHA256 해시 키 자동 변환
 - 🗂️ **테이블 기반 무효화**: 데이터베이스 테이블 변경 시 관련 캐시 자동 삭제
+- 🏗️ **Convention 기반 추론**: 컨트롤러명에서 테이블명 자동 추론, 중복 선언 불필요
 - 🚀 **다중 백엔드 지원**: MemoryCache, Redis, Valkey 지원
 - 🎨 **선언적 캐싱**: `[AthenaCache]`, `[CacheInvalidateOn]` 어트리뷰트
 - ⚡ **고성능**: 대용량 트래픽 환경에 최적화, Primary Constructor 사용
@@ -147,6 +148,211 @@ curl -v http://localhost:5000/api/users
 # 두 번째 요청 (캐시 히트)
 curl -v http://localhost:5000/api/users  
 # 응답 헤더: X-Athena-Cache: HIT
+```
+
+## 🎯 Convention 기반 캐싱 (권장)
+
+Convention 기반 캐싱을 사용하면 `CacheInvalidateOn` 어트리뷰트를 반복 선언할 필요 없이, 컨트롤러명에서 테이블명을 자동으로 추론합니다.
+
+### 기본 설정 (Convention 활성화)
+
+```csharp
+// Program.cs
+builder.Services.AddAthenaCacheComplete(options => {
+    options.Namespace = "MyApp";
+    options.DefaultExpirationMinutes = 30;
+    
+    // Convention 기반 테이블명 추론 활성화 (기본값: true)
+    options.Convention.Enabled = true;
+    options.Convention.UsePluralizer = true; // UsersController → Users
+});
+```
+
+### 간단한 사용법
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase  // 자동으로 "Users" 테이블과 연결
+{
+    // ✅ Convention 사용: CacheInvalidateOn 중복 선언 불필요
+    [HttpGet]
+    [AthenaCache(ExpirationMinutes = 30)]
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
+    {
+        // 자동으로 Users 테이블 변경 시 캐시 무효화
+        return Ok(await _userService.GetUsersAsync());
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<UserDto>> CreateUser([FromBody] User user)
+    {
+        // 자동으로 Users 테이블 관련 캐시 무효화
+        var createdUser = await _userService.CreateUserAsync(user);
+        return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
+    }
+
+    // 추가 테이블이 필요한 경우에만 명시적 선언
+    [HttpGet("{id}")]
+    [AthenaCache(ExpirationMinutes = 60)]
+    [CacheInvalidateOn("Orders", InvalidationType.Pattern, "User_*")] // Users는 자동, Orders만 명시
+    public async Task<ActionResult<UserDto>> GetUser(int id)
+    {
+        return Ok(await _userService.GetUserByIdAsync(id));
+    }
+}
+```
+
+### 고급 Convention 설정
+
+```csharp
+// 다중 테이블 매핑
+builder.Services.AddAthenaCacheComplete(options => {
+    options.Convention.ControllerTableMappings = new Dictionary<string, string[]>
+    {
+        ["UsersController"] = ["Users", "UserProfiles"],
+        ["OrdersController"] = ["Orders", "OrderItems", "Users"]
+    };
+    
+    // 커스텀 추론 함수
+    options.Convention.CustomMultiTableInferrer = controllerName =>
+    {
+        // UsersOrdersController → ["Users", "Orders"]
+        if (controllerName.Contains("Users") && controllerName.Contains("Orders"))
+            return ["Users", "Orders"];
+            
+        return [controllerName.Replace("Controller", "")];
+    };
+});
+```
+
+### Convention vs 명시적 선언 비교
+
+```csharp
+// ❌ 기존 방식: 모든 메서드에 중복 선언
+public class UsersController : ControllerBase
+{
+    [HttpGet]
+    [AthenaCache(ExpirationMinutes = 30)]
+    [CacheInvalidateOn("Users")]  // 중복
+    public async Task<IActionResult> GetUsers() { ... }
+
+    [HttpPost]
+    [CacheInvalidateOn("Users")]  // 중복
+    public async Task<IActionResult> CreateUser() { ... }
+
+    [HttpPut("{id}")]
+    [CacheInvalidateOn("Users")]  // 중복
+    public async Task<IActionResult> UpdateUser() { ... }
+}
+
+// ✅ Convention 방식: 자동 추론으로 간소화
+public class UsersController : ControllerBase
+{
+    [HttpGet]
+    [AthenaCache(ExpirationMinutes = 30)]
+    public async Task<IActionResult> GetUsers() { ... }  // Users 테이블 자동 연결
+
+    [HttpPost]
+    public async Task<IActionResult> CreateUser() { ... }  // Users 테이블 자동 무효화
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateUser() { ... }  // Users 테이블 자동 무효화
+}
+```
+
+### 마이그레이션 가이드
+
+기존 프로젝트에서 Convention으로 전환하는 방법:
+
+1. **Convention 활성화**
+```csharp
+options.Convention.Enabled = true;
+```
+
+2. **중복 선언 제거** (선택사항)
+```csharp
+// 제거 가능: 컨트롤러명과 동일한 테이블의 CacheInvalidateOn
+[CacheInvalidateOn("Users")] // UsersController에서 제거 가능
+```
+
+3. **점진적 마이그레이션**
+   - Convention과 명시적 선언이 함께 작동
+   - 명시적 선언이 우선 적용되어 기존 코드 영향 없음
+
+### Convention 비활성화
+
+특정 컨트롤러에서 Convention 추론을 비활성화하고 수동으로 캐시를 제어하려는 경우:
+
+#### 방법 1: NoConventionInvalidation 어트리뷰트
+```csharp
+[ApiController]
+[NoConventionInvalidation]  // Convention 추론 비활성화
+public class ReportsController : ControllerBase
+{
+    private readonly ICacheInvalidator _cacheInvalidator;
+
+    [HttpGet]
+    [AthenaCache(ExpirationMinutes = 120)]
+    public async Task<IActionResult> GetReport()
+    {
+        // 캐싱만 하고, 자동 무효화 없음
+        return Ok(data);
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> RefreshData()
+    {
+        // 수동으로 캐시 무효화
+        await _cacheInvalidator.InvalidateByPatternAsync("*GetReport*");
+        return Ok();
+    }
+}
+```
+
+#### 방법 2: 전역 설정으로 제외
+```csharp
+builder.Services.AddAthenaCacheComplete(options => {
+    options.Convention.Enabled = true;
+    options.Convention.ExcludedControllers.Add("ReportsController");
+    options.Convention.ExcludedControllers.Add("AnalyticsController");
+});
+```
+
+#### 방법 3: 전체 Convention 비활성화
+```csharp
+builder.Services.AddAthenaCacheComplete(options => {
+    options.Convention.Enabled = false;  // 모든 컨트롤러에서 비활성화
+});
+```
+
+### 수동 캐시 제어 패턴
+```csharp
+public class ManualCacheController : ControllerBase
+{
+    private readonly ICacheInvalidator _invalidator;
+
+    [HttpGet]
+    [AthenaCache]
+    [NoConventionInvalidation]
+    public async Task<IActionResult> GetData() { ... }
+
+    [HttpPost]
+    [NoConventionInvalidation]
+    public async Task<IActionResult> UpdateData()
+    {
+        // 비즈니스 로직 실행
+        var result = await _service.UpdateAsync();
+        
+        // 선택적 캐시 무효화
+        if (result.ShouldInvalidateCache)
+        {
+            await _invalidator.InvalidateByPatternAsync("GetData*");
+        }
+        
+        return Ok(result);
+    }
+}
 ```
 
 ## 🛠️ 고급 기능

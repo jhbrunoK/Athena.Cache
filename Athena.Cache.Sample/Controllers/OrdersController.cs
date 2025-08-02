@@ -12,11 +12,10 @@ public class OrdersController(IOrderService orderService, ILogger<OrdersControll
     : ControllerBase
 {
     /// <summary>
-    /// 주문 목록 조회 (Orders, Users 테이블과 연관)
+    /// 주문 목록 조회 (Convention 기반 Orders + 명시적 Users 테이블과 연관)
     /// </summary>
     [HttpGet]
     [AthenaCache(ExpirationMinutes = 20)]
-    [CacheInvalidateOn("Orders")]
     [CacheInvalidateOn("Users", InvalidationType.Related, "Orders")]
     public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrders(
         [FromQuery] int? userId = null,
@@ -30,11 +29,10 @@ public class OrdersController(IOrderService orderService, ILogger<OrdersControll
     }
 
     /// <summary>
-    /// 특정 주문 조회
+    /// 특정 주문 조회 (Convention 기반 Orders + 명시적 Users 테이블 변경 시 무효화)
     /// </summary>
     [HttpGet("{id}")]
     [AthenaCache(ExpirationMinutes = 45)]
-    [CacheInvalidateOn("Orders")]
     [CacheInvalidateOn("Users")]
     public async Task<ActionResult<OrderDto>> GetOrder(int id)
     {
@@ -48,9 +46,10 @@ public class OrdersController(IOrderService orderService, ILogger<OrdersControll
     }
 
     /// <summary>
-    /// 주문 생성
+    /// 주문 생성 (Convention 기반 Orders + 명시적 Users 테이블 무효화)
     /// </summary>
     [HttpPost]
+    [CacheInvalidateOn("Users", InvalidationType.Related, "Orders")]
     public async Task<ActionResult<OrderDto>> CreateOrder([FromBody] Order order)
     {
         if (!ModelState.IsValid)
@@ -63,9 +62,10 @@ public class OrdersController(IOrderService orderService, ILogger<OrdersControll
     }
 
     /// <summary>
-    /// 주문 삭제
+    /// 주문 삭제 (Convention 기반 Orders + 명시적 Users 테이블 무효화)
     /// </summary>
     [HttpDelete("{id}")]
+    [CacheInvalidateOn("Users", InvalidationType.Related, "Orders")]
     public async Task<ActionResult> DeleteOrder(int id)
     {
         var deleted = await orderService.DeleteOrderAsync(id);
