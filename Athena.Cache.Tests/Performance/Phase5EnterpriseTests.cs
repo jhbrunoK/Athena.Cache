@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using StackExchange.Redis;
 using System.Diagnostics;
+using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 
@@ -16,6 +17,7 @@ namespace Athena.Cache.Tests.Performance;
 public class Phase5EnterpriseTests
 {
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task DistributedCacheInvalidation_Performance_Test()
     {
         // Arrange
@@ -60,6 +62,7 @@ public class Phase5EnterpriseTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task IntelligentCacheManager_HotKeyDetection_Performance()
     {
         // Arrange
@@ -109,6 +112,7 @@ public class Phase5EnterpriseTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task AdaptiveTTL_Calculation_Performance()
     {
         // Arrange
@@ -172,6 +176,7 @@ public class Phase5EnterpriseTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task CacheEviction_Policy_Performance()
     {
         // Arrange
@@ -220,6 +225,7 @@ public class Phase5EnterpriseTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task CacheWarming_Performance_Test()
     {
         // Arrange
@@ -251,6 +257,7 @@ public class Phase5EnterpriseTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task ConcurrentAccess_Performance_Test()
     {
         // Arrange

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO.Hashing;
 using System.Security.Cryptography;
 using System.Text;
+using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 
@@ -14,6 +15,7 @@ namespace Athena.Cache.Tests.Performance;
 public class HashPerformanceTests
 {
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task XxHash3_vs_SHA256_HashingPerformance()
     {
         // Arrange
@@ -78,6 +80,7 @@ public class HashPerformanceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task CacheKeyGenerator_Performance_Comparison()
     {
         // Arrange
@@ -139,6 +142,7 @@ public class HashPerformanceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task KeyCaching_Effectiveness_Test()
     {
         // Arrange
@@ -173,6 +177,7 @@ public class HashPerformanceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task Base36_Encoding_Performance()
     {
         // Arrange
