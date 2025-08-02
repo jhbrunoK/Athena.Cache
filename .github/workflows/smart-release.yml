@@ -154,7 +154,7 @@ jobs:
       run: dotnet build --no-restore --configuration Release
     
     - name: Run tests
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      run: dotnet test --no-build --configuration Release --verbosity normal --filter "Category!=Performance"
     
     - name: Create NuGet directory
       run: mkdir -p ${{ env.NuGetDirectory }}

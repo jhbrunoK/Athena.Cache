@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System.Diagnostics;
 using System.Text.Json;
+using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 
@@ -36,6 +37,7 @@ public class MessagePackPerformanceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task MessagePack_vs_JSON_SerializationPerformance()
     {
         // Arrange
@@ -121,6 +123,7 @@ public class MessagePackPerformanceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task CacheProvider_MessagePack_vs_JSON_Performance()
     {
         // Arrange
@@ -188,6 +191,7 @@ public class MessagePackPerformanceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task CachedResponse_MessagePack_Serialization()
     {
         // Arrange

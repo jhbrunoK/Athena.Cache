@@ -6,6 +6,7 @@ using Athena.Cache.Core.ObjectPools;
 using FluentAssertions;
 using Microsoft.Extensions.ObjectPool;
 using System.Diagnostics;
+using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 
@@ -15,6 +16,7 @@ namespace Athena.Cache.Tests.Performance;
 public class Phase4OptimizationTests
 {
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task ObjectPooling_Performance_Test()
     {
         // Arrange
@@ -62,6 +64,7 @@ public class Phase4OptimizationTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task ValueTask_vs_Task_Performance()
     {
         // Arrange
@@ -104,6 +107,7 @@ public class Phase4OptimizationTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task ConcurrentDictionary_Optimization_Test()
     {
         // Arrange
@@ -149,6 +153,7 @@ public class Phase4OptimizationTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public void PerformanceMonitor_Overhead_Test()
     {
         // Arrange

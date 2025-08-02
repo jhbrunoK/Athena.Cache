@@ -5,12 +5,14 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Diagnostics;
+using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 
 public class PerformanceTests
 {
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task MemoryCache_BulkOperations_ShouldBeReasonablyFast()
     {
         // Arrange
@@ -46,6 +48,7 @@ public class PerformanceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task CacheKeyGeneration_ShouldBeEfficient()
     {
         // Arrange
