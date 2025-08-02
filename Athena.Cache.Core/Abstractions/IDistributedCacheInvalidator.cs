@@ -1,3 +1,5 @@
+using Athena.Cache.Core.Enums;
+
 namespace Athena.Cache.Core.Abstractions;
 
 /// <summary>
@@ -67,22 +69,4 @@ public class InvalidationMessage
     public string? Pattern { get; init; }
     public DateTime Timestamp { get; init; } = DateTime.UtcNow;
     public string? CorrelationId { get; init; }
-}
-
-/// <summary>
-/// 무효화 타입
-/// </summary>
-public enum InvalidationType
-{
-    /// <summary>테이블 기반 무효화</summary>
-    Table,
-    
-    /// <summary>패턴 기반 무효화</summary>
-    Pattern,
-    
-    /// <summary>배치 무효화</summary>
-    Batch,
-    
-    /// <summary>전체 무효화</summary>
-    All
 }

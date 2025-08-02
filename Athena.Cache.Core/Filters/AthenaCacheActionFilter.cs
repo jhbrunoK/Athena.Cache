@@ -1,6 +1,7 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Attributes;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Enums;
 using Athena.Cache.Core.Models;
 using Microsoft.AspNetCore.Mvc.Filters;
 

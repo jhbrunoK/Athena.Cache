@@ -3,6 +3,7 @@ using Athena.Cache.Core.Configuration;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System.Text.Json;
+using Athena.Cache.Core.Enums;
 
 namespace Athena.Cache.Redis;
 
