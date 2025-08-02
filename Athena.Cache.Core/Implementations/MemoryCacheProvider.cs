@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using MessagePack;
 
 namespace Athena.Cache.Core.Implementations;
 
@@ -47,7 +48,21 @@ public class MemoryCacheProvider(
                     return Task.FromResult<T?>(typedValue);
                 }
 
-                // JSON 역직렬화 시도
+                // MessagePack 역직렬화 시도
+                if (cachedValue is byte[] messagePackValue && messagePackValue.Length > 0)
+                {
+                    try
+                    {
+                        var deserializedValue = MessagePackSerializer.Deserialize<T>(messagePackValue);
+                        return Task.FromResult<T?>(deserializedValue);
+                    }
+                    catch (MessagePackSerializationException ex)
+                    {
+                        logger.LogWarning(ex, "Failed to deserialize cached value for key: {CacheKey}", key);
+                    }
+                }
+                
+                // 하위 호환성을 위한 JSON 역직렬화 시도
                 if (cachedValue is string jsonValue && !string.IsNullOrEmpty(jsonValue))
                 {
                     try
@@ -57,7 +72,7 @@ public class MemoryCacheProvider(
                     }
                     catch (JsonException ex)
                     {
-                        logger.LogWarning(ex, "Failed to deserialize cached value for key: {CacheKey}", key);
+                        logger.LogWarning(ex, "Failed to deserialize cached JSON value for key: {CacheKey}", key);
                     }
                 }
             }
@@ -120,11 +135,20 @@ public class MemoryCacheProvider(
                 }
             });
 
-            // 복잡한 객체는 JSON 직렬화하여 저장
+            // 복잡한 객체는 MessagePack 직렬화하여 저장 (성능 최적화)
             object cacheValue = value;
             if (typeof(T) != typeof(string) && !typeof(T).IsPrimitive && !typeof(T).IsValueType)
             {
-                cacheValue = JsonSerializer.Serialize(value);
+                try
+                {
+                    cacheValue = MessagePackSerializer.Serialize(value);
+                }
+                catch (MessagePackSerializationException)
+                {
+                    // MessagePack 직렬화 실패 시 JSON으로 fallback
+                    cacheValue = JsonSerializer.Serialize(value);
+                    logger.LogDebug("Fallback to JSON serialization for key: {CacheKey}", key);
+                }
             }
 
             memoryCache.Set(key, cacheValue, entryOptions);

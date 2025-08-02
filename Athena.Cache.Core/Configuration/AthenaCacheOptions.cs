@@ -39,4 +39,25 @@ public class AthenaCacheOptions
 
     /// <summary>에러 처리 옵션</summary>
     public ErrorHandlingOptions ErrorHandling { get; set; } = new();
+
+    /// <summary>Circuit Breaker 설정</summary>
+    public CircuitBreakerOptions? CircuitBreaker { get; set; }
+}
+
+/// <summary>
+/// Circuit Breaker 설정 옵션
+/// </summary>
+public class CircuitBreakerOptions
+{
+    /// <summary>Circuit을 Open하기 위한 연속 실패 임계치</summary>
+    public int FailureThreshold { get; set; } = 5;
+    
+    /// <summary>Open 상태에서 Half-Open으로 전환하기 위한 대기 시간</summary>
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(1);
+    
+    /// <summary>헬스 체크 주기</summary>
+    public TimeSpan HealthCheckInterval { get; set; } = TimeSpan.FromSeconds(30);
+    
+    /// <summary>메트릭 보존 기간</summary>
+    public TimeSpan MetricRetentionPeriod { get; set; } = TimeSpan.FromHours(1);
 }

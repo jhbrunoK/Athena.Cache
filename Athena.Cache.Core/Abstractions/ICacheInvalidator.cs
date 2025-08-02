@@ -34,4 +34,14 @@ public interface ICacheInvalidator
     /// 관련 테이블들과 함께 연쇄 무효화
     /// </summary>
     Task InvalidateWithRelatedAsync(string tableName, string[] relatedTables, int maxDepth = 3, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 여러 테이블을 배치로 무효화 (성능 최적화)
+    /// </summary>
+    Task InvalidateBatchAsync(IEnumerable<string> tableNames, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 여러 패턴을 배치로 무효화 (성능 최적화)
+    /// </summary>
+    Task InvalidateByPatternBatchAsync(IEnumerable<string> patterns, CancellationToken cancellationToken = default);
 }

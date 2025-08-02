@@ -1,6 +1,7 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Attributes;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Enums;
 using Athena.Cache.Core.Models;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -42,23 +43,57 @@ public class AthenaCacheActionFilter(ILogger<AthenaCacheActionFilter> logger) : 
             // 액션 실행
             var executedContext = await next();
 
-            // 액션 실행 후 테이블 추적 설정
+            // 액션 실행 후 HTTP 메서드별 처리
             if (executedContext.HttpContext.Items.TryGetValue("AthenaCache.Config", out var configObj) &&
                 configObj is CacheConfiguration config &&
                 config.InvalidationRules.Any())
             {
                 var invalidator = executedContext.HttpContext.RequestServices.GetService<ICacheInvalidator>();
-                var cacheKey = executedContext.HttpContext.Items["AthenaCache.GeneratedKey"] as string;
-
-                if (invalidator != null && !string.IsNullOrEmpty(cacheKey))
+                if (invalidator != null)
                 {
-                    // 캐시 키를 테이블들과 연결하여 추적
-                    var tablesToTrack = config.InvalidationRules
-                        .Select(rule => rule.TableName)
-                        .Distinct()
-                        .ToArray();
+                    var httpMethod = executedContext.HttpContext.Request.Method;
+                    
+                    if (IsGetRequest(httpMethod))
+                    {
+                        // GET 요청: 캐시 키를 테이블들과 연결하여 추적
+                        var cacheKey = executedContext.HttpContext.Items["AthenaCache.GeneratedKey"] as string;
+                        if (!string.IsNullOrEmpty(cacheKey))
+                        {
+                            var tablesToTrack = config.InvalidationRules
+                                .Select(rule => rule.TableName)
+                                .Distinct()
+                                .ToArray();
 
-                    await invalidator.TrackCacheKeyAsync(tablesToTrack, cacheKey);
+                            await invalidator.TrackCacheKeyAsync(tablesToTrack, cacheKey);
+                            
+                            if (context.HttpContext.RequestServices.GetService<AthenaCacheOptions>() is AthenaCacheOptions options &&
+                                options.Logging.LogInvalidation)
+                            {
+                                logger.LogDebug("Tracked cache key for tables [{Tables}] in {Controller}.{Action}",
+                                    string.Join(", ", tablesToTrack), config.Controller, config.Action);
+                            }
+                        }
+                    }
+                    else if (IsModifyingRequest(httpMethod))
+                    {
+                        // POST/PUT/DELETE 요청: 관련 테이블 캐시 무효화
+                        var tablesToInvalidate = config.InvalidationRules
+                            .Select(rule => rule.TableName)
+                            .Distinct()
+                            .ToArray();
+
+                        foreach (var tableName in tablesToInvalidate)
+                        {
+                            await invalidator.InvalidateAsync(tableName);
+                        }
+                        
+                        if (context.HttpContext.RequestServices.GetService<AthenaCacheOptions>() is AthenaCacheOptions options &&
+                            options.Logging.LogInvalidation)
+                        {
+                            logger.LogInformation("Invalidated cache for tables [{Tables}] after {Method} {Controller}.{Action}",
+                                string.Join(", ", tablesToInvalidate), httpMethod, config.Controller, config.Action);
+                        }
+                    }
                 }
             }
         }
@@ -76,6 +111,25 @@ public class AthenaCacheActionFilter(ILogger<AthenaCacheActionFilter> logger) : 
             .Any(fd => fd.Filter is NoCacheAttribute);
     }
 
+    /// <summary>
+    /// GET 요청인지 확인
+    /// </summary>
+    private static bool IsGetRequest(string httpMethod)
+    {
+        return string.Equals(httpMethod, "GET", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// 데이터 수정 요청인지 확인 (POST, PUT, DELETE, PATCH)
+    /// </summary>
+    private static bool IsModifyingRequest(string httpMethod)
+    {
+        return string.Equals(httpMethod, "POST", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(httpMethod, "PUT", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(httpMethod, "DELETE", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(httpMethod, "PATCH", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static CacheConfiguration? BuildCacheConfiguration(ActionExecutingContext context)
     {
         var controllerName = context.Controller.GetType().Name;
@@ -88,8 +142,11 @@ public class AthenaCacheActionFilter(ILogger<AthenaCacheActionFilter> logger) : 
             return null;
         }
 
-        // CacheInvalidateOnAttribute들 수집
+        // CacheInvalidateOnAttribute들 수집 (명시적 선언)
         var invalidationAttributes = GetAttributes<CacheInvalidateOnAttribute>(context);
+
+        // Convention 기반 테이블명 추론 및 병합
+        var allInvalidationRules = MergeInvalidationRules(context, invalidationAttributes, controllerName);
 
         var config = new CacheConfiguration
         {
@@ -101,14 +158,7 @@ public class AthenaCacheActionFilter(ILogger<AthenaCacheActionFilter> logger) : 
             AdditionalKeyParameters = cacheAttribute?.AdditionalKeyParameters ?? [],
             ExcludeParameters = cacheAttribute?.ExcludeParameters ?? [],
             CustomKeyPrefix = cacheAttribute?.CustomKeyPrefix,
-            InvalidationRules = invalidationAttributes.Select(attr => new TableInvalidationRule
-            {
-                TableName = attr.TableName,
-                InvalidationType = attr.InvalidationType,
-                Pattern = attr.Pattern,
-                RelatedTables = attr.RelatedTables,
-                MaxDepth = attr.MaxDepth
-            }).ToList()
+            InvalidationRules = allInvalidationRules
         };
 
         return config;
@@ -154,5 +204,150 @@ public class AthenaCacheActionFilter(ILogger<AthenaCacheActionFilter> logger) : 
         attributes.AddRange(controllerAttributes);
 
         return attributes;
+    }
+
+    /// <summary>
+    /// Convention 기반 테이블명 추론과 명시적 선언을 병합
+    /// </summary>
+    private static List<TableInvalidationRule> MergeInvalidationRules(
+        ActionExecutingContext context, 
+        IEnumerable<CacheInvalidateOnAttribute> explicitAttributes, 
+        string controllerName)
+    {
+        var rules = new List<TableInvalidationRule>();
+
+        // 1. 명시적 선언 추가 (최우선)
+        rules.AddRange(explicitAttributes.Select(attr => new TableInvalidationRule
+        {
+            TableName = attr.TableName,
+            InvalidationType = attr.InvalidationType,
+            Pattern = attr.Pattern,
+            RelatedTables = attr.RelatedTables,
+            MaxDepth = attr.MaxDepth
+        }));
+
+        // 2. Convention 기반 추론 추가
+        var conventionOptions = context.HttpContext.RequestServices.GetService<AthenaCacheOptions>()?.Convention;
+        if (conventionOptions?.Enabled == true && !IsConventionDisabled(context, controllerName, conventionOptions))
+        {
+            var inferredTableNames = InferTableNamesFromController(controllerName, conventionOptions);
+            
+            foreach (var tableName in inferredTableNames)
+            {
+                // 이미 명시적으로 선언된 테이블은 중복 추가하지 않음
+                if (!rules.Any(r => r.TableName.Equals(tableName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    rules.Add(new TableInvalidationRule
+                    {
+                        TableName = tableName,
+                        InvalidationType = InvalidationType.All,
+                        Pattern = null,
+                        RelatedTables = [],
+                        MaxDepth = -1
+                    });
+                }
+            }
+        }
+
+        return rules;
+    }
+
+    /// <summary>
+    /// 컨트롤러명에서 테이블명 추론
+    /// </summary>
+    private static string[] InferTableNamesFromController(string controllerName, ConventionOptions conventionOptions)
+    {
+        // 1. 설정 기반 매핑 확인 (최우선)
+        if (conventionOptions.ControllerTableMappings.TryGetValue(controllerName, out var mappedTables))
+        {
+            return mappedTables;
+        }
+
+        // 2. 커스텀 다중 테이블 추론 함수 사용
+        if (conventionOptions.CustomMultiTableInferrer != null)
+        {
+            return conventionOptions.CustomMultiTableInferrer(controllerName);
+        }
+
+        // 3. 기본 단일 테이블 추론
+        var baseTableName = ExtractBaseTableName(controllerName, conventionOptions);
+        return [baseTableName];
+    }
+
+    /// <summary>
+    /// 컨트롤러명에서 기본 테이블명 추출
+    /// </summary>
+    private static string ExtractBaseTableName(string controllerName, ConventionOptions conventionOptions)
+    {
+        // "Controller" 접미사 제거
+        var baseName = controllerName.EndsWith("Controller", StringComparison.OrdinalIgnoreCase)
+            ? controllerName[..^10]  // "Controller" 길이 = 10
+            : controllerName;
+
+        // 커스텀 단일 변환 함수 사용
+        if (conventionOptions.CustomPluralizer != null)
+        {
+            return conventionOptions.CustomPluralizer(baseName);
+        }
+
+        // 기본 동작: 복수형 변환 여부에 따라 처리
+        if (conventionOptions.UsePluralizer)
+        {
+            // 간단한 복수형 변환 (향후 Humanizer 라이브러리 연동 가능)
+            return ConvertToPlural(baseName);
+        }
+
+        return baseName;
+    }
+
+    /// <summary>
+    /// 간단한 복수형 변환 (기본 구현)
+    /// </summary>
+    private static string ConvertToPlural(string singular)
+    {
+        // 이미 복수형인지 확인 (간단한 휴리스틱)
+        if (singular.EndsWith("s", StringComparison.OrdinalIgnoreCase) ||
+            singular.EndsWith("es", StringComparison.OrdinalIgnoreCase))
+        {
+            return singular;
+        }
+
+        // 기본 복수형 규칙
+        if (singular.EndsWith("y", StringComparison.OrdinalIgnoreCase))
+        {
+            return singular[..^1] + "ies";
+        }
+        
+        if (singular.EndsWith("s", StringComparison.OrdinalIgnoreCase) ||
+            singular.EndsWith("sh", StringComparison.OrdinalIgnoreCase) ||
+            singular.EndsWith("ch", StringComparison.OrdinalIgnoreCase) ||
+            singular.EndsWith("x", StringComparison.OrdinalIgnoreCase) ||
+            singular.EndsWith("z", StringComparison.OrdinalIgnoreCase))
+        {
+            return singular + "es";
+        }
+
+        return singular + "s";
+    }
+
+    /// <summary>
+    /// Convention 기반 추론이 비활성화되어 있는지 확인
+    /// </summary>
+    private static bool IsConventionDisabled(ActionExecutingContext context, string controllerName, ConventionOptions conventionOptions)
+    {
+        // 1. NoConventionInvalidationAttribute 체크 (액션 레벨 우선)
+        var noConventionAttribute = GetAttribute<NoConventionInvalidationAttribute>(context);
+        if (noConventionAttribute != null)
+        {
+            return true;
+        }
+
+        // 2. 전역 설정에서 제외된 컨트롤러 체크
+        if (conventionOptions.ExcludedControllers.Contains(controllerName))
+        {
+            return true;
+        }
+
+        return false;
     }
 }
