@@ -7,6 +7,7 @@ on:
       - 'redis-v*'     # Athena.Cache.Redis만 릴리즈  
       - 'generator-v*' # Athena.Cache.SourceGenerator만 릴리즈
       - 'analytics-v*' # Athena.Cache.Analytics만 릴리즈
+      - 'monitoring-v*' # Athena.Cache.Monitoring만 릴리즈
       - 'v*'           # 모든 패키지 통합 릴리즈
 
 env:
@@ -23,10 +24,12 @@ jobs:
       release-redis: ${{ steps.scope.outputs.redis }}
       release-generator: ${{ steps.scope.outputs.generator }}
       release-analytics: ${{ steps.scope.outputs.analytics }}
+      release-monitoring: ${{ steps.scope.outputs.monitoring }}
       version-core: ${{ steps.scope.outputs.version-core }}
       version-redis: ${{ steps.scope.outputs.version-redis }}
       version-generator: ${{ steps.scope.outputs.version-generator }}
       version-analytics: ${{ steps.scope.outputs.version-analytics }}
+      version-monitoring: ${{ steps.scope.outputs.version-monitoring }}
       is-unified-release: ${{ steps.scope.outputs.unified }}
       release-version: ${{ steps.scope.outputs.release-version }}
     
@@ -42,6 +45,7 @@ jobs:
         echo "redis=false" >> $GITHUB_OUTPUT
         echo "generator=false" >> $GITHUB_OUTPUT
         echo "analytics=false" >> $GITHUB_OUTPUT
+        echo "monitoring=false" >> $GITHUB_OUTPUT
         echo "unified=false" >> $GITHUB_OUTPUT
         
         if [[ $TAG == core-v* ]]; then
@@ -68,6 +72,12 @@ jobs:
           echo "version-analytics=${TAG#analytics-v}" >> $GITHUB_OUTPUT
           echo "release-version=${TAG#analytics-v}" >> $GITHUB_OUTPUT
           
+        elif [[ $TAG == monitoring-v* ]]; then
+          echo "=== Monitoring 개별 릴리즈 ==="
+          echo "monitoring=true" >> $GITHUB_OUTPUT
+          echo "version-monitoring=${TAG#monitoring-v}" >> $GITHUB_OUTPUT
+          echo "release-version=${TAG#monitoring-v}" >> $GITHUB_OUTPUT
+          
         elif [[ $TAG == v* ]]; then
           echo "=== 통합 릴리즈 - 모든 패키지 ==="
           VERSION=${TAG#v}
@@ -75,11 +85,13 @@ jobs:
           echo "redis=true" >> $GITHUB_OUTPUT
           echo "generator=true" >> $GITHUB_OUTPUT
           echo "analytics=true" >> $GITHUB_OUTPUT
+          echo "monitoring=true" >> $GITHUB_OUTPUT
           echo "unified=true" >> $GITHUB_OUTPUT
           echo "version-core=$VERSION" >> $GITHUB_OUTPUT
           echo "version-redis=$VERSION" >> $GITHUB_OUTPUT
           echo "version-generator=$VERSION" >> $GITHUB_OUTPUT
           echo "version-analytics=$VERSION" >> $GITHUB_OUTPUT
+          echo "version-monitoring=$VERSION" >> $GITHUB_OUTPUT
           echo "release-version=$VERSION" >> $GITHUB_OUTPUT
           
         else
@@ -119,6 +131,8 @@ jobs:
           VERSION=${TAG#generator-v}
         elif [[ $TAG == analytics-v* ]]; then
           VERSION=${TAG#analytics-v}
+        elif [[ $TAG == monitoring-v* ]]; then
+          VERSION=${TAG#monitoring-v}
         elif [[ $TAG == v* ]]; then
           VERSION=${TAG#v}
         else
@@ -269,10 +283,41 @@ jobs:
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
 
+  release-monitoring:
+    name: Release Athena.Cache.Monitoring
+    runs-on: ubuntu-latest
+    needs: [determine-scope, build-and-test]
+    if: needs.determine-scope.outputs.release-monitoring == 'true'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Pack Athena.Cache.Monitoring
+      run: |
+        dotnet pack Athena.Cache.Monitoring/Athena.Cache.Monitoring.csproj \
+          --configuration Release \
+          --output ${{ env.NuGetDirectory }} \
+          -p:Version=${{ needs.determine-scope.outputs.version-monitoring }} \
+          -p:PackageReleaseNotes="v${{ needs.determine-scope.outputs.version-monitoring }}: Real-time cache monitoring and alerting system"
+    
+    - name: Publish Monitoring to NuGet
+      run: |
+        dotnet nuget push ${{ env.NuGetDirectory }}/Athena.Cache.Monitoring.*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
   create-github-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [determine-scope, build-and-test, release-core, release-redis, release-generator, release-analytics]
+    needs: [determine-scope, build-and-test, release-core, release-redis, release-generator, release-analytics, release-monitoring]
     if: always() && !failure() && !cancelled()
     
     steps:
@@ -295,6 +340,7 @@ jobs:
         - ✅ **Athena.Cache.Redis** v$VERSION  
         - ✅ **Athena.Cache.SourceGenerator** v$VERSION
         - ✅ **Athena.Cache.Analytics** v$VERSION
+        - ✅ **Athena.Cache.Monitoring** v$VERSION
 
         ### 🎯 주요 변경사항
         - 🛠️ Source Generator 통합으로 컴파일 타임 최적화
@@ -312,6 +358,9 @@ jobs:
 
         # 분석 도구 (선택사항)
         dotnet add package Athena.Cache.Analytics
+        
+        # 모니터링 도구 (선택사항)
+        dotnet add package Athena.Cache.Monitoring
         \`\`\`"
         
         elif [[ $TAG == core-v* ]]; then
@@ -367,6 +416,21 @@ jobs:
         ### 📖 설치
         \`\`\`bash
         dotnet add package Athena.Cache.Analytics --version $VERSION
+        \`\`\`"
+        
+        elif [[ $TAG == monitoring-v* ]]; then
+          TITLE="🔍 Athena.Cache.Monitoring v$VERSION"
+          BODY="## 📦 Monitoring 모듈 업데이트
+
+        ### ✨ 기능
+        - 실시간 캐시 모니터링
+        - 경고 및 알림 시스템
+        - SignalR 기반 실시간 대시보드
+        - 다양한 알림 채널 지원
+
+        ### 📖 설치
+        \`\`\`bash
+        dotnet add package Athena.Cache.Monitoring --version $VERSION
         \`\`\`"
         fi
         

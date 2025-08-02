@@ -4,7 +4,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Athena.Cache.Monitoring</PackageId>
+    <Description>Real-time monitoring and alerting system for Athena Cache with SignalR dashboard and multi-channel alerts</Description>
+    <Authors>Bruno Kim</Authors>
+    <PackageTags>cache;monitoring;alerting;signalr;dashboard;performance;aspnetcore</PackageTags>
   </PropertyGroup>
+
+  <!-- 패키지 파일들은 Directory.Build.props에서 자동 관리 -->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
