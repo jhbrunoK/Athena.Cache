@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>{% if page.title %}{{ page.title | escape }} | {{ site.title }}{% else %}{{ site.title | escape }}{% endif %}</title>
+    <meta name="description" content="{% if page.excerpt %}{{ page.excerpt | strip_html | strip_newlines | truncate: 160 }}{% else %}{{ site.description }}{% endif %}">
+    
+    <link rel="stylesheet" href="{{ "/assets/main.css" | relative_url }}">
+    <link rel="canonical" href="{{ page.url | replace:'index.html','' | absolute_url }}">
+    
+    <!-- Syntax highlighting -->
+    <link rel="stylesheet" href="{{ "/assets/css/syntax.css" | relative_url }}">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        .site-header {
+            background-color: #2c3e50;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .site-title {
+            color: #ecf0f1 !important;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+        
+        .site-nav .page-link {
+            color: #bdc3c7;
+        }
+        
+        .site-nav .page-link:hover {
+            color: #ecf0f1;
+        }
+        
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .sidebar {
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding: 1rem;
+            height: 100vh;
+            overflow-y: auto;
+            position: fixed;
+            width: 250px;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+        
+        .content {
+            margin-left: 270px;
+            padding: 2rem;
+        }
+        
+        .nav-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .nav-section h4 {
+            color: #495057;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 0.25rem;
+        }
+        
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .nav-list li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .nav-list a {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            color: #6c757d;
+            text-decoration: none;
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+        }
+        
+        .nav-list a:hover {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        
+        .nav-list a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .highlight {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.375rem;
+            background-color: #3498db;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .content {
+                margin-left: 0;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-wrapper">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-content">
+                <h3 style="color: #2c3e50; margin-bottom: 1.5rem;">
+                    <i class="fas fa-bolt"></i> Athena.Cache
+                </h3>
+                
+                <div class="nav-section">
+                    <h4><i class="fas fa-rocket"></i> Getting Started</h4>
+                    <ul class="nav-list">
+                        <li><a href="{{ site.baseurl }}/getting-started/installation">Installation</a></li>
+                        <li><a href="{{ site.baseurl }}/getting-started/quick-start">Quick Start</a></li>
+                        <li><a href="{{ site.baseurl }}/getting-started/basics">Basics</a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h4><i class="fas fa-cogs"></i> Core Features</h4>
+                    <ul class="nav-list">
+                        <li><a href="{{ site.baseurl }}/fundamentals/cache-key-generation">Cache Key Generation</a></li>
+                        <li><a href="{{ site.baseurl }}/fundamentals/cache-invalidation">Cache Invalidation</a></li>
+                        <li><a href="{{ site.baseurl }}/fundamentals/expiration-strategies">Expiration Strategies</a></li>
+                        <li><a href="{{ site.baseurl }}/fundamentals/error-handling">Error Handling</a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h4><i class="fas fa-tachometer-alt"></i> Performance</h4>
+                    <ul class="nav-list">
+                        <li><a href="{{ site.baseurl }}/performance/zero-memory-optimization">Zero Memory Optimization</a></li>
+                        <li><a href="{{ site.baseurl }}/performance/source-generator">Source Generator</a></li>
+                        <li><a href="{{ site.baseurl }}/performance/production-tuning">Production Tuning</a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h4><i class="fas fa-network-wired"></i> Distributed Caching</h4>
+                    <ul class="nav-list">
+                        <li><a href="{{ site.baseurl }}/distributed/redis-setup">Redis Setup</a></li>
+                        <li><a href="{{ site.baseurl }}/distributed/high-availability">High Availability</a></li>
+                        <li><a href="{{ site.baseurl }}/distributed/cross-instance-sync">Cross-instance Sync</a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h4><i class="fas fa-chart-line"></i> Monitoring</h4>
+                    <ul class="nav-list">
+                        <li><a href="{{ site.baseurl }}/monitoring/real-time-dashboards">Real-time Dashboards</a></li>
+                        <li><a href="{{ site.baseurl }}/monitoring/performance-metrics">Performance Metrics</a></li>
+                        <li><a href="{{ site.baseurl }}/monitoring/analytics">Analytics</a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h4><i class="fas fa-tools"></i> Advanced</h4>
+                    <ul class="nav-list">
+                        <li><a href="{{ site.baseurl }}/advanced/custom-providers">Custom Providers</a></li>
+                        <li><a href="{{ site.baseurl }}/advanced/testing-strategies">Testing Strategies</a></li>
+                        <li><a href="{{ site.baseurl }}/advanced/troubleshooting">Troubleshooting</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Main Content -->
+        <main class="content">
+            {{ content }}
+        </main>
+    </div>
+    
+    <!-- Mobile menu toggle -->
+    <script>
+        // Add mobile menu functionality if needed
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('show');
+        }
+    </script>
+</body>
+</html>
