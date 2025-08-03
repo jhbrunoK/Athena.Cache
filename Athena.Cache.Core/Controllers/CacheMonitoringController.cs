@@ -24,7 +24,7 @@ public class CacheMonitoringController(
     /// 전체 캐시 헬스 상태 조회 (기본 기능)
     /// </summary>
     [HttpGet("health")]
-    public async Task<ActionResult<OverallHealthStatus>> GetHealthStatus()
+    public async Task<ActionResult<OverallCacheHealthStatus>> GetHealthStatus()
     {
         try
         {

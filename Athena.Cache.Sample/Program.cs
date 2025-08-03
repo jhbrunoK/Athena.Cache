@@ -34,6 +34,26 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 // 제로 메모리 최적화 관련 서비스 등록
 builder.Services.AddSingleton<MemoryPressureManager>();
 
+// Athena Cache Health Check 추가
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDevelopmentAthenaCacheHealthCheck();
+}
+else
+{
+    builder.Services.AddProductionAthenaCacheHealthCheck();
+}
+
+// 보안 기능 추가
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDevelopmentCacheSecurity();
+}
+else
+{
+    builder.Services.AddProductionCacheSecurity();
+}
+
 // Athena Cache 설정 - Redis 테스트용
 builder.Services.AddAthenaCacheRedisComplete(
     athena =>
@@ -83,6 +103,40 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+// Health Check 엔드포인트 추가
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            totalDuration = report.TotalDuration.TotalMilliseconds,
+            results = report.Entries.ToDictionary(
+                kvp => kvp.Key,
+                kvp => new
+                {
+                    status = kvp.Value.Status.ToString(),
+                    description = kvp.Value.Description,
+                    duration = kvp.Value.Duration.TotalMilliseconds,
+                    data = kvp.Value.Data
+                })
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live")
+});
 
 // Athena Cache 미들웨어 추가
 app.UseAthenaCache();

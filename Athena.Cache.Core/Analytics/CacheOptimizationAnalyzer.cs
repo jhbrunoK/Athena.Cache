@@ -83,7 +83,7 @@ public class CacheOptimizationAnalyzer : IDisposable
         }
     }
 
-    private async Task AnalyzeHitRateAsync(
+    private Task AnalyzeHitRateAsync(
         CachePerformanceSnapshot snapshot, 
         IEnumerable<CachePerformanceSnapshot> history,
         List<OptimizationRecommendation> recommendations)
@@ -138,6 +138,8 @@ public class CacheOptimizationAnalyzer : IDisposable
                 });
             }
         }
+        
+        return Task.CompletedTask;
     }
 
     private void AnalyzeMemoryUsage(
