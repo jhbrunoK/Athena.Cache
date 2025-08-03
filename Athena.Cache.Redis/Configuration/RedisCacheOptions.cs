@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Athena.Cache.Redis;
+namespace Athena.Cache.Redis.Configuration;
 
 /// <summary>
 /// Redis 캐시 설정 옵션

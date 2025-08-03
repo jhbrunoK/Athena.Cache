@@ -10,7 +10,7 @@ public interface ICacheAnalyticsService
     /// <summary>
     /// 기간별 캐시 통계 조회
     /// </summary>
-    Task<CacheStatistics> GetStatisticsAsync(DateTime startDate, DateTime endDate);
+    Task<CacheAnalyticsStatistics> GetStatisticsAsync(DateTime startDate, DateTime endDate);
 
     /// <summary>
     /// 시계열 데이터 조회

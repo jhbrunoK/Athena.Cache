@@ -1,4 +1,4 @@
-using Athena.Cache.Core.Analytics;
+using Athena.Cache.Analytics.Analyzers;
 using Athena.Cache.Core.Memory;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;

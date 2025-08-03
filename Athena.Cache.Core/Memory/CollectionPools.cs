@@ -1,7 +1,6 @@
 using Microsoft.Extensions.ObjectPool;
 using System.Collections.Concurrent;
 using System.Text;
-using Athena.Cache.Core.Analytics;
 
 namespace Athena.Cache.Core.Memory;
 
@@ -12,7 +11,6 @@ namespace Athena.Cache.Core.Memory;
 public static class CollectionPools
 {
     // List<T> 풀들
-    private static readonly ObjectPool<List<OptimizationRecommendation>> _optimizationRecommendationPool;
     private static readonly ObjectPool<List<string>> _stringPool;
     
     // Dictionary 풀들
@@ -26,7 +24,6 @@ public static class CollectionPools
     {
         var provider = new DefaultObjectPoolProvider();
         
-        _optimizationRecommendationPool = provider.Create(new ListPoolPolicy<OptimizationRecommendation>());
         _stringPool = provider.Create(new ListPoolPolicy<string>());
         
         _stringObjectDictionaryPool = provider.Create(new DictionaryPoolPolicy<string, object>());
@@ -36,9 +33,6 @@ public static class CollectionPools
     }
 
     // List<T> 대여/반환
-    public static List<OptimizationRecommendation> RentOptimizationRecommendationList() => _optimizationRecommendationPool.Get();
-    public static void Return(List<OptimizationRecommendation> list) => _optimizationRecommendationPool.Return(list);
-    
     public static List<string> RentStringList() => _stringPool.Get();
     public static void Return(List<string> list) => _stringPool.Return(list);
     

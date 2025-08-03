@@ -10,7 +10,7 @@ public class MemoryCacheAnalyticsService(MemoryCacheEventCollector eventCollecto
 {
     private readonly MemoryCacheEventCollector _eventCollector = eventCollector;
 
-    public async Task<CacheStatistics> GetStatisticsAsync(DateTime startDate, DateTime endDate)
+    public async Task<CacheAnalyticsStatistics> GetStatisticsAsync(DateTime startDate, DateTime endDate)
     {
         var events = MemoryCacheEventCollector.GetStoredEvents()
             .Where(e => e.Timestamp >= startDate && e.Timestamp <= endDate)
@@ -20,7 +20,7 @@ public class MemoryCacheAnalyticsService(MemoryCacheEventCollector eventCollecto
         var misses = events.Count(e => e.EventType == CacheEventType.Miss);
         var total = hits + misses;
 
-        return await Task.FromResult(new CacheStatistics
+        return await Task.FromResult(new CacheAnalyticsStatistics
         {
             PeriodStart = startDate,
             PeriodEnd = endDate,

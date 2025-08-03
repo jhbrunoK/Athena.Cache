@@ -1,4 +1,5 @@
 ﻿using Athena.Cache.Core.Abstractions;
+using Athena.Cache.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Athena.Cache.Sample.Controllers;

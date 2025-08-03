@@ -10,7 +10,7 @@ namespace Athena.Cache.Analytics.Implementations;
 /// </summary>
 public class SqliteCacheAnalyticsService(CacheAnalyticsDbContext dbContext) : ICacheAnalyticsService
 {
-    public async Task<CacheStatistics> GetStatisticsAsync(DateTime startDate, DateTime endDate)
+    public async Task<CacheAnalyticsStatistics> GetStatisticsAsync(DateTime startDate, DateTime endDate)
     {
         var events = await dbContext.CacheEvents
             .Where(e => e.Timestamp >= startDate && e.Timestamp <= endDate)
@@ -20,7 +20,7 @@ public class SqliteCacheAnalyticsService(CacheAnalyticsDbContext dbContext) : IC
         var misses = events.Count(e => e.EventType == (int)CacheEventType.Miss);
         var total = hits + misses;
 
-        return new CacheStatistics
+        return new CacheAnalyticsStatistics
         {
             PeriodStart = startDate,
             PeriodEnd = endDate,
