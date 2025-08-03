@@ -1,0 +1,73 @@
+# Site settings
+title: Athena.Cache
+description: Smart caching library for ASP.NET Core with automatic query parameter key generation and table-based cache invalidation
+baseurl: "/Athena.Cache"
+url: "https://jhbrunoK.github.io"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Navigation
+header_pages:
+  - getting-started/installation.md
+  - getting-started/basics.md
+  - fundamentals/cache-key-generation.md
+  - fundamentals/cache-invalidation.md
+  - performance/zero-memory-optimization.md
+  - distributed/redis-setup.md
+  - monitoring/real-time-dashboards.md
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# Code highlighting
+kramdown:
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+    span:
+      line_numbers: false
+    block:
+      line_numbers: false
+
+# GitHub repository
+repository: jhbrunoK/Athena.Cache
+github_username: jhbrunoK
+
+# Author
+author:
+  name: Bruno Kim
+  email: bruno@example.com
