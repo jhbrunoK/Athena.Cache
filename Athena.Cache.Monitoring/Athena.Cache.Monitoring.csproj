@@ -10,6 +10,11 @@
     <PackageId>Athena.Cache.Monitoring</PackageId>
     <Description>Real-time monitoring and alerting system for Athena Cache with SignalR dashboard and multi-channel alerts</Description>
     <Authors>Bruno Kim</Authors>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
     <PackageTags>cache;monitoring;alerting;signalr;dashboard;performance;aspnetcore</PackageTags>
   </PropertyGroup>
 
