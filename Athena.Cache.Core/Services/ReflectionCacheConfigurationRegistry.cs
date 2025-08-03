@@ -1,6 +1,6 @@
 using System.Reflection;
 using Athena.Cache.Core.Attributes;
-using Athena.Cache.Core.Interfaces;
+using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 

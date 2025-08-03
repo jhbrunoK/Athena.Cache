@@ -1,10 +1,8 @@
 ﻿using Athena.Cache.Core.Abstractions;
-using Athena.Cache.Core.Analytics;
 using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Diagnostics;
 using Athena.Cache.Core.Filters;
 using Athena.Cache.Core.Implementations;
-using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
 using Athena.Cache.Core.ObjectPools;
 using Athena.Cache.Core.Observability;
@@ -47,9 +45,6 @@ public static class ServiceCollectionExtensions
         
         // 헬스 모니터링 시스템 등록
         services.AddSingleton<CacheHealthMonitor>();
-        
-        // 분석 엔진 등록
-        services.AddSingleton<CacheOptimizationAnalyzer>();
         
         // Circuit Breaker 등록
         services.AddSingleton(provider =>

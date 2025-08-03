@@ -1,4 +1,4 @@
-﻿namespace Athena.Cache.Core.Abstractions;
+﻿namespace Athena.Cache.Core.Models;
 
 /// <summary>
 /// 캐시 통계 정보

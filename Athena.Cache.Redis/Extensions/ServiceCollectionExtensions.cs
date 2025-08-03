@@ -2,6 +2,8 @@
 using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Extensions;
 using Athena.Cache.Core.Implementations;
+using Athena.Cache.Redis.Configuration;
+using Athena.Cache.Redis.Implementations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;

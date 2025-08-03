@@ -1,7 +1,8 @@
 ﻿using Athena.Cache.Core.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Athena.Cache.Redis;
+using Athena.Cache.Redis.Configuration;
+using Athena.Cache.Redis.Implementations;
 using FluentAssertions;
 using StackExchange.Redis;
 using Testcontainers.Redis;

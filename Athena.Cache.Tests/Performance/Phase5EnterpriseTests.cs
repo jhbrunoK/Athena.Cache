@@ -1,7 +1,7 @@
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Implementations;
-using Athena.Cache.Redis;
+using Athena.Cache.Redis.Implementations;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;

@@ -1,10 +1,12 @@
 ﻿using System.Text.Json;
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Models;
+using Athena.Cache.Redis.Configuration;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace Athena.Cache.Redis;
+namespace Athena.Cache.Redis.Implementations;
 
 /// <summary>
 /// Redis 기반 Athena 캐시 구현체
