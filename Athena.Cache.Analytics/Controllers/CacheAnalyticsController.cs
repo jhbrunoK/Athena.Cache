@@ -19,7 +19,7 @@ public class CacheAnalyticsController(
     /// 캐시 통계 조회
     /// </summary>
     [HttpGet("statistics")]
-    public async Task<ActionResult<CacheStatistics>> GetStatistics(
+    public async Task<ActionResult<CacheAnalyticsStatistics>> GetStatistics(
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
@@ -39,7 +39,7 @@ public class CacheAnalyticsController(
     /// 실시간 캐시 통계 (최근 1시간)
     /// </summary>
     [HttpGet("statistics/realtime")]
-    public async Task<ActionResult<CacheStatistics>> GetRealtimeStatistics()
+    public async Task<ActionResult<CacheAnalyticsStatistics>> GetRealtimeStatistics()
     {
         var end = DateTime.UtcNow;
         var start = end.AddHours(-1);

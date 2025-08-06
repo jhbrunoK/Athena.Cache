@@ -1,6 +1,6 @@
 using Athena.Cache.Core.Models;
 
-namespace Athena.Cache.Core.Interfaces;
+namespace Athena.Cache.Core.Abstractions;
 
 /// <summary>
 /// 캐시 설정 레지스트리 인터페이스

@@ -1,7 +1,6 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Diagnostics;
-using Athena.Cache.Core.Interfaces;
 using Athena.Cache.Core.Models;
 using Athena.Cache.Core.ObjectPools;
 using Athena.Cache.Core.Observability;

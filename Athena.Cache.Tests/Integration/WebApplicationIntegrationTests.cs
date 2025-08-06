@@ -367,7 +367,7 @@ public class TestCacheController(
     : Microsoft.AspNetCore.Mvc.ControllerBase
 {
     [Microsoft.AspNetCore.Mvc.HttpGet("statistics")]
-    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<Core.Abstractions.CacheStatistics>> GetStatistics()
+    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<Core.Models.CacheStatistics>> GetStatistics()
     {
         var stats = await cache.GetStatisticsAsync();
         return Ok(stats);

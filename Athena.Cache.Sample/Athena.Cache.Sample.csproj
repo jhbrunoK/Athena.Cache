@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Athena.Cache.Core\Athena.Cache.Core.csproj" />
+    <ProjectReference Include="..\Athena.Cache.Analytics\Athena.Cache.Analytics.csproj" />
     <ProjectReference Include="..\Athena.Cache.Redis\Athena.Cache.Redis.csproj" />
     <ProjectReference Include="..\Athena.Cache.SourceGenerator\Athena.Cache.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

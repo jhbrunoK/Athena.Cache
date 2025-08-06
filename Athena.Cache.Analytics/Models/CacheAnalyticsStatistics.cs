@@ -5,7 +5,7 @@ namespace Athena.Cache.Analytics.Models;
 /// <summary>
 /// 캐시 통계 집계 - ICacheMetrics 구현 (분석용)
 /// </summary>
-public class CacheStatistics : ICacheMetrics
+public class CacheAnalyticsStatistics : ICacheMetrics
 {
     // 분석 기간
     public DateTime PeriodStart { get; set; }

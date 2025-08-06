@@ -1,11 +1,11 @@
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Enums;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System.Text.Json;
-using Athena.Cache.Core.Enums;
 
-namespace Athena.Cache.Redis;
+namespace Athena.Cache.Redis.Implementations;
 
 /// <summary>
 /// Redis Pub/Sub 기반 분산 캐시 무효화 구현

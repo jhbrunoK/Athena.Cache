@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using Athena.Cache.Core.Memory;
 
-namespace Athena.Cache.Core.Analytics;
+namespace Athena.Cache.Analytics.Analyzers;
 
 /// <summary>
 /// 캐시 성능 분석 및 최적화 제안 엔진
@@ -46,7 +46,7 @@ public class CacheOptimizationAnalyzer : IDisposable
         var performanceHistory = _healthMonitor.GetPerformanceHistory(60);
         
         // 컬렉션 풀에서 대여
-        var recommendations = CollectionPools.RentOptimizationRecommendationList();
+        var recommendations = new List<OptimizationRecommendation>();
         
         try
         {
@@ -78,8 +78,7 @@ public class CacheOptimizationAnalyzer : IDisposable
         }
         finally
         {
-            // 풀로 반환
-            CollectionPools.Return(recommendations);
+            // 더 이상 풀 사용하지 않음
         }
     }
 

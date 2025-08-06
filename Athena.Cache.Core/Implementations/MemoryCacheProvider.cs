@@ -1,4 +1,5 @@
 ﻿using Athena.Cache.Core.Abstractions;
+using Athena.Cache.Core.Models;
 using Athena.Cache.Core.Configuration;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;

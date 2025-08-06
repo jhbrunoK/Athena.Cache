@@ -5,7 +5,7 @@ using Athena.Cache.Monitoring.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Athena.Cache.Monitoring;
+namespace Athena.Cache.Monitoring.Services;
 
 /// <summary>
 /// 캐시 상태 확인 서비스
