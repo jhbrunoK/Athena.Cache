@@ -17,7 +17,7 @@ public class CacheHealthMonitor : IDisposable
     private readonly ILogger<CacheHealthMonitor> _logger;
     
     private readonly Timer _healthCheckTimer;
-    private readonly ConcurrentDictionary<string, HealthCheckResult> _healthResults = new();
+    private readonly ConcurrentDictionary<string, CacheHealthResult> _healthResults = new();
     private readonly ConcurrentQueue<CachePerformanceSnapshot> _performanceHistory = new();
     
     private volatile bool _disposed = false;
@@ -52,7 +52,7 @@ public class CacheHealthMonitor : IDisposable
 
     #region Health Check Methods
 
-    public async Task<OverallHealthStatus> GetOverallHealthAsync()
+    public async Task<OverallCacheHealthStatus> GetOverallHealthAsync()
     {
         var healthChecks = new[]
         {
@@ -63,13 +63,13 @@ public class CacheHealthMonitor : IDisposable
             await CheckIntelligentCacheAsync()
         };
 
-        var overallStatus = healthChecks.All(h => h.Status == HealthStatus.Healthy) 
-            ? HealthStatus.Healthy
-            : healthChecks.Any(h => h.Status == HealthStatus.Critical)
-                ? HealthStatus.Critical 
-                : HealthStatus.Warning;
+        var overallStatus = healthChecks.All(h => h.Status == CacheHealthStatus.Healthy) 
+            ? CacheHealthStatus.Healthy
+            : healthChecks.Any(h => h.Status == CacheHealthStatus.Critical)
+                ? CacheHealthStatus.Critical 
+                : CacheHealthStatus.Warning;
 
-        return new OverallHealthStatus
+        return new OverallCacheHealthStatus
         {
             Status = overallStatus,
             LastChecked = DateTime.UtcNow,
@@ -78,7 +78,7 @@ public class CacheHealthMonitor : IDisposable
         };
     }
 
-    private async Task<HealthCheckResult> CheckCacheConnectivityAsync()
+    private async Task<CacheHealthResult> CheckCacheConnectivityAsync()
     {
         try
         {
@@ -98,12 +98,12 @@ public class CacheHealthMonitor : IDisposable
             var isHealthy = testValue.Equals(retrievedValue);
             var latency = stopwatch.ElapsedMilliseconds;
             
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Cache Connectivity",
-                Status = isHealthy && latency < 1000 ? HealthStatus.Healthy 
-                       : latency < 5000 ? HealthStatus.Warning 
-                       : HealthStatus.Critical,
+                Status = isHealthy && latency < 1000 ? CacheHealthStatus.Healthy 
+                       : latency < 5000 ? CacheHealthStatus.Warning 
+                       : CacheHealthStatus.Critical,
                 Message = $"Connectivity check completed in {latency}ms",
                 Details = new Dictionary<string, object>
                 {
@@ -115,28 +115,28 @@ public class CacheHealthMonitor : IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Cache connectivity health check failed");
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Cache Connectivity",
-                Status = HealthStatus.Critical,
+                Status = CacheHealthStatus.Critical,
                 Message = $"Connectivity failed: {ex.Message}",
                 Exception = ex
             };
         }
     }
 
-    private async Task<HealthCheckResult> CheckCachePerformanceAsync()
+    private async Task<CacheHealthResult> CheckCachePerformanceAsync()
     {
         try
         {
             var hitRatio = CalculateHitRatio();
             var avgOperationTime = await MeasureAverageOperationTimeAsync();
             
-            var status = hitRatio >= 0.8 && avgOperationTime < 50 ? HealthStatus.Healthy
-                       : hitRatio >= 0.6 && avgOperationTime < 100 ? HealthStatus.Warning
-                       : HealthStatus.Critical;
+            var status = hitRatio >= 0.8 && avgOperationTime < 50 ? CacheHealthStatus.Healthy
+                       : hitRatio >= 0.6 && avgOperationTime < 100 ? CacheHealthStatus.Warning
+                       : CacheHealthStatus.Critical;
 
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Cache Performance",
                 Status = status,
@@ -152,17 +152,17 @@ public class CacheHealthMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Cache Performance",
-                Status = HealthStatus.Warning,
+                Status = CacheHealthStatus.Warning,
                 Message = $"Performance check failed: {ex.Message}",
                 Exception = ex
             };
         }
     }
 
-    private async Task<HealthCheckResult> CheckMemoryUsageAsync()
+    private async Task<CacheHealthResult> CheckMemoryUsageAsync()
     {
         try
         {
@@ -176,11 +176,11 @@ public class CacheHealthMonitor : IDisposable
             var maxMemoryMB = maxMemory / (1024.0 * 1024.0);
             var memoryUsageRatio = memoryUsage / (double)Math.Max(maxMemory, 1);
             
-            var status = memoryUsageRatio < 0.8 ? HealthStatus.Healthy
-                       : memoryUsageRatio < 0.9 ? HealthStatus.Warning
-                       : HealthStatus.Critical;
+            var status = memoryUsageRatio < 0.8 ? CacheHealthStatus.Healthy
+                       : memoryUsageRatio < 0.9 ? CacheHealthStatus.Warning
+                       : CacheHealthStatus.Critical;
 
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Memory Usage",
                 Status = status,
@@ -196,26 +196,26 @@ public class CacheHealthMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Memory Usage", 
-                Status = HealthStatus.Warning,
+                Status = CacheHealthStatus.Warning,
                 Message = $"Memory check failed: {ex.Message}",
                 Exception = ex
             };
         }
     }
 
-    private async Task<HealthCheckResult> CheckDistributedConnectionAsync()
+    private Task<CacheHealthResult> CheckDistributedConnectionAsync()
     {
         if (_distributedInvalidator == null)
         {
-            return new HealthCheckResult
+            return Task.FromResult(new CacheHealthResult
             {
                 Name = "Distributed Connection",
-                Status = HealthStatus.Healthy,
+                Status = CacheHealthStatus.Healthy,
                 Message = "Distributed invalidation not configured (optional)"
-            };
+            });
         }
 
         try
@@ -223,38 +223,38 @@ public class CacheHealthMonitor : IDisposable
             var isConnected = _distributedInvalidator.IsConnected;
             var instanceId = _distributedInvalidator.InstanceId;
             
-            return new HealthCheckResult
+            return Task.FromResult(new CacheHealthResult
             {
                 Name = "Distributed Connection",
-                Status = isConnected ? HealthStatus.Healthy : HealthStatus.Critical,
+                Status = isConnected ? CacheHealthStatus.Healthy : CacheHealthStatus.Critical,
                 Message = $"Instance {instanceId}: {(isConnected ? "Connected" : "Disconnected")}",
                 Details = new Dictionary<string, object>
                 {
                     { "is_connected", isConnected },
                     { "instance_id", instanceId }
                 }
-            };
+            });
         }
         catch (Exception ex)
         {
-            return new HealthCheckResult
+            return Task.FromResult(new CacheHealthResult
             {
                 Name = "Distributed Connection",
-                Status = HealthStatus.Critical,
+                Status = CacheHealthStatus.Critical,
                 Message = $"Distributed connection check failed: {ex.Message}",
                 Exception = ex
-            };
+            });
         }
     }
 
-    private async Task<HealthCheckResult> CheckIntelligentCacheAsync()
+    private async Task<CacheHealthResult> CheckIntelligentCacheAsync()
     {
         if (_intelligentCacheManager == null)
         {
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Intelligent Cache",
-                Status = HealthStatus.Healthy,
+                Status = CacheHealthStatus.Healthy,
                 Message = "Intelligent caching not configured (optional)"
             };
         }
@@ -264,10 +264,10 @@ public class CacheHealthMonitor : IDisposable
             var hotKeys = await _intelligentCacheManager.GetHotKeysAsync(5);
             var hotKeyCount = hotKeys.Count();
 
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Intelligent Cache",
-                Status = HealthStatus.Healthy,
+                Status = CacheHealthStatus.Healthy,
                 Message = $"Detected {hotKeyCount} hot keys",
                 Details = new Dictionary<string, object>
                 {
@@ -278,10 +278,10 @@ public class CacheHealthMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Name = "Intelligent Cache",
-                Status = HealthStatus.Warning,
+                Status = CacheHealthStatus.Warning,
                 Message = $"Intelligent cache check failed: {ex.Message}",
                 Exception = ex
             };
@@ -394,11 +394,11 @@ public class CacheHealthMonitor : IDisposable
         return totalTime / iterations;
     }
 
-    private string GenerateHealthSummary(HealthCheckResult[] healthChecks)
+    private string GenerateHealthSummary(CacheHealthResult[] healthChecks)
     {
-        var healthy = healthChecks.Count(h => h.Status == HealthStatus.Healthy);
-        var warning = healthChecks.Count(h => h.Status == HealthStatus.Warning);
-        var critical = healthChecks.Count(h => h.Status == HealthStatus.Critical);
+        var healthy = healthChecks.Count(h => h.Status == CacheHealthStatus.Healthy);
+        var warning = healthChecks.Count(h => h.Status == CacheHealthStatus.Warning);
+        var critical = healthChecks.Count(h => h.Status == CacheHealthStatus.Critical);
         
         return $"{healthy} Healthy, {warning} Warning, {critical} Critical";
     }
@@ -423,11 +423,11 @@ public class CacheHealthMonitor : IDisposable
                     _performanceHistory.TryDequeue(out _);
                 }
 
-                if (overallHealth.Status == HealthStatus.Critical)
+                if (overallHealth.Status == CacheHealthStatus.Critical)
                 {
                     _logger.LogError("Critical cache health issues detected: {Summary}", overallHealth.Summary);
                 }
-                else if (overallHealth.Status == HealthStatus.Warning)
+                else if (overallHealth.Status == CacheHealthStatus.Warning)
                 {
                     _logger.LogWarning("Cache health warnings detected: {Summary}", overallHealth.Summary);
                 }
@@ -459,25 +459,25 @@ public class CacheHealthMonitor : IDisposable
 
 #region Health Check Models
 
-public class OverallHealthStatus
+public class OverallCacheHealthStatus
 {
-    public HealthStatus Status { get; init; }
+    public CacheHealthStatus Status { get; init; }
     public DateTime LastChecked { get; init; }
-    public HealthCheckResult[] HealthChecks { get; init; } = [];
+    public CacheHealthResult[] HealthChecks { get; init; } = [];
     public string Summary { get; init; } = string.Empty;
 }
 
-public class HealthCheckResult
+public class CacheHealthResult
 {
     public string Name { get; init; } = string.Empty;
-    public HealthStatus Status { get; init; }
+    public CacheHealthStatus Status { get; init; }
     public string Message { get; init; } = string.Empty;
     public Dictionary<string, object>? Details { get; init; }
     public Exception? Exception { get; init; }
     public DateTime CheckedAt { get; init; } = DateTime.UtcNow;
 }
 
-public enum HealthStatus
+public enum CacheHealthStatus
 {
     Healthy,
     Warning, 

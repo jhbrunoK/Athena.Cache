@@ -396,7 +396,7 @@ public class AthenaCacheMiddleware(
                     );
 
                     // Circuit Breaker를 통해 캐시 저장 실행
-                    await circuitBreaker.ExecuteAsync(
+                    await circuitBreaker.ExecuteAsync<Task>(
                         "cache_set",
                         async () =>
                         {

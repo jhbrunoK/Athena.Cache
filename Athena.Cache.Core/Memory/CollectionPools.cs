@@ -47,6 +47,34 @@ public static class CollectionPools
     // StringBuilder 대여/반환
     public static StringBuilder RentStringBuilder() => _stringBuilderPool.Get();
     public static void Return(StringBuilder sb) => _stringBuilderPool.Return(sb);
+    
+    /// <summary>
+    /// 모든 풀 정리 (메모리 압박 시 사용)
+    /// </summary>
+    public static void ClearAll()
+    {
+        // ObjectPool은 기본적으로 Clear 메서드가 없으므로
+        // 새로운 인스턴스로 재생성하는 것보다 기존 풀을 유지하되
+        // 임시로 많은 객체를 요청해서 풀을 비우는 방식 사용
+        var tempLists = new List<object>();
+        try
+        {
+            // 각 풀에서 최대 100개씩 가져와서 풀 비우기
+            for (int i = 0; i < 100; i++)
+            {
+                tempLists.Add(_optimizationRecommendationPool.Get());
+                tempLists.Add(_stringPool.Get());
+                tempLists.Add(_stringObjectDictionaryPool.Get());
+                tempLists.Add(_stringDoublePool.Get());
+                tempLists.Add(_stringBuilderPool.Get());
+            }
+        }
+        finally
+        {
+            // 모든 객체 반환하지 않음 - GC가 정리하도록 함
+            tempLists.Clear();
+        }
+    }
 }
 
 /// <summary>
