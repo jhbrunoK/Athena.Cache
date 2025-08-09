@@ -225,6 +225,7 @@ public class CircuitBreakerInvalidationEngine : IInvalidationEngine, IAsyncDispo
     {
         if (_disposed) return;
 
+        await Task.Yield(); // Make the method genuinely async
         try
         {
             foreach (var kvp in _circuitStates)
