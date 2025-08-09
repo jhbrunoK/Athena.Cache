@@ -75,6 +75,32 @@ public interface IInvalidationEngine
     /// 엔진 상태 확인
     /// </summary>
     Task<InvalidationEngineStatus> GetStatusAsync(CancellationToken cancellationToken = default);
+    
+    // CQRS 지원 메서드들 (Phase 2에서 추가)
+    
+    /// <summary>
+    /// 명령 실행 후 무효화 처리
+    /// </summary>
+    Task InvalidateOnCommandAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
+        where TCommand : class;
+    
+    /// <summary>
+    /// 도메인 이벤트 기반 무효화 처리
+    /// </summary>
+    Task InvalidateOnEventAsync<TEvent>(TEvent domainEvent, CancellationToken cancellationToken = default)
+        where TEvent : class;
+    
+    /// <summary>
+    /// 읽기 모델 무효화
+    /// </summary>
+    Task InvalidateReadModelAsync<TReadModel>(string? modelId = null, CancellationToken cancellationToken = default)
+        where TReadModel : class;
+    
+    /// <summary>
+    /// 프로젝션 무효화
+    /// </summary>
+    Task InvalidateProjectionAsync<TProjection>(string? projectionId = null, CancellationToken cancellationToken = default)
+        where TProjection : class;
 }
 
 /// <summary>

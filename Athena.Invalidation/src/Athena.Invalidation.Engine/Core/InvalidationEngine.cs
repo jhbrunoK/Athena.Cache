@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Athena.Invalidation.CQRS.Abstractions;
 
 namespace Athena.Invalidation.Engine.Core;
 
@@ -253,6 +254,201 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
         return status;
     }
 
+    // CQRS 지원 메서드 구현
+    
+    public async Task InvalidateOnCommandAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
+        where TCommand : class
+    {
+        try
+        {
+            // CQRS 명령 핸들러 호출 (dynamic typing 사용)
+            var commandHandler = _serviceProvider.GetService<ICommandInvalidationHandler>();
+            if (commandHandler != null)
+            {
+                try
+                {
+                    var canHandle = (bool)typeof(ICommandInvalidationHandler)
+                        .GetMethod("CanHandle")!
+                        .MakeGenericMethod(typeof(TCommand))
+                        .Invoke(commandHandler, new object[] { command! });
+                    
+                    if (canHandle)
+                    {
+                        await (Task)typeof(ICommandInvalidationHandler)
+                            .GetMethod("HandleCommandAsync")!
+                            .MakeGenericMethod(typeof(TCommand))
+                            .Invoke(commandHandler, new object[] { command!, cancellationToken });
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to invoke command handler for {CommandType}", typeof(TCommand).Name);
+                }
+            }
+
+            // 기본 명령 기반 무효화 로직
+            var commandType = typeof(TCommand);
+            var tableName = InferTableFromCommandType(commandType.Name);
+            
+            if (!string.IsNullOrEmpty(tableName))
+            {
+                await InvalidateByTableAsync(tableName, cancellationToken);
+                _logger.LogDebug("Command-based invalidation completed for {CommandType} -> {TableName}", 
+                    commandType.Name, tableName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to invalidate on command {CommandType}", typeof(TCommand).Name);
+            throw;
+        }
+    }
+
+    public async Task InvalidateOnEventAsync<TEvent>(TEvent domainEvent, CancellationToken cancellationToken = default)
+        where TEvent : class
+    {
+        try
+        {
+            // CQRS 이벤트 핸들러 호출 (dynamic typing 사용)
+            var eventHandler = _serviceProvider.GetService<IEventDrivenInvalidation>();
+            if (eventHandler != null)
+            {
+                try
+                {
+                    var canHandle = (bool)typeof(IEventDrivenInvalidation)
+                        .GetMethod("CanHandle")!
+                        .MakeGenericMethod(typeof(TEvent))
+                        .Invoke(eventHandler, new object[] { domainEvent! });
+                    
+                    if (canHandle)
+                    {
+                        await (Task)typeof(IEventDrivenInvalidation)
+                            .GetMethod("HandleEventAsync")!
+                            .MakeGenericMethod(typeof(TEvent))
+                            .Invoke(eventHandler, new object[] { domainEvent!, cancellationToken });
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to invoke event handler for {EventType}", typeof(TEvent).Name);
+                }
+            }
+
+            // 기본 이벤트 기반 무효화 로직
+            var eventType = typeof(TEvent);
+            var tableName = InferTableFromEventType(eventType.Name);
+            
+            if (!string.IsNullOrEmpty(tableName))
+            {
+                await InvalidateByTableAsync(tableName, cancellationToken);
+                _logger.LogDebug("Event-based invalidation completed for {EventType} -> {TableName}", 
+                    eventType.Name, tableName);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to invalidate on event {EventType}", typeof(TEvent).Name);
+            throw;
+        }
+    }
+
+    public async Task InvalidateReadModelAsync<TReadModel>(string? modelId = null, CancellationToken cancellationToken = default)
+        where TReadModel : class
+    {
+        try
+        {
+            // CQRS 읽기 모델 무효화 핸들러 호출 (dynamic typing 사용)
+            var readModelInvalidator = _serviceProvider.GetService<IReadModelInvalidator>();
+            if (readModelInvalidator != null)
+            {
+                try
+                {
+                    await (Task)typeof(IReadModelInvalidator)
+                        .GetMethod("InvalidateReadModelAsync")!
+                        .MakeGenericMethod(typeof(TReadModel))
+                        .Invoke(readModelInvalidator, new object?[] { modelId, cancellationToken });
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to invoke read model invalidator for {ReadModelType}", typeof(TReadModel).Name);
+                }
+            }
+
+            // 기본 읽기 모델 무효화 로직
+            var readModelType = typeof(TReadModel);
+            var tableName = InferTableFromReadModelType(readModelType.Name);
+            
+            if (!string.IsNullOrEmpty(modelId))
+            {
+                var pattern = $"{tableName.ToLower()}:{modelId}:*";
+                await InvalidateByPatternAsync(pattern, cancellationToken);
+            }
+            else
+            {
+                await InvalidateByTableAsync(tableName, cancellationToken);
+            }
+            
+            _logger.LogDebug("Read model invalidation completed for {ReadModelType}", readModelType.Name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to invalidate read model {ReadModelType}", typeof(TReadModel).Name);
+            throw;
+        }
+    }
+
+    public async Task InvalidateProjectionAsync<TProjection>(string? projectionId = null, CancellationToken cancellationToken = default)
+        where TProjection : class
+    {
+        try
+        {
+            // CQRS 프로젝션 무효화 핸들러 호출 (dynamic typing 사용)
+            var readModelInvalidator = _serviceProvider.GetService<IReadModelInvalidator>();
+            if (readModelInvalidator != null)
+            {
+                try
+                {
+                    await (Task)typeof(IReadModelInvalidator)
+                        .GetMethod("InvalidateProjectionAsync")!
+                        .MakeGenericMethod(typeof(TProjection))
+                        .Invoke(readModelInvalidator, new object?[] { projectionId, cancellationToken });
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to invoke projection invalidator for {ProjectionType}", typeof(TProjection).Name);
+                }
+            }
+
+            // 기본 프로젝션 무효화 로직
+            var projectionType = typeof(TProjection);
+            var tableName = InferTableFromProjectionType(projectionType.Name);
+            
+            if (!string.IsNullOrEmpty(projectionId))
+            {
+                var pattern = $"{tableName.ToLower()}:{projectionId}:*";
+                await InvalidateByPatternAsync(pattern, cancellationToken);
+            }
+            else
+            {
+                await InvalidateByTableAsync(tableName, cancellationToken);
+            }
+            
+            // 프로젝션 특화 캐시도 무효화
+            await InvalidateByPatternAsync($"projection:{tableName.ToLower()}:*", cancellationToken);
+            
+            _logger.LogDebug("Projection invalidation completed for {ProjectionType}", projectionType.Name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to invalidate projection {ProjectionType}", typeof(TProjection).Name);
+            throw;
+        }
+    }
+
     private async Task ExecuteInvalidationAsync(IInvalidationContext context, CancellationToken cancellationToken)
     {
         if (_disposed) throw new ObjectDisposedException(nameof(InvalidationEngine));
@@ -335,6 +531,84 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
             _logger.LogDebug(ex, "Failed to get tracking set from provider '{ProviderName}'", provider.ProviderName);
             return null;
         }
+    }
+
+    private string InferTableFromCommandType(string commandTypeName)
+    {
+        // CreateUserCommand -> Users
+        // UpdateOrderCommand -> Orders
+        if (commandTypeName.EndsWith("Command"))
+        {
+            var commandName = commandTypeName.Replace("Command", "");
+            var prefixesToRemove = new[] { "Create", "Update", "Delete", "Modify" };
+            
+            foreach (var prefix in prefixesToRemove)
+            {
+                if (commandName.StartsWith(prefix))
+                {
+                    commandName = commandName.Substring(prefix.Length);
+                    break;
+                }
+            }
+            
+            return string.IsNullOrEmpty(commandName) ? string.Empty : 
+                   (commandName.EndsWith("s") ? commandName : commandName + "s");
+        }
+        
+        return string.Empty;
+    }
+
+    private string InferTableFromEventType(string eventTypeName)
+    {
+        // UserCreatedEvent -> Users
+        // OrderUpdatedEvent -> Orders
+        if (eventTypeName.EndsWith("Event"))
+        {
+            var eventName = eventTypeName.Replace("Event", "");
+            var suffixesToRemove = new[] { "Created", "Updated", "Deleted", "Changed", "Modified" };
+            
+            foreach (var suffix in suffixesToRemove)
+            {
+                if (eventName.EndsWith(suffix))
+                {
+                    eventName = eventName.Substring(0, eventName.Length - suffix.Length);
+                    break;
+                }
+            }
+            
+            return string.IsNullOrEmpty(eventName) ? string.Empty : 
+                   (eventName.EndsWith("s") ? eventName : eventName + "s");
+        }
+        
+        return string.Empty;
+    }
+
+    private string InferTableFromReadModelType(string readModelTypeName)
+    {
+        // UserReadModel -> Users
+        // OrderSummaryReadModel -> OrderSummarys
+        var tableName = readModelTypeName;
+        if (tableName.EndsWith("ReadModel"))
+        {
+            tableName = tableName.Replace("ReadModel", "");
+        }
+        
+        return string.IsNullOrEmpty(tableName) ? string.Empty : 
+               (tableName.EndsWith("s") ? tableName : tableName + "s");
+    }
+
+    private string InferTableFromProjectionType(string projectionTypeName)
+    {
+        // UserProjection -> Users
+        // OrderSummaryProjection -> OrderSummarys
+        var tableName = projectionTypeName;
+        if (tableName.EndsWith("Projection"))
+        {
+            tableName = tableName.Replace("Projection", "");
+        }
+        
+        return string.IsNullOrEmpty(tableName) ? string.Empty : 
+               (tableName.EndsWith("s") ? tableName : tableName + "s");
     }
 
     public void Dispose()
