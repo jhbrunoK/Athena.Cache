@@ -1,4 +1,5 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -23,6 +24,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.MultiProvider", "src\Athena.Invalidation.MultiProvider\Athena.Invalidation.MultiProvider.csproj", "{CE059E74-6C71-483F-8BF6-98EB99DFA78E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.Tracking", "src\Athena.Invalidation.Tracking\Athena.Invalidation.Tracking.csproj", "{0DBBB529-502D-47FD-B72A-7F2B921EE13A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.CQRS", "src\Athena.Invalidation.CQRS\Athena.Invalidation.CQRS.csproj", "{1FABBF38-9AC5-106D-58BD-F4D695F77D0F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.Monitoring", "src\Athena.Invalidation.Monitoring\Athena.Invalidation.Monitoring.csproj", "{78AC9337-9F8C-475B-4432-AF0FC8FE5837}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.Distributed", "src\Athena.Invalidation.Distributed\Athena.Invalidation.Distributed.csproj", "{561DD9BD-1B38-6C70-BC40-F6A69E2E2B59}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.FusionCache", "src\Athena.Invalidation.FusionCache\Athena.Invalidation.FusionCache.csproj", "{BE169465-D82C-9485-4056-4396F7561DD1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,6 +75,22 @@ Global
 		{0DBBB529-502D-47FD-B72A-7F2B921EE13A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0DBBB529-502D-47FD-B72A-7F2B921EE13A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0DBBB529-502D-47FD-B72A-7F2B921EE13A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FABBF38-9AC5-106D-58BD-F4D695F77D0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FABBF38-9AC5-106D-58BD-F4D695F77D0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FABBF38-9AC5-106D-58BD-F4D695F77D0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FABBF38-9AC5-106D-58BD-F4D695F77D0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78AC9337-9F8C-475B-4432-AF0FC8FE5837}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78AC9337-9F8C-475B-4432-AF0FC8FE5837}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78AC9337-9F8C-475B-4432-AF0FC8FE5837}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78AC9337-9F8C-475B-4432-AF0FC8FE5837}.Release|Any CPU.Build.0 = Release|Any CPU
+		{561DD9BD-1B38-6C70-BC40-F6A69E2E2B59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{561DD9BD-1B38-6C70-BC40-F6A69E2E2B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{561DD9BD-1B38-6C70-BC40-F6A69E2E2B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{561DD9BD-1B38-6C70-BC40-F6A69E2E2B59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE169465-D82C-9485-4056-4396F7561DD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE169465-D82C-9485-4056-4396F7561DD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE169465-D82C-9485-4056-4396F7561DD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE169465-D82C-9485-4056-4396F7561DD1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -80,5 +105,12 @@ Global
 		{CFD3BC21-D12D-46B8-9A67-39B7C82D4BA1} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
 		{CE059E74-6C71-483F-8BF6-98EB99DFA78E} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
 		{0DBBB529-502D-47FD-B72A-7F2B921EE13A} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+		{1FABBF38-9AC5-106D-58BD-F4D695F77D0F} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+		{78AC9337-9F8C-475B-4432-AF0FC8FE5837} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+		{561DD9BD-1B38-6C70-BC40-F6A69E2E2B59} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+		{BE169465-D82C-9485-4056-4396F7561DD1} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1E9850DC-8E96-45F3-B899-C438CEE447B3}
 	EndGlobalSection
 EndGlobal
