@@ -337,7 +337,7 @@ public class CircuitBreakerInvalidationEngine : IInvalidationEngine, IAsyncDispo
             status.Metrics[$"CircuitBreaker_{kvp.Key}_State"] = circuitState.State.ToString();
             status.Metrics[$"CircuitBreaker_{kvp.Key}_FailureRate"] = circuitState.CurrentFailureRate;
             status.Metrics[$"CircuitBreaker_{kvp.Key}_TotalCalls"] = circuitState.TotalCalls;
-            status.Metrics[$"CircuitBreaker_{kvp.key}_FailureCount"] = circuitState.FailureCount;
+            status.Metrics[$"CircuitBreaker_{kvp.Key}_FailureCount"] = circuitState.FailureCount;
         }
         
         return status;

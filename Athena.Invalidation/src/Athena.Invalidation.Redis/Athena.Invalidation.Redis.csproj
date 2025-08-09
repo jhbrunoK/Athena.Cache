@@ -6,11 +6,11 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>Athena.Invalidation.Core</PackageId>
-    <Version>0.1.0-alpha</Version>
+    <PackageId>Athena.Invalidation.Redis</PackageId>
+    <Version>0.4.0-alpha</Version>
     <Authors>Athena Development Team</Authors>
-    <Description>Core abstractions and interfaces for universal cache invalidation engine</Description>
-    <PackageTags>cache;invalidation;caching;performance;distributed</PackageTags>
+    <Description>Redis integration for Athena cache invalidation engine</Description>
+    <PackageTags>cache;invalidation;redis;stackexchange;distributed</PackageTags>
     <PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
     <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -18,12 +18,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Athena.Invalidation.Core/Athena.Invalidation.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
-    <PackageReference Include="System.Threading.Channels" Version="8.0.0" />
-    <PackageReference Include="Scrutor" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.0" />
   </ItemGroup>
 
 </Project>
