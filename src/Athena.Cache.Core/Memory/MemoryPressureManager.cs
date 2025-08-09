@@ -169,7 +169,7 @@ public class MemoryPressureManager : IDisposable
         if (cacheStats.TotalCacheSize > 500)
         {
             // 큰 캐시들만 일부 정리
-            // TODO: LazyCache에 부분 정리 메서드 추가 필요
+            LazyCache.PartialCleanup();
         }
         
         _logger.LogDebug("Light cleanup performed");
@@ -202,7 +202,7 @@ public class MemoryPressureManager : IDisposable
         LazyCache.ClearCaches();
         
         // 컬렉션 풀 정리 (필요시)
-        // CollectionPools.ClearAll(); // TODO: 메서드 추가 필요
+        CollectionPools.ClearAll();
         
         // 강제 GC 실행 (모든 세대)
         GC.Collect();

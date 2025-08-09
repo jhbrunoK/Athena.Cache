@@ -198,6 +198,46 @@ public static class LazyCache
         // 다시 기본값들 채우기
         PrePopulateCommonValues();
     }
+    
+    /// <summary>
+    /// 부분 캐시 정리 (큰 캐시들만 선택적으로 정리)
+    /// </summary>
+    public static void PartialCleanup()
+    {
+        // 캐시 크기가 임계값을 넘은 경우만 일부 정리
+        if (_stringCache.Count > MaxCacheSize * 0.8)
+        {
+            // 가장 큰 캐시부터 50% 정리
+            var itemsToRemove = _stringCache.Count / 2;
+            var keysToRemove = _stringCache.Keys.Skip(itemsToRemove).ToList();
+            foreach (var key in keysToRemove)
+            {
+                _stringCache.TryRemove(key, out _);
+            }
+        }
+        
+        if (_intStringCache.Count > MaxCacheSize * 0.8)
+        {
+            var itemsToRemove = _intStringCache.Count / 2;
+            var keysToRemove = _intStringCache.Keys.Skip(itemsToRemove).ToList();
+            foreach (var key in keysToRemove)
+            {
+                _intStringCache.TryRemove(key, out _);
+            }
+        }
+        
+        if (_longStringCache.Count > MaxCacheSize * 0.8)
+        {
+            var itemsToRemove = _longStringCache.Count / 2;
+            var keysToRemove = _longStringCache.Keys.Skip(itemsToRemove).ToList();
+            foreach (var key in keysToRemove)
+            {
+                _longStringCache.TryRemove(key, out _);
+            }
+        }
+        
+        // 백분율과 바이트 크기 캐시는 상대적으로 작으므로 그대로 유지
+    }
 }
 
 /// <summary>
