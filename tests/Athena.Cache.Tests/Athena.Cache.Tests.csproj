@@ -37,9 +37,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Athena.Cache.Core\Athena.Cache.Core.csproj" />
-		<ProjectReference Include="..\Athena.Cache.Redis\Athena.Cache.Redis.csproj" />
-		<ProjectReference Include="..\Athena.Cache.Sample\Athena.Cache.Sample.csproj" />
+		<ProjectReference Include="..\..\src\Athena.Cache.Core\Athena.Cache.Core.csproj" />
+		<ProjectReference Include="..\..\src\Athena.Cache.Redis\Athena.Cache.Redis.csproj" />
+		<ProjectReference Include="..\..\src\Athena.Cache.FusionCache\Athena.Cache.FusionCache.csproj" />
+		<ProjectReference Include="..\..\samples\Athena.Cache.Sample\Athena.Cache.Sample.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

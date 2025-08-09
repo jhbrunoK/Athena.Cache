@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Redis for development and testing
+  redis:
+    image: redis:7-alpine
+    container_name: athena-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass devpassword
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - athena-network
+
+  # Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: athena-redis-commander
+    hostname: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:devpassword
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=admin
+    depends_on:
+      - redis
+    networks:
+      - athena-network
+
+  # SQL Server for integration tests
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: athena-sqlserver-dev
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=DevPassword123!
+      - MSSQL_PID=Developer
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P DevPassword123! -Q 'SELECT 1'"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - athena-network
+
+volumes:
+  redis_data:
+    driver: local
+  sqlserver_data:
+    driver: local
+
+networks:
+  athena-network:
+    driver: bridge
