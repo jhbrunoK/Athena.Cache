@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.34928.147
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Core", "Athena.Cache.Core\Athena.Cache.Core.csproj", "{568E603B-E653-4797-A2F8-A0484593DFFA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Core", "src\Athena.Cache.Core\Athena.Cache.Core.csproj", "{568E603B-E653-4797-A2F8-A0484593DFFA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Redis", "Athena.Cache.Redis\Athena.Cache.Redis.csproj", "{A1867461-ABD0-4D1E-A31A-4DFD0C19FBFC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Redis", "src\Athena.Cache.Redis\Athena.Cache.Redis.csproj", "{A1867461-ABD0-4D1E-A31A-4DFD0C19FBFC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Tests", "Athena.Cache.Tests\Athena.Cache.Tests.csproj", "{94A5A735-5BB3-4FB5-88A5-0FDF105F936B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Tests", "tests\Athena.Cache.Tests\Athena.Cache.Tests.csproj", "{94A5A735-5BB3-4FB5-88A5-0FDF105F936B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Sample", "Athena.Cache.Sample\Athena.Cache.Sample.csproj", "{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Sample", "samples\Athena.Cache.Sample\Athena.Cache.Sample.csproj", "{8E78EE5B-EA90-479B-81BF-C24E68D4F6F4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EA6E562B-CA6A-43AB-B329-4BE38DE45E74}"
 EndProject
@@ -24,13 +24,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{03C24C82-D
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Analytics", "Athena.Cache.Analytics\Athena.Cache.Analytics.csproj", "{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.Analytics", "src\Athena.Cache.Analytics\Athena.Cache.Analytics.csproj", "{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.SourceGenerator", "Athena.Cache.SourceGenerator\Athena.Cache.SourceGenerator.csproj", "{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Athena.Cache.SourceGenerator", "src\Athena.Cache.SourceGenerator\Athena.Cache.SourceGenerator.csproj", "{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Monitoring", "Athena.Cache.Monitoring\Athena.Cache.Monitoring.csproj", "{FECF6192-D7A0-44F7-B760-C7FE2A49DACB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Monitoring", "src\Athena.Cache.Monitoring\Athena.Cache.Monitoring.csproj", "{FECF6192-D7A0-44F7-B760-C7FE2A49DACB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.FusionCache", "Athena.Cache.FusionCache\Athena.Cache.FusionCache.csproj", "{38346A92-BB18-425C-8A9F-C32B77B26394}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.FusionCache", "src\Athena.Cache.FusionCache\Athena.Cache.FusionCache.csproj", "{38346A92-BB18-425C-8A9F-C32B77B26394}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -82,6 +82,7 @@ Global
 		{2E4605E8-EB66-4EAB-BADD-128E9BFFCBE6} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
 		{4AA2CBAC-0D2E-4ECD-A529-9CA91CF05CC7} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
 		{FECF6192-D7A0-44F7-B760-C7FE2A49DACB} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
+		{38346A92-BB18-425C-8A9F-C32B77B26394} = {EA6E562B-CA6A-43AB-B329-4BE38DE45E74}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FA0453E9-B173-4B9B-A314-A78075A9F0BA}
