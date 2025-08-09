@@ -62,7 +62,6 @@ public static class CollectionPools
             // 각 풀에서 최대 100개씩 가져와서 풀 비우기
             for (int i = 0; i < 100; i++)
             {
-                tempLists.Add(_optimizationRecommendationPool.Get());
                 tempLists.Add(_stringPool.Get());
                 tempLists.Add(_stringObjectDictionaryPool.Get());
                 tempLists.Add(_stringDoublePool.Get());
