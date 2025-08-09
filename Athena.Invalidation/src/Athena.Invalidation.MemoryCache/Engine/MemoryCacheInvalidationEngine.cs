@@ -1,3 +1,4 @@
+using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.MemoryCache.Abstractions;
 
 namespace Athena.Invalidation.MemoryCache.Engine;
@@ -303,11 +304,7 @@ public class MemoryCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
     {
         if (_disposed) throw new ObjectDisposedException(nameof(MemoryCacheInvalidationEngine));
         
-        var context = new MemoryCacheInvalidationContext
-        {
-            Trigger = trigger,
-            Timestamp = DateTimeOffset.UtcNow
-        };
+        var context = new MemoryCacheInvalidationContext(trigger);
         
         if (metadata is Dictionary<string, object> metadataDict)
         {
@@ -463,44 +460,16 @@ public class MemoryCacheInvalidationEngineOptions
 /// <summary>
 /// Memory Cache 무효화 컨텍스트
 /// </summary>
-public class MemoryCacheInvalidationContext : IInvalidationContext
+public class MemoryCacheInvalidationContext : BaseInvalidationContext
 {
-    public string ContextId { get; } = Guid.NewGuid().ToString();
-    public InvalidationTrigger Trigger { get; set; } = new();
-    public string Target { get; set; } = string.Empty;
-    public InvalidationType Type { get; set; }
-    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
-    public Dictionary<string, object> Metadata { get; } = new();
-    public IEnumerable<ICacheProvider> CacheProviders { get; set; } = Enumerable.Empty<ICacheProvider>();
-    public int Priority { get; set; }
-    public TimeSpan? Timeout { get; set; }
-    public int MaxRetries { get; set; }
-
-    public void AddMetadata(string key, object value)
+    public MemoryCacheInvalidationContext(InvalidationTrigger trigger) : base(trigger)
     {
-        Metadata[key] = value;
     }
 
-    public T? GetMetadata<T>(string key, T? defaultValue = default)
+    public override IInvalidationContext Clone()
     {
-        if (Metadata.TryGetValue(key, out var value) && value is T typedValue)
-        {
-            return typedValue;
-        }
-        return defaultValue;
-    }
-
-    public IInvalidationContext Clone()
-    {
-        return new MemoryCacheInvalidationContext
-        {
-            Trigger = Trigger,
-            Target = Target,
-            Type = Type,
-            CacheProviders = CacheProviders,
-            Priority = Priority,
-            Timeout = Timeout,
-            MaxRetries = MaxRetries
-        };
+        var clone = new MemoryCacheInvalidationContext(Trigger);
+        CopyPropertiesTo(clone);
+        return clone;
     }
 }

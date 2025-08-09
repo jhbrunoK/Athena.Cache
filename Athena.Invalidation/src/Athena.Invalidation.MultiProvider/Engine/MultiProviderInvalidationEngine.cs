@@ -1,3 +1,4 @@
+using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.MultiProvider.Abstractions;
 
 namespace Athena.Invalidation.MultiProvider.Engine;
@@ -321,19 +322,30 @@ public class MultiProviderInvalidationEngine : IMultiProviderInvalidationEngine,
     {
         if (_disposed) throw new ObjectDisposedException(nameof(MultiProviderInvalidationEngine));
         
-        return new MultiProviderInvalidationContext
+        var context = new MultiProviderInvalidationContext(trigger);
+        
+        if (metadata != null)
         {
-            Trigger = trigger,
-            Timestamp = DateTimeOffset.UtcNow,
-            Metadata = metadata as Dictionary<string, object> ?? new Dictionary<string, object>
+            if (metadata is Dictionary<string, object> metaDict)
             {
-                ["multi_provider_engine"] = true,
-                ["active_providers"] = ActiveProviders.ToArray(),
-                ["providers_count"] = ProvidersCount,
-                ["parallel_execution"] = _parallelExecution,
-                ["failure_policy"] = _failurePolicy.ToString()
+                foreach (var kvp in metaDict)
+                {
+                    context.AddMetadata(kvp.Key, kvp.Value);
+                }
             }
-        };
+            else
+            {
+                context.AddMetadata("metadata", metadata);
+            }
+        }
+        
+        context.AddMetadata("multi_provider_engine", true);
+        context.AddMetadata("active_providers", ActiveProviders.ToArray());
+        context.AddMetadata("providers_count", ProvidersCount);
+        context.AddMetadata("parallel_execution", _parallelExecution);
+        context.AddMetadata("failure_policy", _failurePolicy.ToString());
+        
+        return context;
     }
 
     public async Task ClearAllAsync(CancellationToken cancellationToken = default)
@@ -709,12 +721,16 @@ public class MultiProviderInvalidationOptions
 /// <summary>
 /// 다중 제공자 무효화 컨텍스트
 /// </summary>
-public class MultiProviderInvalidationContext : IInvalidationContext
+public class MultiProviderInvalidationContext : BaseInvalidationContext
 {
-    public InvalidationTrigger Trigger { get; set; }
-    public DateTimeOffset Timestamp { get; set; }
-    public Dictionary<string, object>? Metadata { get; set; }
-    
-    // TODO: IInvalidationContext 인터페이스의 나머지 멤버들을 구현해야 함
-    // 현재는 빌드 오류를 피하기 위해 기본 구현만 제공
+    public MultiProviderInvalidationContext(InvalidationTrigger trigger) : base(trigger)
+    {
+    }
+
+    public override IInvalidationContext Clone()
+    {
+        var clone = new MultiProviderInvalidationContext(Trigger);
+        CopyPropertiesTo(clone);
+        return clone;
+    }
 }

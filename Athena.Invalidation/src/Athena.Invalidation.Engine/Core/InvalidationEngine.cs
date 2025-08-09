@@ -181,18 +181,15 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
 
     public IInvalidationContext CreateContext(InvalidationTrigger trigger, object? metadata = null)
     {
-        return new InvalidationContext
-        {
-            ContextId = Guid.NewGuid().ToString("N")[..8],
-            Trigger = trigger,
-            Target = metadata?.ToString() ?? string.Empty,
-            Type = InvalidationType.Custom,
-            Timestamp = DateTimeOffset.UtcNow,
-            CacheProviders = _cacheProviders,
-            Priority = 0,
-            Timeout = _optionsMonitor.CurrentValue.DefaultTimeout,
-            MaxRetries = _optionsMonitor.CurrentValue.DefaultMaxRetries
-        };
+        var context = new InvalidationContext(trigger);
+        context.Target = metadata?.ToString() ?? string.Empty;
+        context.Type = InvalidationType.Custom;
+        context.CacheProviders = _cacheProviders;
+        context.Priority = 0;
+        context.Timeout = _optionsMonitor.CurrentValue.DefaultTimeout;
+        context.MaxRetries = _optionsMonitor.CurrentValue.DefaultMaxRetries;
+        
+        return context;
     }
 
     public async Task ClearAllAsync(CancellationToken cancellationToken = default)

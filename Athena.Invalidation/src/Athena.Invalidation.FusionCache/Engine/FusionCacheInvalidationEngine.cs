@@ -1,4 +1,4 @@
-using Athena.Invalidation.FusionCache.Abstractions;
+using Athena.Invalidation.Core.Abstractions;
 
 namespace Athena.Invalidation.FusionCache.Engine;
 
@@ -42,7 +42,7 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
                 return;
             }
 
-            await _cacheProvider.InvalidateBatchAsync(keys, cancellationToken);
+            await _cacheProvider.RemoveManyAsync(keys, cancellationToken);
             _logger.LogInformation("Invalidated {Count} keys for table: {TableName}", keys.Count, tableName);
         }
         catch (Exception ex)
@@ -62,13 +62,14 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
             if (_options.ConvertPatternToTag && IsValidTagPattern(pattern))
             {
                 var tag = ConvertPatternToTag(pattern);
-                await _cacheProvider.InvalidateByTagAsync(tag, cancellationToken);
+                // ICacheProvider는 태그 기반 무효화를 직접 지원하지 않음
+            _logger.LogWarning("Tag-based invalidation not supported by ICacheProvider interface");
                 _logger.LogDebug("Invalidated by tag (from pattern): {Tag}", tag);
             }
             else
             {
                 // 패턴 매칭을 통한 무효화
-                await _cacheProvider.InvalidateByPatternAsync(pattern, cancellationToken);
+                await _cacheProvider.RemoveByPatternAsync(pattern, cancellationToken);
                 _logger.LogDebug("Invalidated by pattern: {Pattern}", pattern);
             }
         }
@@ -85,7 +86,7 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
         
         try
         {
-            await _cacheProvider.InvalidateAsync(key, cancellationToken);
+            await _cacheProvider.RemoveAsync(key, cancellationToken);
             _logger.LogDebug("Invalidated key: {Key}", key);
         }
         catch (Exception ex)
@@ -114,7 +115,7 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
 
             if (allKeys.Any())
             {
-                await _cacheProvider.InvalidateBatchAsync(allKeys, cancellationToken);
+                await _cacheProvider.RemoveManyAsync(allKeys, cancellationToken);
                 _logger.LogInformation("Invalidated {KeyCount} keys for {TableCount} tables in batch", 
                     allKeys.Count, tableNames.Count());
             }
@@ -290,15 +291,26 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
     {
         if (_disposed) throw new ObjectDisposedException(nameof(FusionCacheInvalidationEngine));
         
-        return new FusionCacheInvalidationContext
+        var context = new FusionCacheInvalidationContext(trigger);
+        
+        if (metadata != null)
         {
-            Trigger = trigger,
-            Timestamp = DateTimeOffset.UtcNow,
-            Metadata = metadata as Dictionary<string, object> ?? new Dictionary<string, object>
+            if (metadata is Dictionary<string, object> metaDict)
             {
-                ["cache_provider"] = _cacheProvider.Name
+                foreach (var kvp in metaDict)
+                {
+                    context.AddMetadata(kvp.Key, kvp.Value);
+                }
             }
-        };
+            else
+            {
+                context.AddMetadata("metadata", metadata);
+            }
+        }
+        
+        context.AddMetadata("cache_provider", _cacheProvider.ProviderName);
+        
+        return context;
     }
 
     public async Task ClearAllAsync(CancellationToken cancellationToken = default)
@@ -307,7 +319,12 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
         
         try
         {
-            await _cacheProvider.InvalidateAllAsync(cancellationToken);
+            // ICacheProvider does not have InvalidateAllAsync, clear tracked keys instead
+            var allKeys = GetAllTrackedKeys();
+            if (allKeys.Any())
+            {
+                await _cacheProvider.RemoveManyAsync(allKeys, cancellationToken);
+            }
             
             // 추적 정보도 클리어
             _mappingLock.EnterWriteLock();
@@ -358,8 +375,7 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
                 LastActivity = DateTimeOffset.UtcNow,
                 Metrics = new Dictionary<string, object>
                 {
-                    ["cache_provider_name"] = _cacheProvider.Name,
-                    ["cache_provider_type"] = _cacheProvider.Type.ToString(),
+                    ["cache_provider_name"] = _cacheProvider.ProviderName,
                     ["tracked_tables"] = _tableKeyMappings.Count,
                     ["cache_hit_ratio"] = cacheStats.HitRatio,
                     ["cache_total_keys"] = cacheStats.TotalKeys
@@ -370,6 +386,22 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
         {
             _logger.LogError(ex, "Failed to get invalidation engine status");
             throw;
+        }
+    }
+
+    private List<string> GetAllTrackedKeys()
+    {
+        _mappingLock.EnterReadLock();
+        try
+        {
+            return _tableKeyMappings.Values
+                .SelectMany(keys => keys)
+                .Distinct()
+                .ToList();
+        }
+        finally
+        {
+            _mappingLock.ExitReadLock();
         }
     }
 
@@ -411,7 +443,11 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
         {
             _mappingLock.Dispose();
             
-            if (_cacheProvider is IDisposable disposable)
+            if (_cacheProvider is IAsyncDisposable asyncDisposable)
+            {
+                await asyncDisposable.DisposeAsync();
+            }
+            else if (_cacheProvider is IDisposable disposable)
             {
                 disposable.Dispose();
             }
@@ -450,9 +486,16 @@ public class FusionCacheInvalidationOptions
 /// <summary>
 /// FusionCache 무효화 컨텍스트
 /// </summary>
-public class FusionCacheInvalidationContext : IInvalidationContext
+public class FusionCacheInvalidationContext : BaseInvalidationContext
 {
-    public InvalidationTrigger Trigger { get; set; }
-    public DateTimeOffset Timestamp { get; set; }
-    public Dictionary<string, object>? Metadata { get; set; }
+    public FusionCacheInvalidationContext(InvalidationTrigger trigger) : base(trigger)
+    {
+    }
+
+    public override IInvalidationContext Clone()
+    {
+        var clone = new FusionCacheInvalidationContext(Trigger);
+        CopyPropertiesTo(clone);
+        return clone;
+    }
 }

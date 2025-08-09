@@ -75,7 +75,7 @@ public class InvalidationEngineHealthCheck : IInvalidationHealthChecker, IHealth
                 ["uptime"] = status.Uptime.TotalSeconds,
                 ["tracked_keys"] = status.TrackedKeysCount,
                 ["registered_rules"] = status.RegisteredRulesCount,
-                ["last_activity"] = status.LastActivity?.ToString("O") ?? "Never"
+                ["last_activity"] = status.LastActivity.ToString("O")
             };
 
             // 메트릭 정보 추가

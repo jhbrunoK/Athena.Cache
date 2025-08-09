@@ -120,9 +120,9 @@ public class DefaultInvalidationMetricsCollector : IInvalidationMetricsCollector
         {
             var tags = new TagList
             {
-                ["type"] = type.ToString().ToLowerInvariant(),
-                ["target"] = target,
-                ["success"] = success.ToString().ToLowerInvariant()
+                { "type", type.ToString().ToLowerInvariant() },
+                { "target", target },
+                { "success", success.ToString().ToLowerInvariant() }
             };
 
             _invalidationCounter.Add(1, tags);
@@ -169,9 +169,9 @@ public class DefaultInvalidationMetricsCollector : IInvalidationMetricsCollector
         {
             var tags = new TagList
             {
-                ["type"] = "batch",
-                ["count"] = count.ToString(),
-                ["success"] = success.ToString().ToLowerInvariant()
+                { "type", "batch" },
+                { "count", count.ToString() },
+                { "success", success.ToString().ToLowerInvariant() }
             };
 
             _invalidationCounter.Add(count, tags);
@@ -209,8 +209,8 @@ public class DefaultInvalidationMetricsCollector : IInvalidationMetricsCollector
         {
             var tags = new TagList
             {
-                ["cache_name"] = cacheName,
-                ["result"] = hit ? "hit" : "miss"
+                { "cache_name", cacheName },
+                { "result", hit ? "hit" : "miss" }
             };
 
             _cacheAccessCounter.Add(1, tags);
@@ -238,9 +238,9 @@ public class DefaultInvalidationMetricsCollector : IInvalidationMetricsCollector
         {
             var tags = new TagList
             {
-                ["event_type"] = eventType,
-                ["source_node"] = sourceNode,
-                ["success"] = success.ToString().ToLowerInvariant()
+                { "event_type", eventType },
+                { "source_node", sourceNode },
+                { "success", success.ToString().ToLowerInvariant() }
             };
 
             _distributedEventCounter.Add(1, tags);

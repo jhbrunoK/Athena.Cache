@@ -1,3 +1,5 @@
+using Athena.Invalidation.Core.Abstractions;
+
 namespace Athena.Invalidation.MemoryCache.Abstractions;
 
 /// <summary>
@@ -48,15 +50,7 @@ public interface IMemoryCacheInvalidationProvider
     Task<MemoryCacheInvalidationStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
 }
 
-/// <summary>
-/// 캐시 제공자 타입
-/// </summary>
-public enum CacheProviderType
-{
-    Memory,
-    Distributed,
-    Hybrid
-}
+
 
 /// <summary>
 /// Memory Cache 무효화 통계

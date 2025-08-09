@@ -1,3 +1,4 @@
+using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Redis.Abstractions;
 
 namespace Athena.Invalidation.Redis.Providers;

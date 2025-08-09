@@ -77,7 +77,7 @@ public class DistributedMetricsSnapshot
 /// <summary>
 /// 노드별 메트릭
 /// </summary>
-public class NodeMetrics
+public record NodeMetrics
 {
     public string NodeId { get; init; } = string.Empty;
     public bool IsConnected { get; init; }

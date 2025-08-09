@@ -1,3 +1,4 @@
+using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Redis.Abstractions;
 
 namespace Athena.Invalidation.Redis.Engine;
@@ -309,11 +310,7 @@ public class RedisInvalidationEngine : IInvalidationEngine, IAsyncDisposable
     {
         if (_disposed) throw new ObjectDisposedException(nameof(RedisInvalidationEngine));
         
-        var context = new RedisInvalidationContext
-        {
-            Trigger = trigger,
-            Timestamp = DateTimeOffset.UtcNow
-        };
+        var context = new RedisInvalidationContext(trigger);
         
         if (metadata is Dictionary<string, object> metadataDict)
         {
@@ -462,44 +459,16 @@ public class RedisInvalidationEngineOptions
 /// <summary>
 /// Redis 무효화 컨텍스트
 /// </summary>
-public class RedisInvalidationContext : IInvalidationContext
+public class RedisInvalidationContext : BaseInvalidationContext
 {
-    public string ContextId { get; } = Guid.NewGuid().ToString();
-    public InvalidationTrigger Trigger { get; set; } = new();
-    public string Target { get; set; } = string.Empty;
-    public InvalidationType Type { get; set; }
-    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
-    public Dictionary<string, object> Metadata { get; } = new();
-    public IEnumerable<ICacheProvider> CacheProviders { get; set; } = Enumerable.Empty<ICacheProvider>();
-    public int Priority { get; set; }
-    public TimeSpan? Timeout { get; set; }
-    public int MaxRetries { get; set; }
-
-    public void AddMetadata(string key, object value)
+    public RedisInvalidationContext(InvalidationTrigger trigger) : base(trigger)
     {
-        Metadata[key] = value;
     }
 
-    public T? GetMetadata<T>(string key, T? defaultValue = default)
+    public override IInvalidationContext Clone()
     {
-        if (Metadata.TryGetValue(key, out var value) && value is T typedValue)
-        {
-            return typedValue;
-        }
-        return defaultValue;
-    }
-
-    public IInvalidationContext Clone()
-    {
-        return new RedisInvalidationContext
-        {
-            Trigger = Trigger,
-            Target = Target,
-            Type = Type,
-            CacheProviders = CacheProviders,
-            Priority = Priority,
-            Timeout = Timeout,
-            MaxRetries = MaxRetries
-        };
+        var clone = new RedisInvalidationContext(Trigger);
+        CopyPropertiesTo(clone);
+        return clone;
     }
 }

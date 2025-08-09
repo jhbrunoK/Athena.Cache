@@ -19,6 +19,7 @@ public class MemoryCacheProvider : ICacheProvider, IDisposable
     private readonly DateTimeOffset _startTime = DateTimeOffset.UtcNow;
 
     public string ProviderName => "Memory";
+    public CacheProviderType ProviderType => CacheProviderType.Memory;
 
     public MemoryCacheProvider(IMemoryCache memoryCache, ILogger<MemoryCacheProvider> logger)
     {

@@ -20,6 +20,7 @@ public class RedisCacheProvider : ICacheProvider, IDisposable
     private readonly DateTimeOffset _startTime = DateTimeOffset.UtcNow;
 
     public string ProviderName => "Redis";
+    public CacheProviderType ProviderType => CacheProviderType.Distributed;
 
     public RedisCacheProvider(
         IDistributedCache distributedCache,

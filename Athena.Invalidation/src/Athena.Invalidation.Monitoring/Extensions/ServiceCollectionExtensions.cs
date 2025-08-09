@@ -49,9 +49,7 @@ public static class ServiceCollectionExtensions
             .WithMetrics(builder =>
             {
                 builder
-                    .AddMeter("Athena.Invalidation")
-                    .AddAspNetCoreInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddMeter("Athena.Invalidation");
                     
                 configureMeter?.Invoke(builder);
             });

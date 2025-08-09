@@ -12,6 +12,11 @@ public interface ICacheProvider
     string ProviderName { get; }
 
     /// <summary>
+    /// 캐시 프로바이더 타입
+    /// </summary>
+    CacheProviderType ProviderType { get; }
+
+    /// <summary>
     /// 캐시 키가 존재하는지 확인
     /// </summary>
     Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default);
@@ -50,6 +55,16 @@ public interface ICacheProvider
     /// 캐시 연결 상태 확인
     /// </summary>
     Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// 캐시 제공자 타입
+/// </summary>
+public enum CacheProviderType
+{
+    Memory,
+    Distributed,
+    Hybrid
 }
 
 /// <summary>

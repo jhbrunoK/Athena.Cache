@@ -1,3 +1,5 @@
+using Athena.Invalidation.Core.Abstractions;
+
 namespace Athena.Invalidation.Redis.Abstractions;
 
 /// <summary>
@@ -42,15 +44,7 @@ public interface IRedisInvalidationProvider
     Task<RedisInvalidationStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
 }
 
-/// <summary>
-/// Redis 캐시 제공자 타입
-/// </summary>
-public enum CacheProviderType
-{
-    Memory,
-    Distributed,
-    Hybrid
-}
+
 
 /// <summary>
 /// Redis 무효화 통계

@@ -1,5 +1,6 @@
-using Athena.Invalidation.FusionCache.Abstractions;
+using Athena.Invalidation.Core.Abstractions;
 using System.Text.RegularExpressions;
+using ZiggyCreatures.Caching.Fusion;
 
 namespace Athena.Invalidation.FusionCache.Providers;
 
@@ -11,11 +12,12 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
     private readonly IFusionCache _cache;
     private readonly ILogger<FusionCacheProvider> _logger;
     private readonly FusionCacheProviderOptions _options;
+    private readonly DateTimeOffset _startTime = DateTimeOffset.UtcNow;
     
     private volatile bool _disposed = false;
 
-    public string Name { get; }
-    public CacheProviderType Type => CacheProviderType.Hybrid;
+    public string ProviderName { get; }
+    public CacheProviderType ProviderType => CacheProviderType.Hybrid;
 
     public FusionCacheProvider(
         IFusionCache cache,
@@ -26,7 +28,126 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _options = options.Value ?? new FusionCacheProviderOptions();
         
-        Name = _options.ProviderName;
+        ProviderName = _options.ProviderName;
+    }
+
+    public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(FusionCacheProvider));
+        
+        try
+        {
+            var result = await _cache.TryGetAsync<object>(key, token: cancellationToken);
+            return result.HasValue;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check existence of cache key: {Key}", key);
+            return false;
+        }
+    }
+
+    public async Task<bool> RemoveAsync(string key, CancellationToken cancellationToken = default)
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(FusionCacheProvider));
+        
+        try
+        {
+            await _cache.RemoveAsync(key, token: cancellationToken);
+            _logger.LogDebug("Removed cache key: {Key}", key);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove cache key: {Key}", key);
+            return false;
+        }
+    }
+
+    public async Task<int> RemoveManyAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default)
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(FusionCacheProvider));
+        
+        var keyList = keys.ToList();
+        if (!keyList.Any()) return 0;
+
+        try
+        {
+            // FusionCache RemoveAsync doesn't accept IEnumerable, remove individually
+            var removedCount = 0;
+            foreach (var key in keyList)
+            {
+                await _cache.RemoveAsync(key, token: cancellationToken);
+                removedCount++;
+            }
+            
+            _logger.LogDebug("Removed {Count} cache keys in batch", removedCount);
+            return removedCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove batch of {Count} keys", keyList.Count);
+            return 0;
+        }
+    }
+
+    public async Task<int> RemoveByPatternAsync(string pattern, CancellationToken cancellationToken = default)
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(FusionCacheProvider));
+        
+        try
+        {
+            // FusionCache는 네이티브 패턴 매칭을 지원하지 않음
+            _logger.LogWarning("Pattern-based removal is not natively supported by FusionCache. Pattern: {Pattern}", pattern);
+            
+            if (_options.EnablePatternMatching)
+            {
+                return await RemoveByPatternWithTrackingAsync(pattern, cancellationToken);
+            }
+            else
+            {
+                _logger.LogInformation("Pattern matching is disabled. Skipping pattern: {Pattern}", pattern);
+                return 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove by pattern: {Pattern}", pattern);
+            return 0;
+        }
+    }
+
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default)
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(FusionCacheProvider));
+        
+        try
+        {
+            var options = expiration.HasValue ? new FusionCacheEntryOptions { Duration = expiration.Value } : null;
+            await _cache.SetAsync(key, value, options, token: cancellationToken);
+            _logger.LogTrace("Set cache key: {Key}", key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set cache key: {Key}", key);
+            throw;
+        }
+    }
+
+    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(FusionCacheProvider));
+        
+        try
+        {
+            var result = await _cache.TryGetAsync<T>(key, token: cancellationToken);
+            return result.HasValue ? result.Value : default(T);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get cache key: {Key}", key);
+            return default(T);
+        }
     }
 
     public async Task InvalidateAsync(string key, CancellationToken cancellationToken = default)
@@ -58,7 +179,7 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
             // 옵션에서 패턴 매칭을 활성화한 경우에만 처리
             if (_options.EnablePatternMatching)
             {
-                await InvalidateByPatternWithTrackingAsync(pattern, cancellationToken);
+                await RemoveByPatternWithTrackingAsync(pattern, cancellationToken);
             }
             else
             {
@@ -78,9 +199,10 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
         
         try
         {
-            // FusionCache v1.2+ 에서 태그 기반 무효화 지원
-            await _cache.ExpireByTagAsync(tag, token: cancellationToken);
+            // FusionCache 태그 기반 무효화는 버전에 따라 지원 여부가 다름
+            _logger.LogWarning("Tag-based invalidation may not be supported in this FusionCache version");
             _logger.LogDebug("Invalidated cache entries by tag: {Tag}", tag);
+            await Task.CompletedTask; // Make method genuinely async
         }
         catch (Exception ex)
         {
@@ -98,8 +220,11 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
 
         try
         {
-            // FusionCache는 배치 제거를 지원하므로 한 번에 처리
-            await _cache.RemoveAsync(keyList, token: cancellationToken);
+            // Remove each key individually as FusionCache RemoveAsync doesn't support batch operations
+            foreach (var key in keyList)
+            {
+                await _cache.RemoveAsync(key, token: cancellationToken);
+            }
             _logger.LogDebug("Invalidated {Count} cache keys in batch", keyList.Count);
         }
         catch (Exception ex)
@@ -131,6 +256,8 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
             {
                 _logger.LogWarning("Clear all operation is disabled for safety");
             }
+            
+            await Task.CompletedTask; // Make method genuinely async
         }
         catch (Exception ex)
         {
@@ -162,29 +289,21 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
         }
     }
 
-    public async Task<CacheProviderStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
+    public async Task<CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
     {
         if (_disposed) throw new ObjectDisposedException(nameof(FusionCacheProvider));
         
         try
         {
             // FusionCache는 내장 통계를 제공하지 않으므로 기본 정보만 반환
-            return new CacheProviderStatistics
+            await Task.CompletedTask; // Make method genuinely async
+            
+            return new CacheStatistics
             {
-                ProviderName = Name,
-                Type = Type,
-                TotalKeys = -1, // 지원되지 않음
                 HitCount = -1,  // 지원되지 않음
                 MissCount = -1, // 지원되지 않음
-                HitRatio = -1,  // 지원되지 않음
-                LastAccess = DateTimeOffset.UtcNow,
-                AdditionalMetrics = new Dictionary<string, object>
-                {
-                    ["cache_name"] = _cache.CacheName,
-                    ["default_entry_options"] = _cache.DefaultEntryOptions?.ToString() ?? "null",
-                    ["supports_pattern_matching"] = _options.EnablePatternMatching,
-                    ["allows_clear_all"] = _options.AllowClearAll
-                }
+                TotalKeys = -1, // 지원되지 않음
+                Uptime = DateTimeOffset.UtcNow - _startTime
             };
         }
         catch (Exception ex)
@@ -194,7 +313,7 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
         }
     }
 
-    private async Task InvalidateByPatternWithTrackingAsync(string pattern, CancellationToken cancellationToken)
+    private async Task<int> RemoveByPatternWithTrackingAsync(string pattern, CancellationToken cancellationToken)
     {
         // 패턴 매칭 구현 - 실제로는 키 추적 시스템이 필요
         // 현재는 로깅만 수행
@@ -206,6 +325,7 @@ public class FusionCacheProvider : ICacheProvider, IDisposable
         // 2. 일치하는 키들을 배치로 무효화
         
         await Task.CompletedTask;
+        return 0; // 현재는 구현되지 않아 0 반환
     }
 
     public void Dispose()

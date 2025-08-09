@@ -255,6 +255,7 @@ public class MultiProviderInvalidationHealthCheck : IHealthCheck
             {
                 return HealthCheckResult.Degraded(
                     $"Multi-provider invalidation engine is degraded ({healthyProviders}/{totalProviders} providers healthy)", 
+                    exception: null,
                     data);
             }
         }
