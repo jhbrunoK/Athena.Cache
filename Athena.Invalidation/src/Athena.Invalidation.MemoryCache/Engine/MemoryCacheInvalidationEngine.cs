@@ -416,6 +416,7 @@ public class MemoryCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
     {
         if (_disposed) return;
         
+        await Task.Yield(); // Make the method genuinely async
         try
         {
             _mappingLock.Dispose();
