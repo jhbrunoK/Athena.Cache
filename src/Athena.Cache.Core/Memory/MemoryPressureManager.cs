@@ -1,5 +1,4 @@
 using System.Runtime;
-using Microsoft.Extensions.Logging;
 
 namespace Athena.Cache.Core.Memory;
 

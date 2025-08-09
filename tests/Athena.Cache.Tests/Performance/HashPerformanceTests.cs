@@ -1,11 +1,10 @@
-﻿using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Implementations;
 using FluentAssertions;
 using System.Diagnostics;
 using System.IO.Hashing;
 using System.Security.Cryptography;
 using System.Text;
-using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 

@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.Logging;
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Memory;
 

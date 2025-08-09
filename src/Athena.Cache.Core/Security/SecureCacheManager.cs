@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Memory;
 using Athena.Cache.Core.Models;

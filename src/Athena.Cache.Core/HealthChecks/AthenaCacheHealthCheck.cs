@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Logging;
 using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Observability;
 using Athena.Cache.Core.Memory;

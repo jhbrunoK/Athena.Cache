@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using StackExchange.Redis;
 using System.Diagnostics;
-using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 

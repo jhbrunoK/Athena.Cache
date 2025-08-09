@@ -6,7 +6,6 @@ using Athena.Cache.Core.ObjectPools;
 using FluentAssertions;
 using Microsoft.Extensions.ObjectPool;
 using System.Diagnostics;
-using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 

@@ -1,5 +1,3 @@
-using Athena.Cache.Core.Enums;
-
 namespace Athena.Cache.FusionCache.Implementations;
 
 /// <summary>

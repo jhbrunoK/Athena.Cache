@@ -1,4 +1,4 @@
-﻿using Athena.Cache.Core.Configuration;
+using Athena.Cache.Core.Configuration;
 using Athena.Cache.Core.Implementations;
 using Athena.Cache.Core.Middleware;
 using FluentAssertions;
@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System.Diagnostics;
 using System.Text.Json;
-using Xunit;
 
 namespace Athena.Cache.Tests.Performance;
 

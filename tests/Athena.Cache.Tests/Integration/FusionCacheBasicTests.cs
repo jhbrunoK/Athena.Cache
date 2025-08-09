@@ -1,8 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Xunit;
 using Athena.Cache.Core.Abstractions;
-using Athena.Cache.Core.Configuration;
 using Athena.Cache.FusionCache.Extensions;
 
 namespace Athena.Cache.Tests.Integration;

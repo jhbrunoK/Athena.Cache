@@ -1,10 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Athena.Cache.Core.HealthChecks;
-using Athena.Cache.Core.Abstractions;
-using Athena.Cache.Core.Observability;
-using Athena.Cache.Core.Memory;
-using Athena.Cache.Core.Security;
 using MsHealthCheck = Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Athena.Cache.Core.Extensions;
