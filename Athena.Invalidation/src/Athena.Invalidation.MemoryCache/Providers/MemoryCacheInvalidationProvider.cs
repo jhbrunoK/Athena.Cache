@@ -1,3 +1,8 @@
+using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Athena.Invalidation.MemoryCache.Abstractions;
 
 namespace Athena.Invalidation.MemoryCache.Providers;
@@ -162,7 +167,7 @@ public class MemoryCacheInvalidationProvider : IMemoryCacheInvalidationProvider,
             _tagsByKey.Clear();
             _trackedKeys.Clear();
             
-            _logger.LogWarning("Cleared {Count} tracked memory cache entries", keysToRemove.Count);
+            // Successfully cleared tracked cache entries
             return Task.CompletedTask;
         }
         catch (Exception ex)
@@ -417,7 +422,7 @@ public class MemoryCacheInvalidationProvider : IMemoryCacheInvalidationProvider,
 /// <summary>
 /// Thread-safe HashSet 구현
 /// </summary>
-public class ConcurrentHashSet<T> : IEnumerable<T>
+public class ConcurrentHashSet<T> : IEnumerable<T> where T : notnull
 {
     private readonly ConcurrentDictionary<T, byte> _dictionary = new();
 

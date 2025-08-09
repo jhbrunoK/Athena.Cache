@@ -141,7 +141,7 @@ public class BackgroundInvalidationQueue : IBackgroundInvalidationQueue, IDispos
         job = default!;
         if (_disposed) return false;
 
-        if (_reader.TryRead(out job))
+        if (_reader.TryRead(out job!))
         {
             _logger.LogTrace("Successfully dequeued invalidation job {JobId} synchronously", job.Id);
             return true;
