@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +23,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Moq" Version="4.20.69" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
+    <PackageReference Include="StackExchange.Redis" Version="2.7.10" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +32,8 @@
     <ProjectReference Include="../../src/Athena.Invalidation.Engine/Athena.Invalidation.Engine.csproj" />
     <ProjectReference Include="../../src/Athena.Invalidation.Strategies/Athena.Invalidation.Strategies.csproj" />
     <ProjectReference Include="../../src/Athena.Invalidation.AspNetCore/Athena.Invalidation.AspNetCore.csproj" />
+    <ProjectReference Include="../../src/Athena.Invalidation.Distributed/Athena.Invalidation.Distributed.csproj" />
+    <ProjectReference Include="../../src/Athena.Invalidation.Monitoring/Athena.Invalidation.Monitoring.csproj" />
   </ItemGroup>
 
 </Project>
