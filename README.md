@@ -79,6 +79,7 @@ public class UsersController : ControllerBase
 | 패키지 | 설명 | NuGet |
 |--------|------|-------|
 | **[Athena.Cache.Core](https://www.nuget.org/packages/Athena.Cache.Core/)** | 기본 캐싱 기능 (MemoryCache) | [![NuGet](https://img.shields.io/nuget/v/Athena.Cache.Core.svg)](https://www.nuget.org/packages/Athena.Cache.Core/) |
+| **[Athena.Cache.FusionCache](https://www.nuget.org/packages/Athena.Cache.FusionCache/)** | **🚀 FusionCache 통합 (권장)** | [![NuGet](https://img.shields.io/nuget/v/Athena.Cache.FusionCache.svg)](https://www.nuget.org/packages/Athena.Cache.FusionCache/) |
 | **[Athena.Cache.Redis](https://www.nuget.org/packages/Athena.Cache.Redis/)** | Redis 분산 캐싱 지원 | [![NuGet](https://img.shields.io/nuget/v/Athena.Cache.Redis.svg)](https://www.nuget.org/packages/Athena.Cache.Redis/) |
 | **[Athena.Cache.Monitoring](https://www.nuget.org/packages/Athena.Cache.Monitoring/)** | 실시간 모니터링 및 알림 | [![NuGet](https://img.shields.io/nuget/v/Athena.Cache.Monitoring.svg)](https://www.nuget.org/packages/Athena.Cache.Monitoring/) |
 | **[Athena.Cache.Analytics](https://www.nuget.org/packages/Athena.Cache.Analytics/)** | 고급 분석 및 인사이트 | [![NuGet](https://img.shields.io/nuget/v/Athena.Cache.Analytics.svg)](https://www.nuget.org/packages/Athena.Cache.Analytics/) |
@@ -91,8 +92,25 @@ public class UsersController : ControllerBase
 - 🎯 **어트리뷰트 기반 캐싱**: `[AthenaCache]`로 간단한 캐시 설정
 - 🗂️ **자동 무효화**: `[CacheInvalidateOn]`으로 테이블 기반 캐시 무효화
 - 🔑 **자동 키 생성**: 쿼리 파라미터에서 캐시 키 자동 생성
-- 🚀 **다중 백엔드**: MemoryCache, Redis, Valkey 지원
+- 🚀 **다중 백엔드**: MemoryCache, Redis, **FusionCache** 지원
 - ⚡ **고성능**: 메모리 최적화 및 제로 할당 구현
+- 🛡️ **고급 기능**: Fail-Safe, Circuit Breaker, 태그 기반 무효화 (FusionCache 통합)
+
+## 🔧 FusionCache 통합 (권장)
+
+```csharp
+// FusionCache 통합 - Fail-Safe, Circuit Breaker, 태그 기반 무효화 지원
+builder.Services.AddAthenaCacheFusionComplete(
+    athena => {
+        athena.Namespace = "MyApp_PROD";
+        athena.DefaultExpirationMinutes = 60;
+    },
+    fusion => {
+        fusion.WithFailSafe(TimeSpan.FromHours(1));
+        fusion.WithCircuitBreaker(TimeSpan.FromMinutes(2));
+        fusion.WithOptions(options => options.DefaultEntryOptions.Duration = TimeSpan.FromHours(1));
+    });
+```
 
 ## 🔧 Redis 설정
 
@@ -107,6 +125,12 @@ builder.Services.AddAthenaCacheRedisComplete(
         redis.ConnectionString = "localhost:6379";
         redis.DatabaseId = 1;
     });
+
+// 또는 FusionCache + Redis 분산 캐시
+builder.Services.AddAthenaCacheFusionDistributed(
+    "localhost:6379",
+    athena => { athena.Namespace = "MyApp_PROD"; },
+    fusion => { fusion.WithBackplane(); });
 ```
 
 ## 📄 라이선스
