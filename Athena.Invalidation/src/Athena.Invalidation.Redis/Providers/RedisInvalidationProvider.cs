@@ -251,7 +251,7 @@ public class RedisInvalidationProvider : IRedisInvalidationProvider, IDisposable
             if (serverSection != null)
             {
                 var uptimeItem = serverSection.FirstOrDefault(item => item.Key == "uptime_in_seconds");
-                if (uptimeItem != null && int.TryParse(uptimeItem.Value, out var uptimeSeconds))
+                if (!uptimeItem.Equals(default(KeyValuePair<string, string>)) && int.TryParse(uptimeItem.Value, out var uptimeSeconds))
                 {
                     uptime = TimeSpan.FromSeconds(uptimeSeconds);
                 }
@@ -261,7 +261,7 @@ public class RedisInvalidationProvider : IRedisInvalidationProvider, IDisposable
             {
                 var dbKey = $"db{_options.Database}";
                 var dbInfo = keyspaceSection.FirstOrDefault(item => item.Key == dbKey);
-                if (dbInfo != null)
+                if (!dbInfo.Equals(default(KeyValuePair<string, string>)))
                 {
                     // db0:keys=2,expires=0,avg_ttl=0 형식 파싱
                     var parts = dbInfo.Value.Split(',');

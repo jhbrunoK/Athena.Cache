@@ -66,7 +66,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
             
             var duration = DateTimeOffset.UtcNow - startTime;
             
-            Interlocked.Increment(ref _statistics.PublishedEvents);
+            _statistics.PublishedEvents++;
             _statistics.AverageProcessingTime = CalculateAverageTime(_statistics.AverageProcessingTime, duration);
             
             if (_options.LogEvents)
@@ -77,7 +77,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Interlocked.Increment(ref _statistics.FailedEvents);
+            _statistics.FailedEvents++;
             _logger.LogError(ex, "Failed to publish invalidation event {EventType}:{EventId}",
                 typeof(T).Name, invalidationEvent.EventId);
             throw;
@@ -268,7 +268,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
         
         try
         {
-            var deserializedEvent = JsonSerializer.Deserialize(message, eventType, _options.JsonOptions);
+            var deserializedEvent = JsonSerializer.Deserialize(message.Message.ToString(), eventType, _options.JsonOptions);
             if (deserializedEvent is not IDistributedInvalidationEvent invalidationEvent)
             {
                 _logger.LogWarning("Received invalid event format for type {EventType}", eventType.Name);
@@ -306,7 +306,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
                 await Task.WhenAll(processingTasks);
             }
 
-            Interlocked.Increment(ref _statistics.ConsumedEvents);
+            _statistics.ConsumedEvents++;
             
             var duration = DateTimeOffset.UtcNow - startTime;
             _statistics.AverageProcessingTime = CalculateAverageTime(_statistics.AverageProcessingTime, duration);
@@ -319,7 +319,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Interlocked.Increment(ref _statistics.FailedEvents);
+            _statistics.FailedEvents++;
             _logger.LogError(ex, "Error processing incoming message for event type {EventType}", eventType.Name);
         }
     }

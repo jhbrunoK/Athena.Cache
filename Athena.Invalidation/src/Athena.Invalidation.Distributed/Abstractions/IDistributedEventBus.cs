@@ -56,7 +56,7 @@ public interface IDistributedInvalidationEvent
     string EventType { get; }
     
     /// <summary>발생 노드 식별자</summary>
-    string SourceNodeId { get; }
+    string SourceNodeId { get; set; }
     
     /// <summary>발생 시간</summary>
     DateTimeOffset Timestamp { get; }

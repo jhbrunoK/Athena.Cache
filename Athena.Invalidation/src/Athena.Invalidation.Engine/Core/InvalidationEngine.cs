@@ -158,8 +158,8 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
     {
         if (rule == null) throw new ArgumentNullException(nameof(rule));
 
-        _rules[rule.RuleId] = rule;
-        _logger.LogInformation("Registered invalidation rule '{RuleId}': {RuleName}", rule.RuleId, rule.Name);
+        _rules[rule.Id] = rule;
+        _logger.LogInformation("Registered invalidation rule '{RuleId}': {RuleName}", rule.Id, rule.Name);
         
         return Task.CompletedTask;
     }

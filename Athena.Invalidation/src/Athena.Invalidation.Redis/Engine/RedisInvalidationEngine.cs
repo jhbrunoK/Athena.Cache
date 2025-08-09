@@ -309,16 +309,24 @@ public class RedisInvalidationEngine : IInvalidationEngine, IAsyncDisposable
     {
         if (_disposed) throw new ObjectDisposedException(nameof(RedisInvalidationEngine));
         
-        return new RedisInvalidationContext
+        var context = new RedisInvalidationContext
         {
             Trigger = trigger,
-            Timestamp = DateTimeOffset.UtcNow,
-            Metadata = metadata as Dictionary<string, object> ?? new Dictionary<string, object>
-            {
-                ["cache_provider"] = _redisProvider.Name,
-                ["redis_database"] = _redisProvider.Database
-            }
+            Timestamp = DateTimeOffset.UtcNow
         };
+        
+        if (metadata is Dictionary<string, object> metadataDict)
+        {
+            foreach (var kvp in metadataDict)
+            {
+                context.AddMetadata(kvp.Key, kvp.Value);
+            }
+        }
+        
+        context.AddMetadata("cache_provider", _redisProvider.Name);
+        context.AddMetadata("redis_database", _redisProvider.Database);
+        
+        return context;
     }
 
     public async Task ClearAllAsync(CancellationToken cancellationToken = default)
@@ -456,7 +464,42 @@ public class RedisInvalidationEngineOptions
 /// </summary>
 public class RedisInvalidationContext : IInvalidationContext
 {
-    public InvalidationTrigger Trigger { get; set; }
-    public DateTimeOffset Timestamp { get; set; }
-    public Dictionary<string, object>? Metadata { get; set; }
+    public string ContextId { get; } = Guid.NewGuid().ToString();
+    public InvalidationTrigger Trigger { get; set; } = new();
+    public string Target { get; set; } = string.Empty;
+    public InvalidationType Type { get; set; }
+    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
+    public Dictionary<string, object> Metadata { get; } = new();
+    public IEnumerable<ICacheProvider> CacheProviders { get; set; } = Enumerable.Empty<ICacheProvider>();
+    public int Priority { get; set; }
+    public TimeSpan? Timeout { get; set; }
+    public int MaxRetries { get; set; }
+
+    public void AddMetadata(string key, object value)
+    {
+        Metadata[key] = value;
+    }
+
+    public T? GetMetadata<T>(string key, T? defaultValue = default)
+    {
+        if (Metadata.TryGetValue(key, out var value) && value is T typedValue)
+        {
+            return typedValue;
+        }
+        return defaultValue;
+    }
+
+    public IInvalidationContext Clone()
+    {
+        return new RedisInvalidationContext
+        {
+            Trigger = Trigger,
+            Target = Target,
+            Type = Type,
+            CacheProviders = CacheProviders,
+            Priority = Priority,
+            Timeout = Timeout,
+            MaxRetries = MaxRetries
+        };
+    }
 }

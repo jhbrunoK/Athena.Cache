@@ -111,6 +111,9 @@ public class InvalidationEngineStatus
     public bool IsHealthy { get; set; }
     public int ActiveRules { get; set; }
     public int TrackedKeys { get; set; }
+    public int TrackedKeysCount { get; set; }
+    public int RegisteredRulesCount { get; set; }
+    public DateTimeOffset LastActivity { get; set; }
     public TimeSpan Uptime { get; set; }
     public Dictionary<string, object> Metrics { get; set; } = new();
 }

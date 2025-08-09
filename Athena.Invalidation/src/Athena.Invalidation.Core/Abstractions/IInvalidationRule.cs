@@ -9,7 +9,7 @@ public interface IInvalidationRule
     /// <summary>
     /// 규칙 고유 식별자
     /// </summary>
-    string RuleId { get; }
+    string Id { get; }
 
     /// <summary>
     /// 규칙 이름
