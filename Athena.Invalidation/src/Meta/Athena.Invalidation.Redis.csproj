@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    
+    <!-- 메타패키지 설정 -->
+    <PackageId>Athena.Invalidation.Redis</PackageId>
+    <Authors>Athena Development Team</Authors>
+    <Description>Redis-based distributed cache invalidation extension for Athena.Invalidation. Includes Redis, FusionCache, and multi-provider support for distributed caching scenarios.</Description>
+    <PackageTags>cache;invalidation;redis;distributed;fusioncache;multi-provider;stackexchange;meta-package</PackageTags>
+    <PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- 메타패키지는 코드 없이 의존성만 포함 -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <!-- 메인 패키지 의존성 -->
+  <ItemGroup>
+    <PackageReference Include="Athena.Invalidation" Version="$(Version)" />
+  </ItemGroup>
+
+  <!-- Redis 및 분산 캐싱 패키지들 -->
+  <ItemGroup>
+    <PackageReference Include="Athena.Invalidation.Redis" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.FusionCache" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.MultiProvider" Version="$(Version)" />
+  </ItemGroup>
+
+  <!-- README 파일 포함 -->
+  <ItemGroup>
+    <None Include="Redis-README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
