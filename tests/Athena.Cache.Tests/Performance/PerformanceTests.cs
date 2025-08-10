@@ -48,7 +48,7 @@ public class PerformanceTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task CacheKeyGeneration_ShouldBeEfficient()
+    public void CacheKeyGeneration_ShouldBeEfficient()
     {
         // Arrange
         var options = new AthenaCacheOptions

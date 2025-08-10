@@ -34,7 +34,7 @@ public static class HealthCheckServiceCollectionExtensions
             .AddCheck<AthenaCacheHealthCheck>(
                 name: name,
                 failureStatus: failureStatus ?? MsHealthCheck.HealthStatus.Degraded,
-                tags: tags);
+                tags: tags ?? []);
 
         return services;
     }

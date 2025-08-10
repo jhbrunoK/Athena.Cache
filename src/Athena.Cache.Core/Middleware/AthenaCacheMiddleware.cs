@@ -89,10 +89,10 @@ public class AthenaCacheMiddleware(
                     
                     return result;
                 },
-                fallback: async () => 
+                fallback: () => 
                 {
                     logger.LogWarning("Cache circuit breaker open, bypassing cache for key: {CacheKey}", cacheKey);
-                    return null;
+                    return Task.FromResult<CachedResponse?>(null);
                 }).ConfigureAwait(false);
             
             if (cachedResponse != null)
@@ -289,7 +289,7 @@ public class AthenaCacheMiddleware(
     /// <summary>
     /// LINQ 없이 파라미터 문자열 생성 (zero allocation 최적화)
     /// </summary>
-    private static string BuildParameterString(IDictionary<string, object?> parameters)
+    private static string BuildParameterString(IDictionary<string, object> parameters)
     {
         if (parameters.Count == 0)
             return string.Empty;
@@ -410,10 +410,10 @@ public class AthenaCacheMiddleware(
                             
                             return Task.CompletedTask;
                         },
-                        fallback: async () =>
+                        fallback: () =>
                         {
                             logger.LogWarning("Cache circuit breaker open, unable to cache response for key: {CacheKey}", cacheKey);
-                            return Task.CompletedTask;
+                            return Task.FromResult(Task.CompletedTask);
                         }).ConfigureAwait(false);
                     
                     // 지능형 캐시 관리자에 설정 기록

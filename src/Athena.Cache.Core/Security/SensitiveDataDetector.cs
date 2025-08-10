@@ -8,7 +8,7 @@ namespace Athena.Cache.Core.Security;
 /// </summary>
 public static class SensitiveDataDetector
 {
-    private static ILogger? _logger;
+    private static ILogger? _logger = null;
 
     // 민감한 데이터 패턴들 (정규표현식)
     private static readonly Dictionary<string, Regex> SensitivePatterns = new()

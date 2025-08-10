@@ -217,7 +217,7 @@ public class SimplifiedWebIntegrationTests
 public class BasicFunctionalityTests
 {
     [Fact]
-    public async Task CacheMiddleware_ShouldBeRegistered()
+    public void CacheMiddleware_ShouldBeRegistered()
     {
         // Arrange
         var services = new ServiceCollection();
