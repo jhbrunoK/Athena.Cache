@@ -89,7 +89,7 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
 
     public async Task TrackCacheKeyAsync(string tableName, string cacheKey, CancellationToken cancellationToken = default)
     {
-        await TrackCacheKeyAsync(new[] { tableName }, cacheKey, cancellationToken);
+        await TrackCacheKeyAsync([tableName], cacheKey, cancellationToken);
     }
 
     public async Task TrackCacheKeyAsync(string[] tableNames, string cacheKey, CancellationToken cancellationToken = default)
@@ -150,7 +150,7 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to get tracked keys for table '{TableName}'", tableName);
-            return Enumerable.Empty<string>();
+            return [];
         }
     }
 
@@ -267,14 +267,14 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
                     var canHandle = (bool)typeof(ICommandInvalidationHandler)
                         .GetMethod("CanHandle")!
                         .MakeGenericMethod(typeof(TCommand))
-                        .Invoke(commandHandler, new object[] { command! });
+                        .Invoke(commandHandler, [command!]);
                     
                     if (canHandle)
                     {
                         await (Task)typeof(ICommandInvalidationHandler)
                             .GetMethod("HandleCommandAsync")!
                             .MakeGenericMethod(typeof(TCommand))
-                            .Invoke(commandHandler, new object[] { command!, cancellationToken });
+                            .Invoke(commandHandler, [command!, cancellationToken]);
                         return;
                     }
                 }
@@ -316,14 +316,14 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
                     var canHandle = (bool)typeof(IEventDrivenInvalidation)
                         .GetMethod("CanHandle")!
                         .MakeGenericMethod(typeof(TEvent))
-                        .Invoke(eventHandler, new object[] { domainEvent! });
+                        .Invoke(eventHandler, [domainEvent!]);
                     
                     if (canHandle)
                     {
                         await (Task)typeof(IEventDrivenInvalidation)
                             .GetMethod("HandleEventAsync")!
                             .MakeGenericMethod(typeof(TEvent))
-                            .Invoke(eventHandler, new object[] { domainEvent!, cancellationToken });
+                            .Invoke(eventHandler, [domainEvent!, cancellationToken]);
                         return;
                     }
                 }
@@ -365,7 +365,7 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
                     await (Task)typeof(IReadModelInvalidator)
                         .GetMethod("InvalidateReadModelAsync")!
                         .MakeGenericMethod(typeof(TReadModel))
-                        .Invoke(readModelInvalidator, new object?[] { modelId, cancellationToken });
+                        .Invoke(readModelInvalidator, [modelId, cancellationToken]);
                     return;
                 }
                 catch (Exception ex)
@@ -411,7 +411,7 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
                     await (Task)typeof(IReadModelInvalidator)
                         .GetMethod("InvalidateProjectionAsync")!
                         .MakeGenericMethod(typeof(TProjection))
-                        .Invoke(readModelInvalidator, new object?[] { projectionId, cancellationToken });
+                        .Invoke(readModelInvalidator, [projectionId, cancellationToken]);
                     return;
                 }
                 catch (Exception ex)
@@ -506,7 +506,7 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
     {
         try
         {
-            var existingSet = await provider.GetAsync<HashSet<string>>(trackingKey, cancellationToken) ?? new HashSet<string>();
+            var existingSet = await provider.GetAsync<HashSet<string>>(trackingKey, cancellationToken) ?? [];
             existingSet.Add(cacheKey);
             await provider.SetAsync(trackingKey, existingSet, expiration, cancellationToken);
         }

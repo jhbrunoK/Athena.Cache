@@ -60,7 +60,7 @@ public class BasicInvalidationStrategyTests
         
         contextMock.Setup(c => c.Type).Returns(InvalidationType.Table);
         contextMock.Setup(c => c.Target).Returns("TestTable");
-        contextMock.Setup(c => c.CacheProviders).Returns(new[] { cacheProviderMock.Object });
+        contextMock.Setup(c => c.CacheProviders).Returns([cacheProviderMock.Object]);
         contextMock.Setup(c => c.ContextId).Returns("test-context");
 
         // 추적된 키들 설정
@@ -95,7 +95,7 @@ public class BasicInvalidationStrategyTests
         
         contextMock.Setup(c => c.Type).Returns(InvalidationType.Pattern);
         contextMock.Setup(c => c.Target).Returns("test:pattern:*");
-        contextMock.Setup(c => c.CacheProviders).Returns(new[] { cacheProviderMock.Object });
+        contextMock.Setup(c => c.CacheProviders).Returns([cacheProviderMock.Object]);
         contextMock.Setup(c => c.ContextId).Returns("test-context");
 
         cacheProviderMock
@@ -123,7 +123,7 @@ public class BasicInvalidationStrategyTests
         
         contextMock.Setup(c => c.Type).Returns(InvalidationType.Key);
         contextMock.Setup(c => c.Target).Returns("specific:key");
-        contextMock.Setup(c => c.CacheProviders).Returns(new[] { cacheProviderMock.Object });
+        contextMock.Setup(c => c.CacheProviders).Returns([cacheProviderMock.Object]);
         contextMock.Setup(c => c.ContextId).Returns("test-context");
 
         cacheProviderMock
@@ -150,7 +150,7 @@ public class BasicInvalidationStrategyTests
         
         var tableNames = new List<string> { "Table1", "Table2" };
         contextMock.Setup(c => c.Type).Returns(InvalidationType.Batch);
-        contextMock.Setup(c => c.CacheProviders).Returns(new[] { cacheProviderMock.Object });
+        contextMock.Setup(c => c.CacheProviders).Returns([cacheProviderMock.Object]);
         contextMock.Setup(c => c.ContextId).Returns("test-context");
         contextMock.Setup(c => c.GetMetadata<List<string>>("TableNames", It.IsAny<List<string>>()))
                   .Returns(tableNames);
@@ -168,10 +168,10 @@ public class BasicInvalidationStrategyTests
         // 각 테이블별 추적 키 설정
         cacheProviderMock
             .Setup(p => p.GetAsync<HashSet<string>>("invalidation:tracking:Table1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<string> { "key1" });
+            .ReturnsAsync(["key1"]);
         cacheProviderMock
             .Setup(p => p.GetAsync<HashSet<string>>("invalidation:tracking:Table2", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<string> { "key2", "key3" });
+            .ReturnsAsync(["key2", "key3"]);
         
         cacheProviderMock
             .Setup(p => p.RemoveManyAsync(It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))

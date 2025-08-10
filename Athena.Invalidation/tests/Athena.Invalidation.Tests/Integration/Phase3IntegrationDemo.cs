@@ -234,45 +234,38 @@ public class Phase3IntegrationDemo : IAsyncLifetime
 /// <summary>
 /// 데모용 Mock 무효화 엔진 - 모든 작업 성공
 /// </summary>
-public class DemoMockInvalidationEngine : IInvalidationEngine
+public class DemoMockInvalidationEngine(ILogger<DemoMockInvalidationEngine> logger) : IInvalidationEngine
 {
-    private readonly ILogger<DemoMockInvalidationEngine> _logger;
-    private readonly DateTimeOffset _startTime;
-    
-    public DemoMockInvalidationEngine(ILogger<DemoMockInvalidationEngine> logger)
-    {
-        _logger = logger;
-        _startTime = DateTimeOffset.UtcNow;
-    }
+    private readonly DateTimeOffset _startTime = DateTimeOffset.UtcNow;
 
     public Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Mock: Invalidated table {TableName}", tableName);
+        logger.LogDebug("Mock: Invalidated table {TableName}", tableName);
         return Task.Delay(1, cancellationToken); // 약간의 지연으로 현실적인 처리 시간 시뮬레이션
     }
 
     public Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Mock: Invalidated pattern {Pattern}", pattern);
+        logger.LogDebug("Mock: Invalidated pattern {Pattern}", pattern);
         return Task.Delay(2, cancellationToken);
     }
 
     public Task InvalidateByKeyAsync(string key, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Mock: Invalidated key {Key}", key);
+        logger.LogDebug("Mock: Invalidated key {Key}", key);
         return Task.Delay(1, cancellationToken);
     }
 
     public Task InvalidateBatchAsync(IEnumerable<string> tableNames, CancellationToken cancellationToken = default)
     {
         var count = tableNames.Count();
-        _logger.LogDebug("Mock: Invalidated batch of {Count} tables", count);
+        logger.LogDebug("Mock: Invalidated batch of {Count} tables", count);
         return Task.Delay(count / 10 + 1, cancellationToken); // 배치 크기에 비례한 처리 시간
     }
 
     public Task InvalidateHierarchyAsync(string tableName, string[] relatedTables, int maxDepth = 3, CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Mock: Invalidated hierarchy {TableName} with {RelatedCount} related tables", tableName, relatedTables.Length);
+        logger.LogDebug("Mock: Invalidated hierarchy {TableName} with {RelatedCount} related tables", tableName, relatedTables.Length);
         return Task.Delay(maxDepth * 2, cancellationToken);
     }
 

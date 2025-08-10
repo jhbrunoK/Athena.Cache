@@ -96,9 +96,9 @@ public class EventDrivenInvalidationTests
         var mockHandler = new Mock<IEventInvalidationHandler<TestDomainEvent>>();
         mockHandler.Setup(x => x.Priority).Returns(1);
         mockHandler.Setup(x => x.GetInvalidationTablesAsync(It.IsAny<TestDomainEvent>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { "CustomTable1", "CustomTable2" });
+            .ReturnsAsync(["CustomTable1", "CustomTable2"]);
         mockHandler.Setup(x => x.GetInvalidationPatternsAsync(It.IsAny<TestDomainEvent>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { "custom:*" });
+            .ReturnsAsync(["custom:*"]);
         // mockHandler.Setup(x => x.GetHierarchicalTargetsAsync(It.IsAny<TestDomainEvent>(), It.IsAny<CancellationToken>()))
         //     .ReturnsAsync(Array.Empty<HierarchicalInvalidationTarget>());
 

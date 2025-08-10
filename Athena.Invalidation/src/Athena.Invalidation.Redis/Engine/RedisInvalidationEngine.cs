@@ -6,11 +6,15 @@ namespace Athena.Invalidation.Redis.Engine;
 /// <summary>
 /// Redis를 위한 실제 무효화 엔진 구현
 /// </summary>
-public class RedisInvalidationEngine : IInvalidationEngine, IAsyncDisposable
+public class RedisInvalidationEngine(
+    IRedisInvalidationProvider redisProvider,
+    ILogger<RedisInvalidationEngine> logger,
+    IOptions<RedisInvalidationEngineOptions> options)
+    : IInvalidationEngine, IAsyncDisposable
 {
-    private readonly IRedisInvalidationProvider _redisProvider;
-    private readonly ILogger<RedisInvalidationEngine> _logger;
-    private readonly RedisInvalidationEngineOptions _options;
+    private readonly IRedisInvalidationProvider _redisProvider = redisProvider ?? throw new ArgumentNullException(nameof(redisProvider));
+    private readonly ILogger<RedisInvalidationEngine> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly RedisInvalidationEngineOptions _options = options.Value ?? new RedisInvalidationEngineOptions();
     
     // 키 추적 시스템 (Redis에서 직접 관리)
     private readonly Dictionary<string, IInvalidationRule> _rules = new();
@@ -18,16 +22,6 @@ public class RedisInvalidationEngine : IInvalidationEngine, IAsyncDisposable
     private readonly DateTimeOffset _startTime = DateTimeOffset.UtcNow;
     
     private volatile bool _disposed = false;
-
-    public RedisInvalidationEngine(
-        IRedisInvalidationProvider redisProvider,
-        ILogger<RedisInvalidationEngine> logger,
-        IOptions<RedisInvalidationEngineOptions> options)
-    {
-        _redisProvider = redisProvider ?? throw new ArgumentNullException(nameof(redisProvider));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options.Value ?? new RedisInvalidationEngineOptions();
-    }
 
     public async Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {
@@ -459,12 +453,8 @@ public class RedisInvalidationEngineOptions
 /// <summary>
 /// Redis 무효화 컨텍스트
 /// </summary>
-public class RedisInvalidationContext : BaseInvalidationContext
+public class RedisInvalidationContext(InvalidationTrigger trigger) : BaseInvalidationContext(trigger)
 {
-    public RedisInvalidationContext(InvalidationTrigger trigger) : base(trigger)
-    {
-    }
-
     public override IInvalidationContext Clone()
     {
         var clone = new RedisInvalidationContext(Trigger);

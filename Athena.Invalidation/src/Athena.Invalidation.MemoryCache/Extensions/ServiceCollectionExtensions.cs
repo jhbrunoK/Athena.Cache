@@ -112,18 +112,13 @@ public static class ServiceCollectionExtensions
 /// <summary>
 /// Memory Cache 무효화 헬스체크
 /// </summary>
-public class MemoryCacheInvalidationHealthCheck : IHealthCheck
+public class MemoryCacheInvalidationHealthCheck(
+    IMemoryCacheInvalidationProvider memoryCacheProvider,
+    ILogger<MemoryCacheInvalidationHealthCheck> logger)
+    : IHealthCheck
 {
-    private readonly IMemoryCacheInvalidationProvider _memoryCacheProvider;
-    private readonly ILogger<MemoryCacheInvalidationHealthCheck> _logger;
-
-    public MemoryCacheInvalidationHealthCheck(
-        IMemoryCacheInvalidationProvider memoryCacheProvider,
-        ILogger<MemoryCacheInvalidationHealthCheck> logger)
-    {
-        _memoryCacheProvider = memoryCacheProvider ?? throw new ArgumentNullException(nameof(memoryCacheProvider));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IMemoryCacheInvalidationProvider _memoryCacheProvider = memoryCacheProvider ?? throw new ArgumentNullException(nameof(memoryCacheProvider));
+    private readonly ILogger<MemoryCacheInvalidationHealthCheck> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,

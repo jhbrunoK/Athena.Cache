@@ -5,11 +5,15 @@ namespace Athena.Invalidation.FusionCache.Engine;
 /// <summary>
 /// FusionCache를 위한 실제 무효화 엔진 구현
 /// </summary>
-public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposable
+public class FusionCacheInvalidationEngine(
+    ICacheProvider cacheProvider,
+    ILogger<FusionCacheInvalidationEngine> logger,
+    IOptions<FusionCacheInvalidationOptions> options)
+    : IInvalidationEngine, IAsyncDisposable
 {
-    private readonly ICacheProvider _cacheProvider;
-    private readonly ILogger<FusionCacheInvalidationEngine> _logger;
-    private readonly FusionCacheInvalidationOptions _options;
+    private readonly ICacheProvider _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
+    private readonly ILogger<FusionCacheInvalidationEngine> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly FusionCacheInvalidationOptions _options = options.Value ?? new FusionCacheInvalidationOptions();
     
     // 키 추적 시스템
     private readonly Dictionary<string, HashSet<string>> _tableKeyMappings = new();
@@ -18,16 +22,6 @@ public class FusionCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
     private readonly DateTimeOffset _startTime = DateTimeOffset.UtcNow;
     
     private volatile bool _disposed = false;
-
-    public FusionCacheInvalidationEngine(
-        ICacheProvider cacheProvider,
-        ILogger<FusionCacheInvalidationEngine> logger,
-        IOptions<FusionCacheInvalidationOptions> options)
-    {
-        _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options.Value ?? new FusionCacheInvalidationOptions();
-    }
 
     public async Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {
@@ -486,12 +480,8 @@ public class FusionCacheInvalidationOptions
 /// <summary>
 /// FusionCache 무효화 컨텍스트
 /// </summary>
-public class FusionCacheInvalidationContext : BaseInvalidationContext
+public class FusionCacheInvalidationContext(InvalidationTrigger trigger) : BaseInvalidationContext(trigger)
 {
-    public FusionCacheInvalidationContext(InvalidationTrigger trigger) : base(trigger)
-    {
-    }
-
     public override IInvalidationContext Clone()
     {
         var clone = new FusionCacheInvalidationContext(Trigger);

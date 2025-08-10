@@ -253,16 +253,16 @@ public class HierarchicalInvalidationTreeTests
         {
             RootTable = "Users",
             Direction = InvalidationDirection.Down,
-            Steps = new List<InvalidationStep>
-            {
+            Steps =
+            [
                 new()
                 {
                     Order = 0,
                     LayerName = "DataLayer",
-                    Tables = new List<string> { "Users", "UserProfiles" },
+                    Tables = ["Users", "UserProfiles"],
                     Strategy = InvalidationStrategy.Immediate
                 }
-            }
+            ]
         };
 
         _mockEngine.Setup(x => x.InvalidateByTableAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -283,16 +283,16 @@ public class HierarchicalInvalidationTreeTests
         var plan = new HierarchicalInvalidationPlan
         {
             RootTable = "Orders",
-            Steps = new List<InvalidationStep>
-            {
+            Steps =
+            [
                 new()
                 {
                     Order = 0,
                     LayerName = "DataLayer",
-                    Tables = new List<string> { "Orders", "OrderItems" },
+                    Tables = ["Orders", "OrderItems"],
                     Strategy = InvalidationStrategy.Batch
                 }
-            }
+            ]
         };
 
         _mockEngine.Setup(x => x.InvalidateBatchAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
@@ -314,17 +314,17 @@ public class HierarchicalInvalidationTreeTests
         var plan = new HierarchicalInvalidationPlan
         {
             RootTable = "Cache",
-            Steps = new List<InvalidationStep>
-            {
+            Steps =
+            [
                 new()
                 {
                     Order = 0,
                     LayerName = "CacheLayer",
-                    Tables = new List<string> { "Cache" },
+                    Tables = ["Cache"],
                     Strategy = InvalidationStrategy.Delayed,
                     Delay = TimeSpan.FromMilliseconds(100)
                 }
-            }
+            ]
         };
 
         _mockEngine.Setup(x => x.InvalidateByTableAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))

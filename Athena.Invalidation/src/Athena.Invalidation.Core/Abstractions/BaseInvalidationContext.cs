@@ -4,23 +4,18 @@ namespace Athena.Invalidation.Core.Abstractions;
 /// 무효화 실행 컨텍스트 기본 구현
 /// 모든 InvalidationContext 구현체의 공통 로직을 제공
 /// </summary>
-public abstract class BaseInvalidationContext : IInvalidationContext
+public abstract class BaseInvalidationContext(InvalidationTrigger trigger) : IInvalidationContext
 {
     public string ContextId { get; } = Guid.NewGuid().ToString("N")[..12];
-    public InvalidationTrigger Trigger { get; protected set; }
+    public InvalidationTrigger Trigger { get; protected set; } = trigger ?? throw new ArgumentNullException(nameof(trigger));
     public string Target { get; set; } = string.Empty;
     public InvalidationType Type { get; set; } = InvalidationType.Key;
     public DateTimeOffset Timestamp { get; } = DateTimeOffset.UtcNow;
     public Dictionary<string, object> Metadata { get; } = new();
-    public IEnumerable<ICacheProvider> CacheProviders { get; set; } = Array.Empty<ICacheProvider>();
+    public IEnumerable<ICacheProvider> CacheProviders { get; set; } = [];
     public int Priority { get; set; } = 0;
     public TimeSpan? Timeout { get; set; }
     public int MaxRetries { get; set; } = 3;
-
-    protected BaseInvalidationContext(InvalidationTrigger trigger)
-    {
-        Trigger = trigger ?? throw new ArgumentNullException(nameof(trigger));
-    }
 
     public void AddMetadata(string key, object value)
     {

@@ -6,20 +6,15 @@ namespace Athena.Invalidation.CQRS.Implementations;
 /// <summary>
 /// CQRS 읽기 모델 및 프로젝션 캐시 무효화 구현
 /// </summary>
-public class ReadModelInvalidator : IReadModelInvalidator
+public class ReadModelInvalidator(
+    IInvalidationEngine invalidationEngine,
+    ILogger<ReadModelInvalidator> logger)
+    : IReadModelInvalidator
 {
-    private readonly IInvalidationEngine _invalidationEngine;
-    private readonly ILogger<ReadModelInvalidator> _logger;
+    private readonly IInvalidationEngine _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
+    private readonly ILogger<ReadModelInvalidator> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ConcurrentDictionary<Type, ReadModelMetadata> _readModelMetadata = new();
     private readonly ConcurrentDictionary<string, HashSet<string>> _modelDependencies = new();
-
-    public ReadModelInvalidator(
-        IInvalidationEngine invalidationEngine,
-        ILogger<ReadModelInvalidator> logger)
-    {
-        _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public async Task InvalidateReadModelAsync<TReadModel>(string? modelId = null, CancellationToken cancellationToken = default) 
         where TReadModel : class, IReadModel
@@ -199,7 +194,7 @@ public class ReadModelInvalidator : IReadModelInvalidator
         var dependentName = typeof(TDependentModel).Name;
 
         _modelDependencies.AddOrUpdate(sourceName,
-            new HashSet<string> { dependentName },
+            [dependentName],
             (key, existing) =>
             {
                 existing.Add(dependentName);
@@ -310,8 +305,8 @@ public class ReadModelInvalidator : IReadModelInvalidator
             var metadata = new ReadModelMetadata
             {
                 ReadModelType = type,
-                RelatedTables = new HashSet<string>(),
-                SourceEventTypes = new HashSet<string>()
+                RelatedTables = [],
+                SourceEventTypes = []
             };
 
             // 타입에서 기본 관련 테이블 추론
@@ -334,6 +329,6 @@ public class ReadModelInvalidator : IReadModelInvalidator
 internal class ReadModelMetadata
 {
     public Type ReadModelType { get; set; } = null!;
-    public HashSet<string> RelatedTables { get; set; } = new();
-    public HashSet<string> SourceEventTypes { get; set; } = new();
+    public HashSet<string> RelatedTables { get; set; } = [];
+    public HashSet<string> SourceEventTypes { get; set; } = [];
 }

@@ -90,11 +90,13 @@ public record NodeMetrics
 /// <summary>
 /// 기본 분산 이벤트 모니터 구현
 /// </summary>
-internal class DefaultDistributedEventMonitor : IDistributedEventMonitor
+internal class DefaultDistributedEventMonitor(
+    IInvalidationMetricsCollector metricsCollector,
+    ILogger<DefaultDistributedEventMonitor> logger,
+    IOptions<DistributedMonitoringOptions> options)
+    : IDistributedEventMonitor
 {
-    private readonly IInvalidationMetricsCollector _metricsCollector;
-    private readonly ILogger<DefaultDistributedEventMonitor> _logger;
-    private readonly DistributedMonitoringOptions _options;
+    private readonly DistributedMonitoringOptions _options = options.Value ?? new DistributedMonitoringOptions();
 
     private readonly ConcurrentDictionary<string, NodeMetrics> _nodeMetrics = new();
     private readonly ConcurrentDictionary<string, long> _eventTypeCounters = new();
@@ -103,16 +105,6 @@ internal class DefaultDistributedEventMonitor : IDistributedEventMonitor
     private long _totalReceivedEvents = 0;
     private long _failedPublishedEvents = 0;
     private long _failedReceivedEvents = 0;
-
-    public DefaultDistributedEventMonitor(
-        IInvalidationMetricsCollector metricsCollector,
-        ILogger<DefaultDistributedEventMonitor> logger,
-        IOptions<DistributedMonitoringOptions> options)
-    {
-        _metricsCollector = metricsCollector;
-        _logger = logger;
-        _options = options.Value ?? new DistributedMonitoringOptions();
-    }
 
     public void RecordEventPublished(string eventType, string targetNode, TimeSpan duration, bool success = true)
     {
@@ -125,11 +117,11 @@ internal class DefaultDistributedEventMonitor : IDistributedEventMonitor
         _eventTypeCounters.AddOrUpdate(eventType, 1, (key, value) => value + 1);
         
         // 메트릭 수집기에도 전달
-        _metricsCollector.RecordDistributedEvent(eventType, targetNode, duration, success);
+        metricsCollector.RecordDistributedEvent(eventType, targetNode, duration, success);
 
         if (_options.LogDistributedEvents)
         {
-            _logger.LogDebug("Published distributed event {EventType} to node {TargetNode} in {Duration}ms (Success: {Success})",
+            logger.LogDebug("Published distributed event {EventType} to node {TargetNode} in {Duration}ms (Success: {Success})",
                 eventType, targetNode, duration.TotalMilliseconds, success);
         }
     }
@@ -163,7 +155,7 @@ internal class DefaultDistributedEventMonitor : IDistributedEventMonitor
 
         if (_options.LogDistributedEvents)
         {
-            _logger.LogDebug("Received distributed event {EventType} from node {SourceNode} processed in {Duration}ms (Success: {Success})",
+            logger.LogDebug("Received distributed event {EventType} from node {SourceNode} processed in {Duration}ms (Success: {Success})",
                 eventType, sourceNode, processingTime.TotalMilliseconds, success);
         }
     }
@@ -174,7 +166,7 @@ internal class DefaultDistributedEventMonitor : IDistributedEventMonitor
             new NodeMetrics { NodeId = nodeId, IsConnected = connected },
             (key, existing) => existing with { IsConnected = connected });
 
-        _logger.LogInformation("Node {NodeId} connection status changed: {Connected}", nodeId, connected);
+        logger.LogInformation("Node {NodeId} connection status changed: {Connected}", nodeId, connected);
     }
 
     public Task<DistributedMetricsSnapshot> GetDistributedMetricsAsync(CancellationToken cancellationToken = default)

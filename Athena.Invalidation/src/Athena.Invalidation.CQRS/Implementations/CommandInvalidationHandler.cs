@@ -5,19 +5,14 @@ namespace Athena.Invalidation.CQRS.Implementations;
 /// <summary>
 /// 명령 기반 캐시 무효화를 처리하는 핸들러
 /// </summary>
-public class CommandInvalidationHandler : ICommandInvalidationHandler
+public class CommandInvalidationHandler(
+    IInvalidationEngine invalidationEngine,
+    ILogger<CommandInvalidationHandler> logger)
+    : ICommandInvalidationHandler
 {
-    private readonly IInvalidationEngine _invalidationEngine;
-    private readonly ILogger<CommandInvalidationHandler> _logger;
+    private readonly IInvalidationEngine _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
+    private readonly ILogger<CommandInvalidationHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly Dictionary<Type, ICommandInvalidationHandler> _specificHandlers = new();
-
-    public CommandInvalidationHandler(
-        IInvalidationEngine invalidationEngine,
-        ILogger<CommandInvalidationHandler> logger)
-    {
-        _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     /// <summary>
     /// 명령을 처리하고 적절한 무효화를 수행합니다

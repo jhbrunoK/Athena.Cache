@@ -153,8 +153,8 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
         if (handler == null) throw new ArgumentNullException(nameof(handler));
 
         var eventType = typeof(T);
-        _handlers.AddOrUpdate(eventType, 
-            new List<object> { handler },
+        _handlers.AddOrUpdate(eventType,
+            [handler],
             (key, existing) =>
             {
                 existing.Add(handler);

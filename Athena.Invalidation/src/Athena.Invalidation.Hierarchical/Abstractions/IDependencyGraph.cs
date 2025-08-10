@@ -74,7 +74,7 @@ public class DependencyNode
     public int Depth { get; set; }
     public TimeSpan? Delay { get; set; }
     public Dictionary<string, object> Properties { get; set; } = new();
-    public string[] Path { get; set; } = Array.Empty<string>();
+    public string[] Path { get; set; } = [];
 }
 
 /// <summary>
@@ -94,8 +94,8 @@ public class GraphStatistics
 /// </summary>
 public class GraphVisualizationData
 {
-    public GraphNode[] Nodes { get; set; } = Array.Empty<GraphNode>();
-    public GraphEdge[] Edges { get; set; } = Array.Empty<GraphEdge>();
+    public GraphNode[] Nodes { get; set; } = [];
+    public GraphEdge[] Edges { get; set; } = [];
 }
 
 public class GraphNode

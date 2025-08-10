@@ -6,11 +6,15 @@ namespace Athena.Invalidation.MemoryCache.Engine;
 /// <summary>
 /// Memory Cache를 위한 실제 무효화 엔진 구현
 /// </summary>
-public class MemoryCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposable
+public class MemoryCacheInvalidationEngine(
+    IMemoryCacheInvalidationProvider memoryCacheProvider,
+    ILogger<MemoryCacheInvalidationEngine> logger,
+    IOptions<MemoryCacheInvalidationEngineOptions> options)
+    : IInvalidationEngine, IAsyncDisposable
 {
-    private readonly IMemoryCacheInvalidationProvider _memoryCacheProvider;
-    private readonly ILogger<MemoryCacheInvalidationEngine> _logger;
-    private readonly MemoryCacheInvalidationEngineOptions _options;
+    private readonly IMemoryCacheInvalidationProvider _memoryCacheProvider = memoryCacheProvider ?? throw new ArgumentNullException(nameof(memoryCacheProvider));
+    private readonly ILogger<MemoryCacheInvalidationEngine> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly MemoryCacheInvalidationEngineOptions _options = options.Value ?? new MemoryCacheInvalidationEngineOptions();
     
     // 키 추적 및 규칙 시스템
     private readonly Dictionary<string, HashSet<string>> _tableKeyMappings = new();
@@ -19,16 +23,6 @@ public class MemoryCacheInvalidationEngine : IInvalidationEngine, IAsyncDisposab
     private readonly DateTimeOffset _startTime = DateTimeOffset.UtcNow;
     
     private volatile bool _disposed = false;
-
-    public MemoryCacheInvalidationEngine(
-        IMemoryCacheInvalidationProvider memoryCacheProvider,
-        ILogger<MemoryCacheInvalidationEngine> logger,
-        IOptions<MemoryCacheInvalidationEngineOptions> options)
-    {
-        _memoryCacheProvider = memoryCacheProvider ?? throw new ArgumentNullException(nameof(memoryCacheProvider));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options.Value ?? new MemoryCacheInvalidationEngineOptions();
-    }
 
     public async Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {
@@ -460,12 +454,8 @@ public class MemoryCacheInvalidationEngineOptions
 /// <summary>
 /// Memory Cache 무효화 컨텍스트
 /// </summary>
-public class MemoryCacheInvalidationContext : BaseInvalidationContext
+public class MemoryCacheInvalidationContext(InvalidationTrigger trigger) : BaseInvalidationContext(trigger)
 {
-    public MemoryCacheInvalidationContext(InvalidationTrigger trigger) : base(trigger)
-    {
-    }
-
     public override IInvalidationContext Clone()
     {
         var clone = new MemoryCacheInvalidationContext(Trigger);

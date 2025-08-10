@@ -158,20 +158,13 @@ public class AllCacheProvidersOptions
 /// <summary>
 /// 다중 제공자 빌더 클래스
 /// </summary>
-public class MultiProviderInvalidationBuilder
+public class MultiProviderInvalidationBuilder(IServiceCollection services)
 {
-    private readonly IServiceCollection _services;
-
-    public MultiProviderInvalidationBuilder(IServiceCollection services)
-    {
-        _services = services;
-    }
-
     /// <summary>Memory Cache 제공자 추가</summary>
     public MultiProviderInvalidationBuilder AddMemoryCache(Action<object>? configure = null)
     {
         // 실제 구현에서는 MemoryCache 제공자 등록
-        _services.AddMemoryCache();
+        services.AddMemoryCache();
         
         return this;
     }
@@ -195,25 +188,20 @@ public class MultiProviderInvalidationBuilder
     /// <summary>빌더 완료 및 다중 제공자 엔진 등록</summary>
     public IServiceCollection Build(Action<MultiProviderInvalidationOptions>? configure = null)
     {
-        return _services.AddMultiProviderInvalidation(configure);
+        return services.AddMultiProviderInvalidation(configure);
     }
 }
 
 /// <summary>
 /// 다중 제공자 무효화 헬스체크
 /// </summary>
-public class MultiProviderInvalidationHealthCheck : IHealthCheck
+public class MultiProviderInvalidationHealthCheck(
+    IMultiProviderInvalidationEngine multiProviderEngine,
+    ILogger<MultiProviderInvalidationHealthCheck> logger)
+    : IHealthCheck
 {
-    private readonly IMultiProviderInvalidationEngine _multiProviderEngine;
-    private readonly ILogger<MultiProviderInvalidationHealthCheck> _logger;
-
-    public MultiProviderInvalidationHealthCheck(
-        IMultiProviderInvalidationEngine multiProviderEngine,
-        ILogger<MultiProviderInvalidationHealthCheck> logger)
-    {
-        _multiProviderEngine = multiProviderEngine ?? throw new ArgumentNullException(nameof(multiProviderEngine));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IMultiProviderInvalidationEngine _multiProviderEngine = multiProviderEngine ?? throw new ArgumentNullException(nameof(multiProviderEngine));
+    private readonly ILogger<MultiProviderInvalidationHealthCheck> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,

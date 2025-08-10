@@ -38,17 +38,10 @@ public interface ICommand<out TResult> : ICommand
 /// </summary>
 public abstract class BaseCommand : ICommand
 {
-    protected BaseCommand()
-    {
-        CommandId = Guid.NewGuid().ToString("N")[..12];
-        Timestamp = DateTimeOffset.UtcNow;
-        Metadata = new Dictionary<string, object>();
-    }
-
-    public string CommandId { get; init; }
-    public DateTimeOffset Timestamp { get; init; }
+    public string CommandId { get; init; } = Guid.NewGuid().ToString("N")[..12];
+    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
     public string? ExecutedBy { get; set; }
-    public Dictionary<string, object> Metadata { get; init; }
+    public Dictionary<string, object> Metadata { get; init; } = new();
 }
 
 /// <summary>

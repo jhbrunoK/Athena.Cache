@@ -7,20 +7,15 @@ namespace Athena.Invalidation.Hierarchical.Implementations;
 /// <summary>
 /// 의존성 그래프 기반 캐시 무효화 구현
 /// </summary>
-public class DependencyGraphInvalidator : IDependencyGraph
+public class DependencyGraphInvalidator(
+    IInvalidationEngine invalidationEngine,
+    ILogger<DependencyGraphInvalidator> logger)
+    : IDependencyGraph
 {
-    private readonly IInvalidationEngine _invalidationEngine;
-    private readonly ILogger<DependencyGraphInvalidator> _logger;
+    private readonly IInvalidationEngine _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
+    private readonly ILogger<DependencyGraphInvalidator> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ConcurrentDictionary<string, HashSet<DependencyEdge>> _dependencies = new();
     private readonly ConcurrentDictionary<string, HashSet<DependencyEdge>> _reverseDependencies = new();
-
-    public DependencyGraphInvalidator(
-        IInvalidationEngine invalidationEngine,
-        ILogger<DependencyGraphInvalidator> logger)
-    {
-        _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public void AddDependency(string source, string target, DependencyType type = DependencyType.Strong)
     {
@@ -38,7 +33,7 @@ public class DependencyGraphInvalidator : IDependencyGraph
 
         // Forward dependencies
         _dependencies.AddOrUpdate(source,
-            new HashSet<DependencyEdge> { edge },
+            [edge],
             (key, existing) =>
             {
                 existing.Add(edge);
@@ -47,7 +42,7 @@ public class DependencyGraphInvalidator : IDependencyGraph
 
         // Reverse dependencies for faster traversal
         _reverseDependencies.AddOrUpdate(target,
-            new HashSet<DependencyEdge> { edge },
+            [edge],
             (key, existing) =>
             {
                 existing.Add(edge);
@@ -126,13 +121,13 @@ public class DependencyGraphInvalidator : IDependencyGraph
     public IEnumerable<DependencyNode> GetAffectedNodes(string sourceNode, int maxDepth = 10)
     {
         if (string.IsNullOrEmpty(sourceNode) || maxDepth <= 0)
-            return Array.Empty<DependencyNode>();
+            return [];
 
         var visited = new HashSet<string>();
         var result = new List<DependencyNode>();
         var queue = new Queue<(string node, int depth, string[] path, DependencyType type, TimeSpan? delay)>();
 
-        queue.Enqueue((sourceNode, 0, new[] { sourceNode }, DependencyType.Strong, null));
+        queue.Enqueue((sourceNode, 0, [sourceNode], DependencyType.Strong, null));
 
         while (queue.Count > 0)
         {
@@ -162,7 +157,7 @@ public class DependencyGraphInvalidator : IDependencyGraph
                 {
                     if (!visited.Contains(edge.Target))
                     {
-                        var newPath = currentPath.Concat(new[] { edge.Target }).ToArray();
+                        var newPath = currentPath.Concat([edge.Target]).ToArray();
                         var delay = CalculateDelay(edge.Type);
                         queue.Enqueue((edge.Target, currentDepth + 1, newPath, edge.Type, delay));
                     }
@@ -198,12 +193,12 @@ public class DependencyGraphInvalidator : IDependencyGraph
     public IEnumerable<string[]> FindPaths(string source, string target, int maxDepth = 10)
     {
         if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(target) || maxDepth <= 0)
-            return Array.Empty<string[]>();
+            return [];
 
         var paths = new List<string[]>();
         var currentPath = new List<string>();
         
-        FindPathsDFS(source, target, currentPath, paths, maxDepth, new HashSet<string>());
+        FindPathsDFS(source, target, currentPath, paths, maxDepth, []);
 
         _logger.LogDebug("Found {PathCount} paths from {Source} to {Target}", paths.Count, source, target);
         
@@ -442,7 +437,7 @@ public class DependencyGraphInvalidator : IDependencyGraph
         {
             if (!visited.Contains(startNode))
             {
-                var depth = CalculateDepthDFS(startNode, new HashSet<string>());
+                var depth = CalculateDepthDFS(startNode, []);
                 maxDepth = Math.Max(maxDepth, depth);
             }
         }
@@ -492,18 +487,11 @@ public class DependencyGraphInvalidator : IDependencyGraph
 /// <summary>
 /// 의존성 간선 정보
 /// </summary>
-internal class DependencyEdge : IEquatable<DependencyEdge>
+internal class DependencyEdge(string source, string target, DependencyType type) : IEquatable<DependencyEdge>
 {
-    public string Source { get; }
-    public string Target { get; }
-    public DependencyType Type { get; }
-
-    public DependencyEdge(string source, string target, DependencyType type)
-    {
-        Source = source ?? throw new ArgumentNullException(nameof(source));
-        Target = target ?? throw new ArgumentNullException(nameof(target));
-        Type = type;
-    }
+    public string Source { get; } = source ?? throw new ArgumentNullException(nameof(source));
+    public string Target { get; } = target ?? throw new ArgumentNullException(nameof(target));
+    public DependencyType Type { get; } = type;
 
     public bool Equals(DependencyEdge? other)
     {

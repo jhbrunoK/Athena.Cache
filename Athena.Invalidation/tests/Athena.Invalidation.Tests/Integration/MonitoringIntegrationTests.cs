@@ -75,7 +75,7 @@ public class MonitoringIntegrationTests : IAsyncLifetime
         await _monitoredEngine.InvalidateByTableAsync("Users");
         await _monitoredEngine.InvalidateByPatternAsync("user:*");
         await _monitoredEngine.InvalidateByKeyAsync("user:123");
-        await _monitoredEngine.InvalidateBatchAsync(new[] { "Orders", "Products" });
+        await _monitoredEngine.InvalidateBatchAsync(["Orders", "Products"]);
         
         // Assert
         var metrics = await _metricsCollector.GetMetricsAsync();

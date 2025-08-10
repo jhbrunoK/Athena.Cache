@@ -87,7 +87,7 @@ public class KeyInvalidationEvent : DistributedInvalidationEvent
 /// </summary>
 public class BatchInvalidationEvent : DistributedInvalidationEvent
 {
-    public string[] TableNames { get; set; } = Array.Empty<string>();
+    public string[] TableNames { get; set; } = [];
     
     public BatchInvalidationEvent()
     {
@@ -111,7 +111,7 @@ public class BatchInvalidationEvent : DistributedInvalidationEvent
 public class HierarchicalInvalidationEvent : DistributedInvalidationEvent
 {
     public string RootTable { get; set; } = string.Empty;
-    public string[] RelatedTables { get; set; } = Array.Empty<string>();
+    public string[] RelatedTables { get; set; } = [];
     public int MaxDepth { get; set; } = 3;
     
     public HierarchicalInvalidationEvent()
