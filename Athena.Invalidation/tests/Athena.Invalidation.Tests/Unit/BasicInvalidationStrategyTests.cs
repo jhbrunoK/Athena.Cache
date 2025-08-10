@@ -154,7 +154,16 @@ public class BasicInvalidationStrategyTests
         contextMock.Setup(c => c.ContextId).Returns("test-context");
         contextMock.Setup(c => c.GetMetadata<List<string>>("TableNames", It.IsAny<List<string>>()))
                   .Returns(tableNames);
-        contextMock.Setup(c => c.Clone()).Returns(contextMock.Object);
+        contextMock.Setup(c => c.Clone()).Returns(() =>
+        {
+            var cloneMock = new Mock<IInvalidationContext>();
+            cloneMock.Setup(c => c.Type).Returns(InvalidationType.Table);
+            cloneMock.Setup(c => c.CacheProviders).Returns(new[] { cacheProviderMock.Object });
+            cloneMock.Setup(c => c.ContextId).Returns("test-context");
+            cloneMock.SetupProperty(c => c.Target);
+            cloneMock.SetupProperty(c => c.Type);
+            return cloneMock.Object;
+        });
 
         // 각 테이블별 추적 키 설정
         cacheProviderMock

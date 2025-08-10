@@ -191,17 +191,41 @@ public class BasicInvalidationStrategy : IInvalidationStrategy
     private async Task<int> InvalidateBatchAsync(IInvalidationContext context, CancellationToken cancellationToken)
     {
         var tableNames = context.GetMetadata<List<string>>("TableNames", new List<string>()) ?? new List<string>();
+        
+        if (!tableNames.Any())
+        {
+            _logger.LogWarning("No table names provided for batch invalidation in context {ContextId}", context.ContextId);
+            return 0;
+        }
+
         var totalInvalidated = 0;
 
         // 각 테이블을 순차적으로 무효화
         foreach (var tableName in tableNames)
         {
-            var tableContext = context.Clone();
-            tableContext.Target = tableName;
-            tableContext.Type = InvalidationType.Table;
-            
-            var invalidated = await InvalidateByTableAsync(tableContext, cancellationToken);
-            totalInvalidated += invalidated;
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                _logger.LogWarning("Skipping null or empty table name in batch invalidation for context {ContextId}", context.ContextId);
+                continue;
+            }
+
+            try
+            {
+                var tableContext = context.Clone();
+                tableContext.Target = tableName;
+                tableContext.Type = InvalidationType.Table;
+                
+                var invalidated = await InvalidateByTableAsync(tableContext, cancellationToken);
+                totalInvalidated += invalidated;
+                
+                _logger.LogDebug("Batch invalidation: processed table '{TableName}', invalidated {Count} keys", tableName, invalidated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to invalidate table '{TableName}' during batch operation in context {ContextId}", 
+                    tableName, context.ContextId);
+                // 하나의 테이블 실패가 전체 배치를 실패시키지 않도록 함
+            }
         }
 
         return totalInvalidated;

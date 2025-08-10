@@ -24,6 +24,16 @@ public class DistributedInvalidationTests : IAsyncLifetime
     {
         // Redis 연결
         _redis = await ConnectionMultiplexer.ConnectAsync("localhost:6379");
+        
+        // Redis 연결 상태 검증
+        if (!_redis.IsConnected)
+        {
+            throw new InvalidOperationException("Redis connection failed. Please ensure Redis is running on localhost:6379");
+        }
+        
+        // 기존 테스트 데이터 정리
+        var database = _redis.GetDatabase();
+        await database.ExecuteAsync("FLUSHDB");
 
         var services = new ServiceCollection();
         
@@ -97,13 +107,14 @@ public class DistributedInvalidationTests : IAsyncLifetime
     {
         // Arrange
         var mockEngine2 = (MockInvalidationEngine)_localEngine2;
+        mockEngine2.InvalidatedTables.Clear(); // 상태 초기화
         var tableName = "Users";
 
         // Act
         await _distributedEngine1.InvalidateByTableAsync(tableName);
         
         // 분산 이벤트 전파를 위한 대기
-        await Task.Delay(500);
+        await Task.Delay(1000);
 
         // Assert
         Assert.Contains(tableName, mockEngine2.InvalidatedTables);
@@ -114,13 +125,14 @@ public class DistributedInvalidationTests : IAsyncLifetime
     {
         // Arrange
         var mockEngine2 = (MockInvalidationEngine)_localEngine2;
+        mockEngine2.InvalidatedPatterns.Clear(); // 상태 초기화
         var pattern = "user:*";
 
         // Act
         await _distributedEngine1.InvalidateByPatternAsync(pattern);
         
         // 분산 이벤트 전파를 위한 대기
-        await Task.Delay(500);
+        await Task.Delay(1000);
 
         // Assert
         Assert.Contains(pattern, mockEngine2.InvalidatedPatterns);
@@ -131,13 +143,14 @@ public class DistributedInvalidationTests : IAsyncLifetime
     {
         // Arrange
         var mockEngine2 = (MockInvalidationEngine)_localEngine2;
+        mockEngine2.InvalidatedTables.Clear(); // 상태 초기화
         var tableNames = new[] { "Users", "Orders", "Products" };
 
         // Act
         await _distributedEngine1.InvalidateBatchAsync(tableNames);
         
         // 분산 이벤트 전파를 위한 대기
-        await Task.Delay(500);
+        await Task.Delay(1000);
 
         // Assert
         foreach (var tableName in tableNames)
@@ -151,6 +164,7 @@ public class DistributedInvalidationTests : IAsyncLifetime
     {
         // Arrange
         var mockEngine2 = (MockInvalidationEngine)_localEngine2;
+        mockEngine2.InvalidatedHierarchies.Clear(); // 상태 초기화
         var rootTable = "Orders";
         var relatedTables = new[] { "OrderItems", "Payments" };
 
@@ -158,7 +172,7 @@ public class DistributedInvalidationTests : IAsyncLifetime
         await _distributedEngine1.InvalidateHierarchyAsync(rootTable, relatedTables, 2);
         
         // 분산 이벤트 전파를 위한 대기
-        await Task.Delay(500);
+        await Task.Delay(1000);
 
         // Assert
         Assert.Contains(rootTable, mockEngine2.InvalidatedHierarchies.Keys);
@@ -183,7 +197,7 @@ public class DistributedInvalidationTests : IAsyncLifetime
         await _distributedEngine1.InvalidateByTableAsync(tableName);
         
         // 분산 이벤트 전파를 위한 대기
-        await Task.Delay(500);
+        await Task.Delay(1000);
 
         // Assert
         // Node1에서 발행한 이벤트가 Node2로만 전파되어야 함
@@ -216,12 +230,29 @@ public class DistributedInvalidationTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_distributedEngine1 != null)
-            await _distributedEngine1.DisposeAsync();
-        if (_distributedEngine2 != null)
-            await _distributedEngine2.DisposeAsync();
-        _redis?.Dispose();
-        _serviceProvider?.Dispose();
+        try
+        {
+            if (_distributedEngine1 != null)
+                await _distributedEngine1.DisposeAsync();
+            if (_distributedEngine2 != null)
+                await _distributedEngine2.DisposeAsync();
+                
+            // Redis 데이터 정리
+            if (_redis?.IsConnected == true)
+            {
+                var database = _redis.GetDatabase();
+                await database.ExecuteAsync("FLUSHDB");
+            }
+        }
+        catch
+        {
+            // Dispose 중 예외 무시
+        }
+        finally
+        {
+            _redis?.Dispose();
+            _serviceProvider?.Dispose();
+        }
     }
 }
 
