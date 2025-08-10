@@ -264,17 +264,22 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
             {
                 try
                 {
-                    var canHandle = (bool)typeof(ICommandInvalidationHandler)
+                    var canHandleMethod = typeof(ICommandInvalidationHandler)
                         .GetMethod("CanHandle")!
-                        .MakeGenericMethod(typeof(TCommand))
-                        .Invoke(commandHandler, [command!]);
+                        .MakeGenericMethod(typeof(TCommand));
+                    var canHandleResult = canHandleMethod.Invoke(commandHandler, [command!]);
+                    var canHandle = canHandleResult != null ? (bool)canHandleResult : false;
                     
                     if (canHandle)
                     {
-                        await (Task)typeof(ICommandInvalidationHandler)
+                        var handleMethod = typeof(ICommandInvalidationHandler)
                             .GetMethod("HandleCommandAsync")!
-                            .MakeGenericMethod(typeof(TCommand))
-                            .Invoke(commandHandler, [command!, cancellationToken]);
+                            .MakeGenericMethod(typeof(TCommand));
+                        var handleResult = handleMethod.Invoke(commandHandler, [command!, cancellationToken]);
+                        if (handleResult is Task handleTask)
+                        {
+                            await handleTask;
+                        }
                         return;
                     }
                 }
@@ -313,17 +318,22 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
             {
                 try
                 {
-                    var canHandle = (bool)typeof(IEventDrivenInvalidation)
+                    var canHandleMethod = typeof(IEventDrivenInvalidation)
                         .GetMethod("CanHandle")!
-                        .MakeGenericMethod(typeof(TEvent))
-                        .Invoke(eventHandler, [domainEvent!]);
+                        .MakeGenericMethod(typeof(TEvent));
+                    var canHandleResult = canHandleMethod.Invoke(eventHandler, [domainEvent!]);
+                    var canHandle = canHandleResult != null ? (bool)canHandleResult : false;
                     
                     if (canHandle)
                     {
-                        await (Task)typeof(IEventDrivenInvalidation)
+                        var handleMethod = typeof(IEventDrivenInvalidation)
                             .GetMethod("HandleEventAsync")!
-                            .MakeGenericMethod(typeof(TEvent))
-                            .Invoke(eventHandler, [domainEvent!, cancellationToken]);
+                            .MakeGenericMethod(typeof(TEvent));
+                        var handleResult = handleMethod.Invoke(eventHandler, [domainEvent!, cancellationToken]);
+                        if (handleResult is Task handleTask)
+                        {
+                            await handleTask;
+                        }
                         return;
                     }
                 }
@@ -362,10 +372,14 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
             {
                 try
                 {
-                    await (Task)typeof(IReadModelInvalidator)
+                    var invalidateMethod = typeof(IReadModelInvalidator)
                         .GetMethod("InvalidateReadModelAsync")!
-                        .MakeGenericMethod(typeof(TReadModel))
-                        .Invoke(readModelInvalidator, [modelId, cancellationToken]);
+                        .MakeGenericMethod(typeof(TReadModel));
+                    var invalidateResult = invalidateMethod.Invoke(readModelInvalidator, [modelId, cancellationToken]);
+                    if (invalidateResult is Task invalidateTask)
+                    {
+                        await invalidateTask;
+                    }
                     return;
                 }
                 catch (Exception ex)
@@ -408,10 +422,14 @@ public class InvalidationEngine : IInvalidationEngine, IDisposable
             {
                 try
                 {
-                    await (Task)typeof(IReadModelInvalidator)
+                    var invalidateProjectionMethod = typeof(IReadModelInvalidator)
                         .GetMethod("InvalidateProjectionAsync")!
-                        .MakeGenericMethod(typeof(TProjection))
-                        .Invoke(readModelInvalidator, [projectionId, cancellationToken]);
+                        .MakeGenericMethod(typeof(TProjection));
+                    var invalidateProjectionResult = invalidateProjectionMethod.Invoke(readModelInvalidator, [projectionId, cancellationToken]);
+                    if (invalidateProjectionResult is Task invalidateProjectionTask)
+                    {
+                        await invalidateProjectionTask;
+                    }
                     return;
                 }
                 catch (Exception ex)

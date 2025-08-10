@@ -62,7 +62,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
             var channelKey = GetChannelKey<T>();
             var serializedEvent = JsonSerializer.Serialize(invalidationEvent, _options.JsonOptions);
             
-            var subscriberCount = await _subscriber.PublishAsync(channelKey, serializedEvent);
+            var subscriberCount = await _subscriber.PublishAsync(RedisChannel.Literal(channelKey), serializedEvent);
             
             var duration = DateTimeOffset.UtcNow - startTime;
             
@@ -123,7 +123,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
             {
                 try
                 {
-                    await _subscriber.UnsubscribeAsync(kvp.Key);
+                    await _subscriber.UnsubscribeAsync(RedisChannel.Literal(kvp.Key));
                     _logger.LogDebug("Unsubscribed from channel {ChannelKey}", kvp.Key);
                 }
                 catch (Exception ex)
@@ -205,7 +205,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
                 {
                     try
                     {
-                        await _subscriber.UnsubscribeAsync(channelKey);
+                        await _subscriber.UnsubscribeAsync(RedisChannel.Literal(channelKey));
                         _subscriptions.TryRemove(channelKey, out _);
                         _logger.LogDebug("Unsubscribed from channel {ChannelKey}", channelKey);
                     }
@@ -251,7 +251,7 @@ public class RedisDistributedEventBus : IDistributedEventBus, IAsyncDisposable
     {
         if (_subscriptions.ContainsKey(channelKey)) return;
 
-        var queue = await _subscriber.SubscribeAsync(channelKey);
+        var queue = await _subscriber.SubscribeAsync(RedisChannel.Literal(channelKey));
         _subscriptions[channelKey] = queue;
         
         queue.OnMessage(async message =>
