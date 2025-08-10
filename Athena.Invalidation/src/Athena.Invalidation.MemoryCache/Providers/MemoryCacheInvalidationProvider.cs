@@ -20,7 +20,7 @@ public class MemoryCacheInvalidationProvider : IMemoryCacheInvalidationProvider,
     // 키 추적 및 태그 시스템
     private readonly ConcurrentDictionary<string, HashSet<string>> _keysByTag = new();
     private readonly ConcurrentDictionary<string, HashSet<string>> _tagsByKey = new();
-    private readonly ConcurrentHashSet<string> _trackedKeys = new();
+    private readonly ConcurrentHashSet<string> _trackedKeys = [];
     
     // 통계 추적
     private long _hitCount = 0;
@@ -231,8 +231,8 @@ public class MemoryCacheInvalidationProvider : IMemoryCacheInvalidationProvider,
             _trackedKeys.Add(key);
             
             // 태그별 키 매핑 추가
-            _keysByTag.AddOrUpdate(tag, 
-                new HashSet<string> { key },
+            _keysByTag.AddOrUpdate(tag,
+                [key],
                 (_, existing) => 
                 {
                     lock (existing)
@@ -244,7 +244,7 @@ public class MemoryCacheInvalidationProvider : IMemoryCacheInvalidationProvider,
             
             // 키별 태그 매핑 추가
             _tagsByKey.AddOrUpdate(key,
-                new HashSet<string> { tag },
+                [tag],
                 (_, existing) =>
                 {
                     lock (existing)

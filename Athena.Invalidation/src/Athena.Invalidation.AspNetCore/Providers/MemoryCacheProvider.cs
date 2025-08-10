@@ -7,10 +7,11 @@ namespace Athena.Invalidation.AspNetCore.Providers;
 /// <summary>
 /// Microsoft.Extensions.Caching.Memory 용 캐시 프로바이더
 /// </summary>
-public class MemoryCacheProvider : ICacheProvider, IDisposable
+public class MemoryCacheProvider(IMemoryCache memoryCache, ILogger<MemoryCacheProvider> logger)
+    : ICacheProvider, IDisposable
 {
-    private readonly IMemoryCache _memoryCache;
-    private readonly ILogger<MemoryCacheProvider> _logger;
+    private readonly IMemoryCache _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
+    private readonly ILogger<MemoryCacheProvider> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ConcurrentDictionary<string, DateTimeOffset> _keyRegistry = new();
     private readonly object _lock = new();
     
@@ -20,12 +21,6 @@ public class MemoryCacheProvider : ICacheProvider, IDisposable
 
     public string ProviderName => "Memory";
     public CacheProviderType ProviderType => CacheProviderType.Memory;
-
-    public MemoryCacheProvider(IMemoryCache memoryCache, ILogger<MemoryCacheProvider> logger)
-    {
-        _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
     {

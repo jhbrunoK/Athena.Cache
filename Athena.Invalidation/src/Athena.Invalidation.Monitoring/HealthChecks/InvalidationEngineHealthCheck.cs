@@ -7,24 +7,17 @@ namespace Athena.Invalidation.Monitoring.HealthChecks;
 /// <summary>
 /// 무효화 엔진 헬스체크 구현
 /// </summary>
-public class InvalidationEngineHealthCheck : IInvalidationHealthChecker, IHealthCheck
+public class InvalidationEngineHealthCheck(
+    IInvalidationEngine invalidationEngine,
+    IInvalidationMetricsCollector metricsCollector,
+    ILogger<InvalidationEngineHealthCheck> logger,
+    IOptions<HealthCheckOptions> options)
+    : IInvalidationHealthChecker, IHealthCheck
 {
-    private readonly IInvalidationEngine _invalidationEngine;
-    private readonly IInvalidationMetricsCollector _metricsCollector;
-    private readonly ILogger<InvalidationEngineHealthCheck> _logger;
-    private readonly HealthCheckOptions _options;
-
-    public InvalidationEngineHealthCheck(
-        IInvalidationEngine invalidationEngine,
-        IInvalidationMetricsCollector metricsCollector,
-        ILogger<InvalidationEngineHealthCheck> logger,
-        IOptions<HealthCheckOptions> options)
-    {
-        _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
-        _metricsCollector = metricsCollector ?? throw new ArgumentNullException(nameof(metricsCollector));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options.Value ?? new HealthCheckOptions();
-    }
+    private readonly IInvalidationEngine _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
+    private readonly IInvalidationMetricsCollector _metricsCollector = metricsCollector ?? throw new ArgumentNullException(nameof(metricsCollector));
+    private readonly ILogger<InvalidationEngineHealthCheck> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly HealthCheckOptions _options = options.Value ?? new HealthCheckOptions();
 
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {

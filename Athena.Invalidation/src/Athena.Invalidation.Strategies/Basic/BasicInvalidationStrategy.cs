@@ -4,18 +4,13 @@ namespace Athena.Invalidation.Strategies.Basic;
 /// 기본 무효화 전략 - Table, Pattern, Key 기반 무효화 지원
 /// 가장 범용적이고 안정적인 무효화 처리
 /// </summary>
-public class BasicInvalidationStrategy : IInvalidationStrategy
+public class BasicInvalidationStrategy(ILogger<BasicInvalidationStrategy> logger) : IInvalidationStrategy
 {
-    private readonly ILogger<BasicInvalidationStrategy> _logger;
+    private readonly ILogger<BasicInvalidationStrategy> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private IServiceProvider _serviceProvider = null!;
 
     public string StrategyName => "Basic";
     public int Priority => 100; // 기본 전략이므로 중간 우선순위
-
-    public BasicInvalidationStrategy(ILogger<BasicInvalidationStrategy> logger)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public bool CanHandle(IInvalidationContext context)
     {

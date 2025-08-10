@@ -396,12 +396,8 @@ public class MockDistributedEventBus : IDistributedEventBus
 /// <summary>
 /// 벤치마크용 Mock 무효화 컨텍스트
 /// </summary>
-public class BenchmarkInvalidationContext : BaseInvalidationContext
+public class BenchmarkInvalidationContext() : BaseInvalidationContext(InvalidationTrigger.Manual("Benchmark", "Test"))
 {
-    public BenchmarkInvalidationContext() : base(InvalidationTrigger.Manual("Benchmark", "Test"))
-    {
-    }
-
     public override IInvalidationContext Clone()
     {
         var clone = new BenchmarkInvalidationContext();

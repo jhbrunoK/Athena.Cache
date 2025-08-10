@@ -202,7 +202,7 @@ public class TestProjection : IProjection
     public DateTimeOffset LastUpdated { get; set; } = DateTimeOffset.UtcNow;
     public long Version { get; set; } = 1;
     public string ProjectionType { get; set; } = nameof(TestProjection);
-    public IEnumerable<string> SourceEventTypes { get; set; } = new[] { "TestEvent" };
+    public IEnumerable<string> SourceEventTypes { get; set; } = ["TestEvent"];
     public string Name { get; set; } = string.Empty;
 
     public IEnumerable<string> GetCacheKeys()

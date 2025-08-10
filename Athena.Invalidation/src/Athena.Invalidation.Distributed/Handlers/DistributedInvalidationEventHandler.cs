@@ -7,27 +7,22 @@ namespace Athena.Invalidation.Distributed.Handlers;
 /// <summary>
 /// 기본 분산 무효화 이벤트 핸들러 - 로컬 무효화 엔진에 위임
 /// </summary>
-public class DistributedInvalidationEventHandler : 
-    IDistributedInvalidationEventHandler<TableInvalidationEvent>,
-    IDistributedInvalidationEventHandler<PatternInvalidationEvent>,
-    IDistributedInvalidationEventHandler<KeyInvalidationEvent>,
-    IDistributedInvalidationEventHandler<BatchInvalidationEvent>,
-    IDistributedInvalidationEventHandler<HierarchicalInvalidationEvent>,
-    IDistributedInvalidationEventHandler<CommandInvalidationEvent>,
-    IDistributedInvalidationEventHandler<DomainEventInvalidationEvent>
+public class DistributedInvalidationEventHandler(
+    IInvalidationEngine invalidationEngine,
+    ILogger<DistributedInvalidationEventHandler> logger)
+    :
+        IDistributedInvalidationEventHandler<TableInvalidationEvent>,
+        IDistributedInvalidationEventHandler<PatternInvalidationEvent>,
+        IDistributedInvalidationEventHandler<KeyInvalidationEvent>,
+        IDistributedInvalidationEventHandler<BatchInvalidationEvent>,
+        IDistributedInvalidationEventHandler<HierarchicalInvalidationEvent>,
+        IDistributedInvalidationEventHandler<CommandInvalidationEvent>,
+        IDistributedInvalidationEventHandler<DomainEventInvalidationEvent>
 {
-    private readonly IInvalidationEngine _invalidationEngine;
-    private readonly ILogger<DistributedInvalidationEventHandler> _logger;
+    private readonly IInvalidationEngine _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
+    private readonly ILogger<DistributedInvalidationEventHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public int Priority => 100; // 기본 우선순위
-
-    public DistributedInvalidationEventHandler(
-        IInvalidationEngine invalidationEngine,
-        ILogger<DistributedInvalidationEventHandler> logger)
-    {
-        _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public async Task HandleAsync(TableInvalidationEvent invalidationEvent, CancellationToken cancellationToken = default)
     {

@@ -134,18 +134,13 @@ public static class ServiceCollectionExtensions
 /// <summary>
 /// Redis 무효화 헬스체크
 /// </summary>
-public class RedisInvalidationHealthCheck : IHealthCheck
+public class RedisInvalidationHealthCheck(
+    IRedisInvalidationProvider redisProvider,
+    ILogger<RedisInvalidationHealthCheck> logger)
+    : IHealthCheck
 {
-    private readonly IRedisInvalidationProvider _redisProvider;
-    private readonly ILogger<RedisInvalidationHealthCheck> _logger;
-
-    public RedisInvalidationHealthCheck(
-        IRedisInvalidationProvider redisProvider,
-        ILogger<RedisInvalidationHealthCheck> logger)
-    {
-        _redisProvider = redisProvider ?? throw new ArgumentNullException(nameof(redisProvider));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IRedisInvalidationProvider _redisProvider = redisProvider ?? throw new ArgumentNullException(nameof(redisProvider));
+    private readonly ILogger<RedisInvalidationHealthCheck> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,

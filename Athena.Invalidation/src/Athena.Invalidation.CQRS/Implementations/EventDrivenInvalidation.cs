@@ -6,19 +6,14 @@ namespace Athena.Invalidation.CQRS.Implementations;
 /// <summary>
 /// 도메인 이벤트 기반 캐시 무효화 구현
 /// </summary>
-public class EventDrivenInvalidation : IEventDrivenInvalidation
+public class EventDrivenInvalidation(
+    IInvalidationEngine invalidationEngine,
+    ILogger<EventDrivenInvalidation> logger)
+    : IEventDrivenInvalidation
 {
-    private readonly IInvalidationEngine _invalidationEngine;
-    private readonly ILogger<EventDrivenInvalidation> _logger;
+    private readonly IInvalidationEngine _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
+    private readonly ILogger<EventDrivenInvalidation> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ConcurrentDictionary<Type, object> _eventHandlers = new();
-
-    public EventDrivenInvalidation(
-        IInvalidationEngine invalidationEngine,
-        ILogger<EventDrivenInvalidation> logger)
-    {
-        _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public async Task HandleEventAsync<TEvent>(TEvent domainEvent, CancellationToken cancellationToken = default) 
         where TEvent : IDomainEvent

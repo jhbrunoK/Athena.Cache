@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.Distrib
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.FusionCache", "src\Athena.Invalidation.FusionCache\Athena.Invalidation.FusionCache.csproj", "{BE169465-D82C-9485-4056-4396F7561DD1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.Hierarchical", "src\Athena.Invalidation.Hierarchical\Athena.Invalidation.Hierarchical.csproj", "{3348897B-533B-BB7E-C985-552D8B6FA4CE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -91,6 +93,10 @@ Global
 		{BE169465-D82C-9485-4056-4396F7561DD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE169465-D82C-9485-4056-4396F7561DD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE169465-D82C-9485-4056-4396F7561DD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3348897B-533B-BB7E-C985-552D8B6FA4CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3348897B-533B-BB7E-C985-552D8B6FA4CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3348897B-533B-BB7E-C985-552D8B6FA4CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3348897B-533B-BB7E-C985-552D8B6FA4CE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -109,6 +115,7 @@ Global
 		{78AC9337-9F8C-475B-4432-AF0FC8FE5837} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
 		{561DD9BD-1B38-6C70-BC40-F6A69E2E2B59} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
 		{BE169465-D82C-9485-4056-4396F7561DD1} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
+		{3348897B-533B-BB7E-C985-552D8B6FA4CE} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1E9850DC-8E96-45F3-B899-C438CEE447B3}

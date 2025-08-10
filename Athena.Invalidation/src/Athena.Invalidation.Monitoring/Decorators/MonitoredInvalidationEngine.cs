@@ -7,23 +7,17 @@ namespace Athena.Invalidation.Monitoring.Decorators;
 /// <summary>
 /// 모니터링 기능이 추가된 무효화 엔진 데코레이터
 /// </summary>
-public class MonitoredInvalidationEngine : IInvalidationEngine, IAsyncDisposable
+public class MonitoredInvalidationEngine(
+    IInvalidationEngine innerEngine,
+    IInvalidationMetricsCollector metricsCollector,
+    ILogger<MonitoredInvalidationEngine> logger)
+    : IInvalidationEngine, IAsyncDisposable
 {
-    private readonly IInvalidationEngine _innerEngine;
-    private readonly IInvalidationMetricsCollector _metricsCollector;
-    private readonly ILogger<MonitoredInvalidationEngine> _logger;
+    private readonly IInvalidationEngine _innerEngine = innerEngine ?? throw new ArgumentNullException(nameof(innerEngine));
+    private readonly IInvalidationMetricsCollector _metricsCollector = metricsCollector ?? throw new ArgumentNullException(nameof(metricsCollector));
+    private readonly ILogger<MonitoredInvalidationEngine> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     
     private volatile bool _disposed = false;
-
-    public MonitoredInvalidationEngine(
-        IInvalidationEngine innerEngine,
-        IInvalidationMetricsCollector metricsCollector,
-        ILogger<MonitoredInvalidationEngine> logger)
-    {
-        _innerEngine = innerEngine ?? throw new ArgumentNullException(nameof(innerEngine));
-        _metricsCollector = metricsCollector ?? throw new ArgumentNullException(nameof(metricsCollector));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public async Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {

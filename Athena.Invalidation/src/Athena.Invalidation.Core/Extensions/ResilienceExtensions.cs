@@ -125,13 +125,12 @@ public static class ResilienceExtensions
                 retry.JitterFactor = 0.3;
                 
                 // 네트워크 관련 예외만 재시도
-                retry.RetryableExceptions.AddRange(new[]
-                {
+                retry.RetryableExceptions.AddRange([
                     typeof(HttpRequestException),
                     typeof(SocketException),
                     typeof(TimeoutException),
                     typeof(TaskCanceledException)
-                });
+                ]);
             },
             circuitBreaker => 
             {

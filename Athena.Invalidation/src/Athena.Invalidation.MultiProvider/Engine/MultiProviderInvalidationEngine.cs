@@ -721,12 +721,8 @@ public class MultiProviderInvalidationOptions
 /// <summary>
 /// 다중 제공자 무효화 컨텍스트
 /// </summary>
-public class MultiProviderInvalidationContext : BaseInvalidationContext
+public class MultiProviderInvalidationContext(InvalidationTrigger trigger) : BaseInvalidationContext(trigger)
 {
-    public MultiProviderInvalidationContext(InvalidationTrigger trigger) : base(trigger)
-    {
-    }
-
     public override IInvalidationContext Clone()
     {
         var clone = new MultiProviderInvalidationContext(Trigger);

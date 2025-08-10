@@ -115,7 +115,7 @@ public class HierarchicalInvalidationPlan
 {
     public string RootTable { get; set; } = string.Empty;
     public InvalidationDirection Direction { get; set; }
-    public List<InvalidationStep> Steps { get; set; } = new();
+    public List<InvalidationStep> Steps { get; set; } = [];
     public TimeSpan EstimatedDuration { get; set; }
     public int TotalTables { get; set; }
 }
@@ -127,7 +127,7 @@ public class InvalidationStep
 {
     public int Order { get; set; }
     public string LayerName { get; set; } = string.Empty;
-    public List<string> Tables { get; set; } = new();
+    public List<string> Tables { get; set; } = [];
     public InvalidationStrategy Strategy { get; set; }
     public TimeSpan? Delay { get; set; }
     public Dictionary<string, object> Properties { get; set; } = new();
@@ -139,9 +139,9 @@ public class InvalidationStep
 public class LayerValidationResult
 {
     public bool IsValid { get; set; }
-    public List<string> Errors { get; set; } = new();
-    public List<string> Warnings { get; set; } = new();
-    public List<string> OrphanedTables { get; set; } = new();
+    public List<string> Errors { get; set; } = [];
+    public List<string> Warnings { get; set; } = [];
+    public List<string> OrphanedTables { get; set; } = [];
 }
 
 /// <summary>
@@ -149,15 +149,15 @@ public class LayerValidationResult
 /// </summary>
 public class LayerVisualizationData
 {
-    public LayerNode[] Layers { get; set; } = Array.Empty<LayerNode>();
-    public LayerConnection[] Connections { get; set; } = Array.Empty<LayerConnection>();
+    public LayerNode[] Layers { get; set; } = [];
+    public LayerConnection[] Connections { get; set; } = [];
 }
 
 public class LayerNode
 {
     public string Name { get; set; } = string.Empty;
     public int Level { get; set; }
-    public string[] Tables { get; set; } = Array.Empty<string>();
+    public string[] Tables { get; set; } = [];
     public LayerProperties Properties { get; set; } = new();
 }
 

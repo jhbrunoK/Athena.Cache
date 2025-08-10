@@ -247,24 +247,18 @@ public class ResilienceIntegrationTests : IAsyncLifetime
 /// <summary>
 /// 간헐적으로 실패하는 Mock 엔진
 /// </summary>
-public class IntermittentlyFaultyMockEngine : IInvalidationEngine
+public class IntermittentlyFaultyMockEngine(double failureRate) : IInvalidationEngine
 {
-    private readonly double _failureRate;
     private readonly Random _random = new();
     
     public int AttemptCount { get; private set; }
     public List<string> SuccessfulTables { get; } = new();
 
-    public IntermittentlyFaultyMockEngine(double failureRate)
-    {
-        _failureRate = failureRate;
-    }
-
     public Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {
         AttemptCount++;
         
-        if (_random.NextDouble() < _failureRate)
+        if (_random.NextDouble() < failureRate)
         {
             throw new InvalidOperationException($"Simulated failure for table {tableName}");
         }

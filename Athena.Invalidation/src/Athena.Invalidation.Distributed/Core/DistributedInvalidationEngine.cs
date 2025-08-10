@@ -7,26 +7,19 @@ namespace Athena.Invalidation.Distributed.Core;
 /// <summary>
 /// 분산 캐시 무효화 엔진 - 로컬 무효화 + 분산 이벤트 발행
 /// </summary>
-public class DistributedInvalidationEngine : IInvalidationEngine, IAsyncDisposable
+public class DistributedInvalidationEngine(
+    IInvalidationEngine localEngine,
+    IDistributedEventBus eventBus,
+    ILogger<DistributedInvalidationEngine> logger,
+    IOptions<DistributedInvalidationOptions> options)
+    : IInvalidationEngine, IAsyncDisposable
 {
-    private readonly IInvalidationEngine _localEngine;
-    private readonly IDistributedEventBus _eventBus;
-    private readonly ILogger<DistributedInvalidationEngine> _logger;
-    private readonly DistributedInvalidationOptions _options;
+    private readonly IInvalidationEngine _localEngine = localEngine ?? throw new ArgumentNullException(nameof(localEngine));
+    private readonly IDistributedEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+    private readonly ILogger<DistributedInvalidationEngine> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly DistributedInvalidationOptions _options = options.Value ?? new DistributedInvalidationOptions();
     
     private volatile bool _disposed = false;
-
-    public DistributedInvalidationEngine(
-        IInvalidationEngine localEngine,
-        IDistributedEventBus eventBus,
-        ILogger<DistributedInvalidationEngine> logger,
-        IOptions<DistributedInvalidationOptions> options)
-    {
-        _localEngine = localEngine ?? throw new ArgumentNullException(nameof(localEngine));
-        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options.Value ?? new DistributedInvalidationOptions();
-    }
 
     public async Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {

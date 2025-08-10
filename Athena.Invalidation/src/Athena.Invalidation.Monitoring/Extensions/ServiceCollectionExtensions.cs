@@ -33,7 +33,7 @@ public static class ServiceCollectionExtensions
             .AddTypeActivatedCheck<InvalidationEngineHealthCheck>(
                 "invalidation_engine",
                 Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
-                tags: new[] { "invalidation", "engine" });
+                tags: ["invalidation", "engine"]);
 
         return services;
     }
@@ -96,31 +96,23 @@ public static class ServiceCollectionExtensions
 /// <summary>
 /// Prometheus 호스티드 서비스
 /// </summary>
-internal class PrometheusHostedService : BackgroundService
+internal class PrometheusHostedService(
+    PrometheusMetricsExporter exporter,
+    ILogger<PrometheusHostedService> logger)
+    : BackgroundService
 {
-    private readonly PrometheusMetricsExporter _exporter;
-    private readonly ILogger<PrometheusHostedService> _logger;
-
-    public PrometheusHostedService(
-        PrometheusMetricsExporter exporter,
-        ILogger<PrometheusHostedService> logger)
-    {
-        _exporter = exporter;
-        _logger = logger;
-    }
-
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting Prometheus metrics exporter");
-        await _exporter.StartAsync(cancellationToken);
+        logger.LogInformation("Starting Prometheus metrics exporter");
+        await exporter.StartAsync(cancellationToken);
         await base.StartAsync(cancellationToken);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Stopping Prometheus metrics exporter");
+        logger.LogInformation("Stopping Prometheus metrics exporter");
         await base.StopAsync(cancellationToken);
-        await _exporter.StopAsync(cancellationToken);
+        await exporter.StopAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

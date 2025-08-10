@@ -65,7 +65,7 @@ public interface IEventInvalidationHandler<in TEvent> where TEvent : IDomainEven
 public class HierarchicalInvalidationTarget
 {
     public string RootTable { get; set; } = string.Empty;
-    public string[] RelatedTables { get; set; } = Array.Empty<string>();
+    public string[] RelatedTables { get; set; } = [];
     public int MaxDepth { get; set; } = 3;
     public Dictionary<string, object> Properties { get; set; } = new();
 }

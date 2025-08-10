@@ -5,23 +5,17 @@ namespace Athena.Invalidation.Core.Resilience;
 /// <summary>
 /// 재시도 패턴을 적용한 무효화 엔진 데코레이터
 /// </summary>
-public class RetryInvalidationEngine : IInvalidationEngine, IAsyncDisposable
+public class RetryInvalidationEngine(
+    IInvalidationEngine innerEngine,
+    ILogger<RetryInvalidationEngine> logger,
+    IOptions<RetryOptions> options)
+    : IInvalidationEngine, IAsyncDisposable
 {
-    private readonly IInvalidationEngine _innerEngine;
-    private readonly ILogger<RetryInvalidationEngine> _logger;
-    private readonly RetryOptions _options;
+    private readonly IInvalidationEngine _innerEngine = innerEngine ?? throw new ArgumentNullException(nameof(innerEngine));
+    private readonly ILogger<RetryInvalidationEngine> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly RetryOptions _options = options.Value ?? new RetryOptions();
     
     private volatile bool _disposed = false;
-
-    public RetryInvalidationEngine(
-        IInvalidationEngine innerEngine,
-        ILogger<RetryInvalidationEngine> logger,
-        IOptions<RetryOptions> options)
-    {
-        _innerEngine = innerEngine ?? throw new ArgumentNullException(nameof(innerEngine));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options.Value ?? new RetryOptions();
-    }
 
     public async Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {
@@ -302,16 +296,16 @@ public class RetryOptions
     public double JitterFactor { get; set; } = 0.2;
     
     /// <summary>재시도 가능한 예외 타입들 (비어있으면 모든 예외 재시도)</summary>
-    public List<Type> RetryableExceptions { get; set; } = new();
+    public List<Type> RetryableExceptions { get; set; } = [];
     
     /// <summary>재시도하지 않을 예외 타입들</summary>
-    public List<Type> NonRetryableExceptions { get; set; } = new()
-    {
+    public List<Type> NonRetryableExceptions { get; set; } =
+    [
         typeof(ArgumentException),
         typeof(ArgumentNullException),
         typeof(NotSupportedException),
         typeof(ObjectDisposedException)
-    };
+    ];
     
     /// <summary>커스텀 재시도 조건</summary>
     public Func<Exception, bool>? RetryPredicate { get; set; }
@@ -329,13 +323,13 @@ public static class RetryPolicies
         BaseDelay = TimeSpan.FromMilliseconds(500),
         MaxDelay = TimeSpan.FromSeconds(10),
         DelayStrategy = RetryDelayStrategy.ExponentialWithJitter,
-        RetryableExceptions = new List<Type>
-        {
+        RetryableExceptions =
+        [
             typeof(HttpRequestException),
             typeof(SocketException),
             typeof(TimeoutException),
             typeof(TaskCanceledException)
-        }
+        ]
     };
 
     /// <summary>데이터베이스 관련 재시도 정책</summary>

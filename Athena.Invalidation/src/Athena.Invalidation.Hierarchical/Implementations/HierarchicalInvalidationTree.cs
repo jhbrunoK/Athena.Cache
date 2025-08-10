@@ -7,21 +7,16 @@ namespace Athena.Invalidation.Hierarchical.Implementations;
 /// <summary>
 /// 계층적 무효화 트리 구현
 /// </summary>
-public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
+public class HierarchicalInvalidationTree(
+    IInvalidationEngine invalidationEngine,
+    ILogger<HierarchicalInvalidationTree> logger)
+    : IHierarchicalInvalidationTree
 {
-    private readonly IInvalidationEngine _invalidationEngine;
-    private readonly ILogger<HierarchicalInvalidationTree> _logger;
+    private readonly IInvalidationEngine _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
+    private readonly ILogger<HierarchicalInvalidationTree> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ConcurrentDictionary<string, LayerInfo> _layers = new();
     private readonly ConcurrentDictionary<string, string> _tableToLayer = new();
     private readonly ConcurrentDictionary<string, HashSet<LayerRelation>> _layerRelations = new();
-
-    public HierarchicalInvalidationTree(
-        IInvalidationEngine invalidationEngine,
-        ILogger<HierarchicalInvalidationTree> logger)
-    {
-        _invalidationEngine = invalidationEngine ?? throw new ArgumentNullException(nameof(invalidationEngine));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public void DefineLayer(string layerName, string? parentLayer = null, LayerProperties? properties = null)
     {
@@ -38,8 +33,8 @@ public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
             Name = layerName,
             ParentLayer = parentLayer,
             Properties = properties ?? new LayerProperties(),
-            Tables = new HashSet<string>(),
-            ChildLayers = new HashSet<string>()
+            Tables = [],
+            ChildLayers = []
         };
 
         _layers[layerName] = layerInfo;
@@ -102,7 +97,7 @@ public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
         {
             RootTable = rootTable,
             Direction = direction,
-            Steps = new List<InvalidationStep>()
+            Steps = []
         };
 
         var rootLayer = GetTableLayer(rootTable);
@@ -113,7 +108,7 @@ public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
             {
                 Order = 0,
                 LayerName = "Unassigned",
-                Tables = new List<string> { rootTable },
+                Tables = [rootTable],
                 Strategy = InvalidationStrategy.Immediate
             });
             plan.TotalTables = 1;
@@ -151,7 +146,7 @@ public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
         };
 
         _layerRelations.AddOrUpdate(parentLayer,
-            new HashSet<LayerRelation> { relation },
+            [relation],
             (key, existing) =>
             {
                 existing.Add(relation);
@@ -382,14 +377,14 @@ public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
     private List<string> GetSiblingLayers(string layerName)
     {
         if (!_layers.TryGetValue(layerName, out var layer) || string.IsNullOrEmpty(layer.ParentLayer))
-            return new List<string>();
+            return [];
 
         if (_layers.TryGetValue(layer.ParentLayer, out var parent))
         {
             return parent.ChildLayers.Where(child => child != layerName).ToList();
         }
 
-        return new List<string>();
+        return [];
     }
 
     private int CalculateLayerLevel(string layerName)
@@ -516,8 +511,8 @@ internal class LayerInfo
     public string Name { get; set; } = string.Empty;
     public string? ParentLayer { get; set; }
     public LayerProperties Properties { get; set; } = new();
-    public HashSet<string> Tables { get; set; } = new();
-    public HashSet<string> ChildLayers { get; set; } = new();
+    public HashSet<string> Tables { get; set; } = [];
+    public HashSet<string> ChildLayers { get; set; } = [];
 }
 
 /// <summary>

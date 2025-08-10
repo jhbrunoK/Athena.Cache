@@ -74,8 +74,8 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
         try
         {
             // 키-테이블 매핑 추가
-            _keyToTables.AddOrUpdate(cacheKey, 
-                new HashSet<string> { tableName },
+            _keyToTables.AddOrUpdate(cacheKey,
+                [tableName],
                 (_, existing) => 
                 {
                     existing.Add(tableName);
@@ -84,7 +84,7 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
             
             // 테이블-키 매핑 추가
             _tableToKeys.AddOrUpdate(tableName,
-                new HashSet<string> { cacheKey },
+                [cacheKey],
                 (_, existing) =>
                 {
                     existing.Add(cacheKey);
@@ -116,7 +116,7 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
         {
             // 키-테이블 매핑 추가
             _keyToTables.AddOrUpdate(cacheKey,
-                new HashSet<string>(tableNames),
+                [..tableNames],
                 (_, existing) =>
                 {
                     foreach (var tableName in tableNames)
@@ -130,7 +130,7 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
             foreach (var tableName in tableNames)
             {
                 _tableToKeys.AddOrUpdate(tableName,
-                    new HashSet<string> { cacheKey },
+                    [cacheKey],
                     (_, existing) =>
                     {
                         existing.Add(cacheKey);
@@ -503,7 +503,7 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
         try
         {
             _keyToTags.AddOrUpdate(cacheKey,
-                new HashSet<string> { tag },
+                [tag],
                 (_, existing) =>
                 {
                     existing.Add(tag);
@@ -511,7 +511,7 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
                 });
             
             _tagToKeys.AddOrUpdate(tag,
-                new HashSet<string> { cacheKey },
+                [cacheKey],
                 (_, existing) =>
                 {
                     existing.Add(cacheKey);
@@ -601,7 +601,7 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
     {
         if (_disposed) throw new ObjectDisposedException(nameof(AdvancedCacheKeyTracker));
         
-        if (!_options.EnableHistory) return Enumerable.Empty<CacheKeyHistoryEntry>();
+        if (!_options.EnableHistory) return [];
         
         return _history.Where(entry => entry.CacheKey == cacheKey || entry.CacheKey == "*").ToList();
     }
@@ -614,7 +614,7 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
         try
         {
             _tableDependencies.AddOrUpdate(tableName,
-                new HashSet<string> { dependentTable },
+                [dependentTable],
                 (_, existing) =>
                 {
                     existing.Add(dependentTable);
@@ -622,7 +622,7 @@ public class AdvancedCacheKeyTracker : IAdvancedCacheKeyTracker, IAsyncDisposabl
                 });
             
             _reverseTableDependencies.AddOrUpdate(dependentTable,
-                new HashSet<string> { tableName },
+                [tableName],
                 (_, existing) =>
                 {
                     existing.Add(tableName);

@@ -4,18 +4,13 @@ namespace Athena.Invalidation.Strategies.Advanced;
 /// 계층적 무효화 전략 - 연관된 테이블들과 함께 계층적으로 무효화
 /// 의존성 그래프를 따라 연쇄적으로 무효화 처리
 /// </summary>
-public class HierarchicalInvalidationStrategy : IInvalidationStrategy
+public class HierarchicalInvalidationStrategy(ILogger<HierarchicalInvalidationStrategy> logger) : IInvalidationStrategy
 {
-    private readonly ILogger<HierarchicalInvalidationStrategy> _logger;
+    private readonly ILogger<HierarchicalInvalidationStrategy> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private IServiceProvider _serviceProvider = null!;
 
     public string StrategyName => "Hierarchical";
     public int Priority => 200; // 고급 전략이므로 높은 우선순위
-
-    public HierarchicalInvalidationStrategy(ILogger<HierarchicalInvalidationStrategy> logger)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public bool CanHandle(IInvalidationContext context)
     {
@@ -30,7 +25,7 @@ public class HierarchicalInvalidationStrategy : IInvalidationStrategy
         try
         {
             var tableName = context.Target;
-            var relatedTables = context.GetMetadata<string[]>("RelatedTables", Array.Empty<string>()) ?? Array.Empty<string>();
+            var relatedTables = context.GetMetadata<string[]>("RelatedTables", []) ?? [];
             var maxDepth = context.GetMetadata<int>("MaxDepth", 3);
 
             var processedTables = new HashSet<string>();
@@ -112,7 +107,7 @@ public class HierarchicalInvalidationStrategy : IInvalidationStrategy
                         {
                             // 각 관련 테이블을 재귀적으로 처리 (더 이상 연관 테이블은 없음)
                             return await InvalidateTableHierarchyAsync(
-                                relatedTable, Array.Empty<string>(), maxDepth, currentDepth + 1, 
+                                relatedTable, [], maxDepth, currentDepth + 1, 
                                 processedTables, baseContext, cancellationToken);
                         }
                         catch (Exception ex)

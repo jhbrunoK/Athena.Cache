@@ -175,8 +175,8 @@ public class DependencyGraphInvalidatorTests
 
         // Assert
         Assert.Equal(2, paths.Count);
-        Assert.Contains(paths, path => path.SequenceEqual(new[] { "A", "B", "C" }));
-        Assert.Contains(paths, path => path.SequenceEqual(new[] { "A", "D", "C" }));
+        Assert.Contains(paths, path => path.SequenceEqual(["A", "B", "C"]));
+        Assert.Contains(paths, path => path.SequenceEqual(["A", "D", "C"]));
     }
 
     [Fact]

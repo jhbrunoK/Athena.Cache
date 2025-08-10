@@ -228,40 +228,31 @@ public class DistributedInvalidationTests : IAsyncLifetime
 /// <summary>
 /// 테스트용 Mock 무효화 엔진
 /// </summary>
-public class MockInvalidationEngine : IInvalidationEngine
+public class MockInvalidationEngine(string nodeId, ILogger<MockInvalidationEngine> logger) : IInvalidationEngine
 {
-    private readonly string _nodeId;
-    private readonly ILogger<MockInvalidationEngine> _logger;
-    
     public List<string> InvalidatedTables { get; } = new();
     public List<string> InvalidatedPatterns { get; } = new();
     public List<string> InvalidatedKeys { get; } = new();
     public Dictionary<string, (string[] RelatedTables, int MaxDepth)> InvalidatedHierarchies { get; } = new();
 
-    public MockInvalidationEngine(string nodeId, ILogger<MockInvalidationEngine> logger)
-    {
-        _nodeId = nodeId;
-        _logger = logger;
-    }
-
     public Task InvalidateByTableAsync(string tableName, CancellationToken cancellationToken = default)
     {
         InvalidatedTables.Add(tableName);
-        _logger.LogInformation("Node {NodeId}: Invalidated table {TableName}", _nodeId, tableName);
+        logger.LogInformation("Node {NodeId}: Invalidated table {TableName}", nodeId, tableName);
         return Task.CompletedTask;
     }
 
     public Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default)
     {
         InvalidatedPatterns.Add(pattern);
-        _logger.LogInformation("Node {NodeId}: Invalidated pattern {Pattern}", _nodeId, pattern);
+        logger.LogInformation("Node {NodeId}: Invalidated pattern {Pattern}", nodeId, pattern);
         return Task.CompletedTask;
     }
 
     public Task InvalidateByKeyAsync(string key, CancellationToken cancellationToken = default)
     {
         InvalidatedKeys.Add(key);
-        _logger.LogInformation("Node {NodeId}: Invalidated key {Key}", _nodeId, key);
+        logger.LogInformation("Node {NodeId}: Invalidated key {Key}", nodeId, key);
         return Task.CompletedTask;
     }
 
@@ -269,15 +260,15 @@ public class MockInvalidationEngine : IInvalidationEngine
     {
         var tables = tableNames.ToArray();
         InvalidatedTables.AddRange(tables);
-        _logger.LogInformation("Node {NodeId}: Invalidated batch {Tables}", _nodeId, string.Join(", ", tables));
+        logger.LogInformation("Node {NodeId}: Invalidated batch {Tables}", nodeId, string.Join(", ", tables));
         return Task.CompletedTask;
     }
 
     public Task InvalidateHierarchyAsync(string tableName, string[] relatedTables, int maxDepth = 3, CancellationToken cancellationToken = default)
     {
         InvalidatedHierarchies[tableName] = (relatedTables, maxDepth);
-        _logger.LogInformation("Node {NodeId}: Invalidated hierarchy {TableName} with {RelatedCount} related tables", 
-            _nodeId, tableName, relatedTables.Length);
+        logger.LogInformation("Node {NodeId}: Invalidated hierarchy {TableName} with {RelatedCount} related tables", 
+            nodeId, tableName, relatedTables.Length);
         return Task.CompletedTask;
     }
 
@@ -335,7 +326,7 @@ public class MockInvalidationEngine : IInvalidationEngine
             LastActivity = DateTimeOffset.UtcNow,
             Metrics = new Dictionary<string, object>
             {
-                ["NodeId"] = _nodeId,
+                ["NodeId"] = nodeId,
                 ["InvalidatedTables"] = InvalidatedTables.Count,
                 ["InvalidatedPatterns"] = InvalidatedPatterns.Count,
                 ["InvalidatedKeys"] = InvalidatedKeys.Count
@@ -347,12 +338,8 @@ public class MockInvalidationEngine : IInvalidationEngine
 /// <summary>
 /// 테스트용 Mock 무효화 컨텍스트
 /// </summary>
-public class MockInvalidationContext : BaseInvalidationContext
+public class MockInvalidationContext() : BaseInvalidationContext(InvalidationTrigger.Manual("Test", "Mock"))
 {
-    public MockInvalidationContext() : base(InvalidationTrigger.Manual("Test", "Mock"))
-    {
-    }
-
     public override IInvalidationContext Clone()
     {
         var clone = new MockInvalidationContext();
