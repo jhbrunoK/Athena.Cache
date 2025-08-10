@@ -35,22 +35,22 @@ function Write-ColorOutput($ForegroundColor) {
     $host.UI.RawUI.ForegroundColor = $fc
 }
 
-Write-ColorOutput Green "🏛️  Athena.Cache 빌드 시작 - Configuration: $Configuration"
+Write-ColorOutput Green "🏛️  Athena 통합 솔루션 빌드 시작 - Configuration: $Configuration"
 
 # 1. Restore
 Write-ColorOutput Yellow "📦 의존성 복원 중..."
-dotnet restore
+dotnet restore Athena.sln
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # 2. Build
 Write-ColorOutput Yellow "🔨 솔루션 빌드 중..."
-dotnet build --configuration $Configuration --no-restore
+dotnet build Athena.sln --configuration $Configuration --no-restore
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # 3. Test
 if (-not $SkipTests) {
     Write-ColorOutput Yellow "🧪 테스트 실행 중..."
-    dotnet test --configuration $Configuration --no-build --verbosity normal --collect:"XPlat Code Coverage" --filter "Category!=Performance"
+    dotnet test Athena.sln --configuration $Configuration --no-build --verbosity normal --collect:"XPlat Code Coverage" --filter "Category!=Performance"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
@@ -64,7 +64,7 @@ if (-not $SkipPack) {
     }
     New-Item -ItemType Directory -Path "artifacts/packages" -Force | Out-Null
     
-    dotnet pack --configuration $Configuration --no-build --output "artifacts/packages"
+    dotnet pack Athena.sln --configuration $Configuration --no-build --output "artifacts/packages"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
