@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    
+    <!-- 메타패키지 설정 -->
+    <PackageId>Athena.Invalidation.Advanced</PackageId>
+    <Authors>Athena Development Team</Authors>
+    <Description>Advanced features for enterprise cache invalidation scenarios. Includes CQRS pattern support, hierarchical invalidation, distributed cluster synchronization, and comprehensive monitoring capabilities.</Description>
+    <PackageTags>cache;invalidation;cqrs;hierarchical;distributed;monitoring;observability;enterprise;meta-package</PackageTags>
+    <PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- 메타패키지는 코드 없이 의존성만 포함 -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <!-- 메인 패키지 의존성 -->
+  <ItemGroup>
+    <PackageReference Include="Athena.Invalidation" Version="$(Version)" />
+  </ItemGroup>
+
+  <!-- 고급 기능 패키지들 -->
+  <ItemGroup>
+    <PackageReference Include="Athena.Invalidation.CQRS" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.Hierarchical" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.Distributed" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.Monitoring" Version="$(Version)" />
+  </ItemGroup>
+
+  <!-- README 파일 포함 -->
+  <ItemGroup>
+    <None Include="Advanced-README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,53 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    
+    <!-- 메타패키지 설정 -->
+    <PackageId>Athena.Invalidation</PackageId>
+    <Authors>Athena Development Team</Authors>
+    <Description>Complete cache invalidation solution with memory cache support. This meta-package includes all core components needed to get started with cache invalidation.</Description>
+    <PackageTags>cache;invalidation;caching;performance;distributed;memory;aspnetcore;meta-package</PackageTags>
+    <PackageProjectUrl>https://github.com/jhbrunoK/Athena.Cache</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- 메타패키지는 코드 없이 의존성만 포함 -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <!-- 핵심 패키지들 - 90%의 사용 케이스를 커버 -->
+  <ItemGroup>
+    <ProjectReference Include="../Athena.Invalidation.Core/Athena.Invalidation.Core.csproj" />
+    <ProjectReference Include="../Athena.Invalidation.Engine/Athena.Invalidation.Engine.csproj" />
+    <ProjectReference Include="../Athena.Invalidation.MemoryCache/Athena.Invalidation.MemoryCache.csproj" />
+    <ProjectReference Include="../Athena.Invalidation.Strategies/Athena.Invalidation.Strategies.csproj" />
+    <ProjectReference Include="../Athena.Invalidation.AspNetCore/Athena.Invalidation.AspNetCore.csproj" />
+    <ProjectReference Include="../Athena.Invalidation.Tracking/Athena.Invalidation.Tracking.csproj" />
+  </ItemGroup>
+  
+  <!-- 실제 배포할 때는 PackageReference로 변경됩니다 -->
+  <!--
+  <ItemGroup>
+    <PackageReference Include="Athena.Invalidation.Core" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.Engine" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.MemoryCache" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.Strategies" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.AspNetCore" Version="$(Version)" />
+    <PackageReference Include="Athena.Invalidation.Tracking" Version="$(Version)" />
+  </ItemGroup>
+  -->
+
+  <!-- README 파일 포함 -->
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
