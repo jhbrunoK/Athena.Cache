@@ -17,6 +17,7 @@
     <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>Advanced-README.md</PackageReadmeFile>
     
     <!-- 메타패키지는 코드 없이 의존성만 포함 -->
     <IncludeBuildOutput>false</IncludeBuildOutput>

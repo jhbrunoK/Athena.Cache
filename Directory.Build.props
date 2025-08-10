@@ -56,7 +56,12 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-    <None Include="$(MSBuildThisFileDirectory)README.md" Condition="Exists('$(MSBuildThisFileDirectory)README.md')">
+    <!-- 프로젝트별 README 파일 우선, 없으면 루트 README 사용 -->
+    <None Include="README.md" Condition="Exists('README.md')">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)README.md" Condition="!Exists('README.md') And Exists('$(MSBuildThisFileDirectory)README.md')">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
