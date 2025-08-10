@@ -38,11 +38,11 @@ function Write-ColorOutput($ForegroundColor) {
     $host.UI.RawUI.ForegroundColor = $fc
 }
 
-Write-ColorOutput Green "🧪 Athena.Cache 테스트 실행 - Category: $Category, Configuration: $Configuration"
+Write-ColorOutput Green "🧪 Athena 통합 솔루션 테스트 실행 - Category: $Category, Configuration: $Configuration"
 
 # 빌드 먼저 수행
 Write-ColorOutput Yellow "🔨 테스트용 빌드 실행 중..."
-dotnet build --configuration $Configuration --no-restore
+dotnet build Athena.sln --configuration $Configuration --no-restore
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # 테스트 필터 설정
@@ -59,6 +59,7 @@ switch ($Category) {
 # 테스트 명령어 구성
 $testArgs = @(
     "test"
+    "Athena.sln"
     "--configuration", $Configuration
     "--no-build"
 )
