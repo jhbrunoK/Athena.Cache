@@ -15,7 +15,7 @@ public class HashPerformanceTests
 {
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task XxHash3_vs_SHA256_HashingPerformance()
+    public void XxHash3_vs_SHA256_HashingPerformance()
     {
         // Arrange
         const int iterations = 10000;
@@ -80,7 +80,7 @@ public class HashPerformanceTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task CacheKeyGenerator_Performance_Comparison()
+    public void CacheKeyGenerator_Performance_Comparison()
     {
         // Arrange
         const int iterations = 5000;
@@ -102,7 +102,6 @@ public class HashPerformanceTests
         };
 
         var totalNewTime = 0L;
-        var totalCacheHits = 0;
 
         foreach (var parameters in testParameters)
         {
@@ -142,7 +141,7 @@ public class HashPerformanceTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task KeyCaching_Effectiveness_Test()
+    public void KeyCaching_Effectiveness_Test()
     {
         // Arrange
         var options = new AthenaCacheOptions { Namespace = "CacheTest" };
@@ -177,7 +176,7 @@ public class HashPerformanceTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task Base36_Encoding_Performance()
+    public void Base36_Encoding_Performance()
     {
         // Arrange
         const int iterations = 10000;

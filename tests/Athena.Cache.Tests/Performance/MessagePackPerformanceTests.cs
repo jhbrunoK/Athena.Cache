@@ -37,7 +37,7 @@ public class MessagePackPerformanceTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task MessagePack_vs_JSON_SerializationPerformance()
+    public void MessagePack_vs_JSON_SerializationPerformance()
     {
         // Arrange
         const int iterations = 1000;
@@ -191,7 +191,7 @@ public class MessagePackPerformanceTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task CachedResponse_MessagePack_Serialization()
+    public void CachedResponse_MessagePack_Serialization()
     {
         // Arrange
         const int iterations = 100;

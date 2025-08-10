@@ -16,7 +16,7 @@ public class Phase4OptimizationTests
 {
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task ObjectPooling_Performance_Test()
+    public void ObjectPooling_Performance_Test()
     {
         // Arrange
         const int iterations = 10000;

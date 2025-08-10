@@ -9,7 +9,7 @@ namespace Athena.Cache.Tests.Benchmarks;
 public class BenchmarkTests
 {
     [Fact]
-    public async Task CompareKeyGenerationPerformance()
+    public void CompareKeyGenerationPerformance()
     {
         // 여러 키 생성 방식의 성능 비교
         var iterations = 10000;

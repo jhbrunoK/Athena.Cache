@@ -123,9 +123,9 @@ public class FusionCacheInvalidator : ICacheInvalidator
     /// <summary>
     /// 여러 테이블과 연결하여 추적 - 캐시 항목에 태그 추가
     /// </summary>
-    public async Task TrackCacheKeyAsync(string[] tableNames, string cacheKey, CancellationToken cancellationToken = default)
+    public Task TrackCacheKeyAsync(string[] tableNames, string cacheKey, CancellationToken cancellationToken = default)
     {
-        if (tableNames == null || tableNames.Length == 0) return;
+        if (tableNames == null || tableNames.Length == 0) return Task.CompletedTask;
 
         try
         {
@@ -140,6 +140,8 @@ public class FusionCacheInvalidator : ICacheInvalidator
             _logger.LogWarning(ex, "Failed to track cache key '{CacheKey}' for tables [{Tables}]",
                 cacheKey, string.Join(", ", tableNames));
         }
+        
+        return Task.CompletedTask;
     }
 
     /// <summary>
