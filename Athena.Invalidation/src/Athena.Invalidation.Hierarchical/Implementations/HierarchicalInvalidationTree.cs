@@ -123,7 +123,7 @@ public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
         var processedLayers = new HashSet<string>();
         var stepOrder = 0;
 
-        await BuildInvalidationPlan(rootLayer, direction, maxDepth, 0, processedLayers, plan, ref stepOrder);
+        BuildInvalidationPlan(rootLayer, direction, maxDepth, 0, processedLayers, plan, ref stepOrder);
 
         // 예상 실행 시간 계산
         plan.EstimatedDuration = CalculateEstimatedDuration(plan.Steps);
@@ -249,7 +249,7 @@ public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
         }
     }
 
-    private async Task BuildInvalidationPlan(
+    private void BuildInvalidationPlan(
         string layerName, 
         InvalidationDirection direction, 
         int maxDepth, 
@@ -284,7 +284,7 @@ public class HierarchicalInvalidationTree : IHierarchicalInvalidationTree
         var nextLayers = GetNextLayers(layerName, direction);
         foreach (var nextLayer in nextLayers)
         {
-            await BuildInvalidationPlan(nextLayer, direction, maxDepth, currentDepth + 1, 
+            BuildInvalidationPlan(nextLayer, direction, maxDepth, currentDepth + 1, 
                 processedLayers, plan, ref stepOrder);
         }
     }

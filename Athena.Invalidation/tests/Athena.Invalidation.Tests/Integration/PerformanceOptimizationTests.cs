@@ -265,10 +265,13 @@ public class PerformanceOptimizationTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await _processor?.StopAsync(CancellationToken.None);
+        if (_processor != null)
+            await _processor.StopAsync(CancellationToken.None);
         _processor?.Dispose();
-        await _batchEngine?.DisposeAsync();
-        _queue?.Dispose();
+        if (_batchEngine != null)
+            await _batchEngine.DisposeAsync();
+        if (_queue is IDisposable disposableQueue)
+            disposableQueue.Dispose();
         _serviceProvider?.Dispose();
     }
 }

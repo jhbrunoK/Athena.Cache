@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,6 +35,8 @@
     <ProjectReference Include="../../src/Athena.Invalidation.AspNetCore/Athena.Invalidation.AspNetCore.csproj" />
     <ProjectReference Include="../../src/Athena.Invalidation.Distributed/Athena.Invalidation.Distributed.csproj" />
     <ProjectReference Include="../../src/Athena.Invalidation.Monitoring/Athena.Invalidation.Monitoring.csproj" />
+    <ProjectReference Include="../../src/Athena.Invalidation.Hierarchical/Athena.Invalidation.Hierarchical.csproj" />
+    <ProjectReference Include="../../src/Athena.Invalidation.CQRS/Athena.Invalidation.CQRS.csproj" />
   </ItemGroup>
 
 </Project>

@@ -194,8 +194,10 @@ public class MonitoringIntegrationTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await _monitoredEngine?.DisposeAsync();
-        await _metricsCollector?.StopAsync();
+        if (_monitoredEngine != null)
+            await _monitoredEngine.DisposeAsync();
+        if (_metricsCollector != null)
+            await _metricsCollector.StopAsync();
         _serviceProvider?.Dispose();
     }
 }

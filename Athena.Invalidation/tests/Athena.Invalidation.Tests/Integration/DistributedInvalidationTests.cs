@@ -216,8 +216,10 @@ public class DistributedInvalidationTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await _distributedEngine1?.DisposeAsync();
-        await _distributedEngine2?.DisposeAsync();
+        if (_distributedEngine1 != null)
+            await _distributedEngine1.DisposeAsync();
+        if (_distributedEngine2 != null)
+            await _distributedEngine2.DisposeAsync();
         _redis?.Dispose();
         _serviceProvider?.Dispose();
     }
@@ -345,9 +347,16 @@ public class MockInvalidationEngine : IInvalidationEngine
 /// <summary>
 /// 테스트용 Mock 무효화 컨텍스트
 /// </summary>
-public class MockInvalidationContext : IInvalidationContext
+public class MockInvalidationContext : BaseInvalidationContext
 {
-    public InvalidationTrigger Trigger { get; set; } = InvalidationTrigger.Manual;
-    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
-    public Dictionary<string, object>? Metadata { get; set; }
+    public MockInvalidationContext() : base(InvalidationTrigger.Manual("Test", "Mock"))
+    {
+    }
+
+    public override IInvalidationContext Clone()
+    {
+        var clone = new MockInvalidationContext();
+        CopyPropertiesTo(clone);
+        return clone;
+    }
 }

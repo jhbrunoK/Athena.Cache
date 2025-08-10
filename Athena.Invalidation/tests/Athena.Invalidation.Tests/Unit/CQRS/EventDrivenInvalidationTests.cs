@@ -26,10 +26,10 @@ public class EventDrivenInvalidationTests
         // Arrange
         var domainEvent = new TestDomainEvent
         {
-            EventId = Guid.NewGuid(),
+            EventId = Guid.NewGuid().ToString("N")[..12],
             EventType = "UserCreatedEvent",
             AggregateId = "user-123",
-            Timestamp = DateTime.UtcNow
+            OccurredAt = DateTimeOffset.UtcNow
         };
 
         _mockEngine.Setup(x => x.InvalidateBatchAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
@@ -53,7 +53,7 @@ public class EventDrivenInvalidationTests
         // Arrange
         var domainEvent = new TestDomainEvent
         {
-            EventId = Guid.NewGuid(),
+            EventId = Guid.NewGuid().ToString("N")[..12],
             EventType = "OrderUpdatedEvent",
             AggregateId = "order-456"
         };
@@ -99,14 +99,14 @@ public class EventDrivenInvalidationTests
             .ReturnsAsync(new[] { "CustomTable1", "CustomTable2" });
         mockHandler.Setup(x => x.GetInvalidationPatternsAsync(It.IsAny<TestDomainEvent>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { "custom:*" });
-        mockHandler.Setup(x => x.GetHierarchicalTargetsAsync(It.IsAny<TestDomainEvent>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<HierarchicalInvalidationTarget>());
+        // mockHandler.Setup(x => x.GetHierarchicalTargetsAsync(It.IsAny<TestDomainEvent>(), It.IsAny<CancellationToken>()))
+        //     .ReturnsAsync(Array.Empty<HierarchicalInvalidationTarget>());
 
         _handler.RegisterEventHandler(mockHandler.Object);
 
         var domainEvent = new TestDomainEvent
         {
-            EventId = Guid.NewGuid(),
+            EventId = Guid.NewGuid().ToString("N")[..12],
             EventType = "TestEvent"
         };
 
@@ -132,7 +132,7 @@ public class EventDrivenInvalidationTests
         // Arrange
         var domainEvent = new TestDomainEvent
         {
-            EventId = Guid.NewGuid(),
+            EventId = Guid.NewGuid().ToString("N")[..12],
             AggregateId = "test-123"
         };
 
@@ -173,17 +173,12 @@ public class EventDrivenInvalidationTests
 
 public class TestDomainEvent : IDomainEvent
 {
-    public Guid EventId { get; set; }
-    public string EventType { get; set; } = string.Empty;
-    public string? AggregateId { get; set; }
+    public string EventId { get; set; } = Guid.NewGuid().ToString("N")[..12];
+    public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
+    public string EventType { get; set; } = nameof(TestDomainEvent);
     public int Version { get; set; } = 1;
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string? AggregateId { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
-public class HierarchicalInvalidationTarget
-{
-    public string RootTable { get; set; } = string.Empty;
-    public string[] RelatedTables { get; set; } = Array.Empty<string>();
-    public int MaxDepth { get; set; } = 3;
-}
+// Removed HierarchicalInvalidationTarget as it's not needed for this test

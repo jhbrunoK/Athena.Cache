@@ -236,8 +236,10 @@ public class ResilienceIntegrationTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await _retryEngine?.DisposeAsync();
-        await _circuitBreakerEngine?.DisposeAsync();
+        if (_retryEngine != null)
+            await _retryEngine.DisposeAsync();
+        if (_circuitBreakerEngine != null)
+            await _circuitBreakerEngine.DisposeAsync();
         _serviceProvider?.Dispose();
     }
 }

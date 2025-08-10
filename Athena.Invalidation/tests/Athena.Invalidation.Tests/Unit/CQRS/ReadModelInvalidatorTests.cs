@@ -80,7 +80,7 @@ public class ReadModelInvalidatorTests
         // Arrange
         var domainEvent = new TestDomainEvent
         {
-            EventId = Guid.NewGuid(),
+            EventId = Guid.NewGuid().ToString("N")[..12],
             EventType = "UserCreatedEvent",
             AggregateId = "user-123"
         };
@@ -155,7 +155,7 @@ public class ReadModelInvalidatorTests
         // Arrange
         var domainEvent = new TestDomainEvent
         {
-            EventId = Guid.NewGuid(),
+            EventId = Guid.NewGuid().ToString("N")[..12],
             EventType = eventType,
             AggregateId = "test-123"
         };
@@ -179,6 +179,8 @@ public class ReadModelInvalidatorTests
 public class TestReadModel : IReadModel
 {
     public string Id { get; set; } = string.Empty;
+    public DateTimeOffset LastUpdated { get; set; } = DateTimeOffset.UtcNow;
+    public long Version { get; set; } = 1;
     public string Name { get; set; } = string.Empty;
 
     public IEnumerable<string> GetCacheKeys()
@@ -197,6 +199,10 @@ public class TestReadModel : IReadModel
 public class TestProjection : IProjection
 {
     public string Id { get; set; } = string.Empty;
+    public DateTimeOffset LastUpdated { get; set; } = DateTimeOffset.UtcNow;
+    public long Version { get; set; } = 1;
+    public string ProjectionType { get; set; } = nameof(TestProjection);
+    public IEnumerable<string> SourceEventTypes { get; set; } = new[] { "TestEvent" };
     public string Name { get; set; } = string.Empty;
 
     public IEnumerable<string> GetCacheKeys()
@@ -208,11 +214,18 @@ public class TestProjection : IProjection
     {
         yield return "Projections";
     }
+
+    public bool NeedsRebuild(IDomainEvent domainEvent)
+    {
+        return SourceEventTypes.Contains(domainEvent.EventType);
+    }
 }
 
 public class TestDependentReadModel : IReadModel
 {
     public string Id { get; set; } = string.Empty;
+    public DateTimeOffset LastUpdated { get; set; } = DateTimeOffset.UtcNow;
+    public long Version { get; set; } = 1;
 
     public IEnumerable<string> GetCacheKeys()
     {

@@ -1,10 +1,11 @@
+/*
 using BenchmarkDotNet.Running;
 using Athena.Invalidation.Tests.Benchmarks;
 
 namespace Athena.Invalidation.Tests;
 
 /// <summary>
-/// 벤치마크 실행 프로그램
+/// 벤치마크 실행 프로그램 - 임시 비활성화
 /// </summary>
 class Program
 {
@@ -40,3 +41,4 @@ class Program
         }
     }
 }
+*/

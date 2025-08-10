@@ -19,6 +19,30 @@ public class CommandInvalidationHandler : ICommandInvalidationHandler
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    /// <summary>
+    /// 명령을 처리하고 적절한 무효화를 수행합니다
+    /// </summary>
+    public async Task HandleCommandAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default) 
+        where TCommand : ICommand
+    {
+        if (!CanHandle(command)) return;
+
+        try
+        {
+            _logger.LogDebug("Handling command {CommandType}:{CommandId}", 
+                typeof(TCommand).Name, command.CommandId);
+
+            // 명령 실행 후 무효화
+            await InvalidateAfterAsync(command, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to handle command {CommandType}:{CommandId}", 
+                typeof(TCommand).Name, command.CommandId);
+            throw;
+        }
+    }
+
     public async Task InvalidateBeforeAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default) 
         where TCommand : ICommand
     {

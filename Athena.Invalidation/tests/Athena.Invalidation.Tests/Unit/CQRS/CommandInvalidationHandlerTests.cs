@@ -118,9 +118,11 @@ public class CommandInvalidationHandlerTests
 
 public class TestCommand : ICommand
 {
-    public Guid Id { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string CommandId { get; set; } = Guid.NewGuid().ToString("N")[..12];
+    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
     public string? ExecutedBy { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
+    
+    public Guid Id { get; set; }
     public string? UserId { get; set; }
 }
