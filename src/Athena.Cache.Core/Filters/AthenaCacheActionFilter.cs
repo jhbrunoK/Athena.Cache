@@ -1,7 +1,7 @@
 ﻿using Athena.Cache.Core.Abstractions;
 using Athena.Cache.Core.Attributes;
 using Athena.Cache.Core.Configuration;
-using Athena.Cache.Core.Enums;
+using Invalidus.Core.Abstractions;
 using Athena.Cache.Core.Models;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -240,7 +240,7 @@ public class AthenaCacheActionFilter(ILogger<AthenaCacheActionFilter> logger) : 
                     rules.Add(new TableInvalidationRule
                     {
                         TableName = tableName,
-                        InvalidationType = InvalidationType.All,
+                        InvalidationType = InvalidationType.ClearAll,
                         Pattern = null,
                         RelatedTables = [],
                         MaxDepth = -1

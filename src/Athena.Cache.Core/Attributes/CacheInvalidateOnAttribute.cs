@@ -1,4 +1,4 @@
-﻿using Athena.Cache.Core.Enums;
+﻿using Invalidus.Core.Abstractions;
 
 namespace Athena.Cache.Core.Attributes;
 
@@ -6,7 +6,7 @@ namespace Athena.Cache.Core.Attributes;
 /// 테이블 변경 시 캐시 무효화 설정 Attribute
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
-public class CacheInvalidateOnAttribute(string tableName, InvalidationType invalidationType = InvalidationType.All)
+public class CacheInvalidateOnAttribute(string tableName, InvalidationType invalidationType = InvalidationType.ClearAll)
     : Attribute
 {
     public string TableName { get; } = tableName;

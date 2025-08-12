@@ -1,4 +1,5 @@
 ﻿using Athena.Cache.Core.Models;
+using Invalidus.Core.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -77,7 +78,7 @@ public static class TestUtilities
             InvalidationRules = invalidationTables.Select(table => new TableInvalidationRule
             {
                 TableName = table,
-                InvalidationType = Core.Enums.InvalidationType.All
+                InvalidationType = InvalidationType.ClearAll
             }).ToList()
         };
     }

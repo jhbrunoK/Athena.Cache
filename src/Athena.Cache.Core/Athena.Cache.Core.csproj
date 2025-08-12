@@ -42,6 +42,10 @@
 
 	<!-- 패키지 파일들은 Directory.Build.props에서 자동 관리 -->
 
+	<ItemGroup>
+		<ProjectReference Include="../Invalidus.Core/Invalidus.Core.csproj" />
+	</ItemGroup>
+
 	<!-- Source Generator는 실제 Controllers가 있는 프로젝트에서만 참조 -->
 
 </Project>

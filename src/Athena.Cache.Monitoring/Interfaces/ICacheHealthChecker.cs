@@ -15,5 +15,5 @@ public interface ICacheHealthChecker
     /// <summary>
     /// 개별 컴포넌트 상태 확인
     /// </summary>
-    Task<HealthCheckResult> CheckComponentHealthAsync(string componentName);
+    Task<CacheHealthResult> CheckComponentHealthAsync(string componentName);
 }

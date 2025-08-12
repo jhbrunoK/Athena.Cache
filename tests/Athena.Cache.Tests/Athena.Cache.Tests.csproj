@@ -40,6 +40,7 @@
 		<ProjectReference Include="..\..\src\Athena.Cache.Core\Athena.Cache.Core.csproj" />
 		<ProjectReference Include="..\..\src\Athena.Cache.Redis\Athena.Cache.Redis.csproj" />
 		<ProjectReference Include="..\..\src\Athena.Cache.FusionCache\Athena.Cache.FusionCache.csproj" />
+		<ProjectReference Include="..\..\src\Invalidus.Core\Invalidus.Core.csproj" />
 		<ProjectReference Include="..\..\samples\Athena.Cache.Sample\Athena.Cache.Sample.csproj" />
 	</ItemGroup>
 

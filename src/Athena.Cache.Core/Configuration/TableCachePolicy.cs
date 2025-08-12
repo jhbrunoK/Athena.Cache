@@ -1,4 +1,4 @@
-﻿using Athena.Cache.Core.Enums;
+﻿using Invalidus.Core.Abstractions;
 
 namespace Athena.Cache.Core.Configuration;
 
@@ -14,7 +14,7 @@ public class TableCachePolicy
     public int ExpirationMinutes { get; set; } = 30;
 
     /// <summary>무효화 타입</summary>
-    public InvalidationType InvalidationType { get; set; } = InvalidationType.All;
+    public InvalidationType InvalidationType { get; set; } = InvalidationType.ClearAll;
 
     /// <summary>패턴 (Pattern 타입일 때)</summary>
     public string? Pattern { get; set; }

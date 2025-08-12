@@ -1,4 +1,4 @@
-using Athena.Cache.Core.Enums;
+using Invalidus.Core.Abstractions;
 
 namespace Athena.Cache.Core.Abstractions;
 

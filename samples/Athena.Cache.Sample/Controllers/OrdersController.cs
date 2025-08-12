@@ -1,6 +1,6 @@
 ﻿using Athena.Cache.Core.Attributes;
-using Athena.Cache.Core.Enums;
 using Athena.Cache.Sample.Models;
+using Invalidus.Core.Abstractions;
 using Athena.Cache.Sample.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +16,7 @@ public class OrdersController(IOrderService orderService, ILogger<OrdersControll
     /// </summary>
     [HttpGet]
     [AthenaCache(ExpirationMinutes = 20)]
-    [CacheInvalidateOn("Users", InvalidationType.Related, "Orders")]
+    [CacheInvalidateOn("Users", InvalidationType.Hierarchy, "Orders")]
     public async Task<ActionResult<IEnumerable<OrderDto>>> GetOrders(
         [FromQuery] int? userId = null,
         [FromQuery] decimal? minAmount = null)
@@ -49,7 +49,7 @@ public class OrdersController(IOrderService orderService, ILogger<OrdersControll
     /// 주문 생성 (Convention 기반 Orders + 명시적 Users 테이블 무효화)
     /// </summary>
     [HttpPost]
-    [CacheInvalidateOn("Users", InvalidationType.Related, "Orders")]
+    [CacheInvalidateOn("Users", InvalidationType.Hierarchy, "Orders")]
     public async Task<ActionResult<OrderDto>> CreateOrder([FromBody] Order order)
     {
         if (!ModelState.IsValid)
@@ -65,7 +65,7 @@ public class OrdersController(IOrderService orderService, ILogger<OrdersControll
     /// 주문 삭제 (Convention 기반 Orders + 명시적 Users 테이블 무효화)
     /// </summary>
     [HttpDelete("{id}")]
-    [CacheInvalidateOn("Users", InvalidationType.Related, "Orders")]
+    [CacheInvalidateOn("Users", InvalidationType.Hierarchy, "Orders")]
     public async Task<ActionResult> DeleteOrder(int id)
     {
         var deleted = await orderService.DeleteOrderAsync(id);

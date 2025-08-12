@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
 namespace Invalidus.Core.Abstractions;
 
 /// <summary>
@@ -130,7 +132,7 @@ public interface ICacheProvider
     /// 상세 헬스체크 정보
     /// Detailed health check information
     /// </summary>
-    Task<HealthCheckResult> GetHealthCheckAsync(CancellationToken cancellationToken = default);
+    Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> GetHealthCheckAsync(CancellationToken cancellationToken = default);
 
     #endregion
 
@@ -188,19 +190,6 @@ public class CacheStatistics
     public Dictionary<string, object> AdditionalMetrics { get; init; } = new();
 }
 
-/// <summary>
-/// 헬스체크 결과
-/// Health check result
-/// </summary>
-public class HealthCheckResult
-{
-    public bool IsHealthy { get; init; }
-    public string Status { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public Dictionary<string, object> Data { get; init; } = new();
-    public TimeSpan ResponseTime { get; init; }
-    public Exception? Exception { get; init; }
-}
 
 /// <summary>
 /// 캐시 키 제거 이벤트 인자

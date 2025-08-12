@@ -316,20 +316,20 @@ public class RedisHealthCheck : IHealthCheck
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public async Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
         {
             var result = await _cacheProvider.GetHealthCheckAsync(cancellationToken);
             
-            return result.IsHealthy
-                ? HealthCheckResult.Healthy("Redis is healthy", result.Data)
-                : HealthCheckResult.Unhealthy(result.Description, result.Exception, result.Data);
+            return result.Status == Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy
+                ? Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Redis is healthy", result.Data)
+                : Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy(result.Description, result.Exception, result.Data);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Redis health check failed");
-            return HealthCheckResult.Unhealthy("Redis health check failed", ex);
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Redis health check failed", ex);
         }
     }
 }

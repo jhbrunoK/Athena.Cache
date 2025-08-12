@@ -1,6 +1,6 @@
 ﻿using Athena.Cache.Core.Attributes;
-using Athena.Cache.Core.Enums;
 using Athena.Cache.Sample.Models;
+using Invalidus.Core.Abstractions;
 using Athena.Cache.Sample.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -86,7 +86,7 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     /// 사용자 삭제 (Convention 기반 Users + 명시적 Orders 테이블 무효화)
     /// </summary>
     [HttpDelete("{id}")]
-    [CacheInvalidateOn("Orders", InvalidationType.Related, "Users")]
+    [CacheInvalidateOn("Orders", InvalidationType.Hierarchy, "Users")]
     public async Task<ActionResult> DeleteUser(int id)
     {
         var deleted = await userService.DeleteUserAsync(id);

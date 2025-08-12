@@ -171,47 +171,55 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         Action<InvalidationMonitorOptions>? configureOptions = null)
     {
-        return services.AddInvalidusMonitoringWithAlerts(configureOptions, alertConfig =>
+        services.AddInvalidusMonitoring(configureOptions);
+
+        // Configure alerts with proper initialization
+        services.AddSingleton<AlertConfiguration>(serviceProvider =>
         {
-            // Default alert thresholds
-            alertConfig.Thresholds["CacheHitRatio"] = new AlertThreshold
+            var thresholds = new Dictionary<string, AlertThreshold>
             {
-                MetricName = "CacheHitRatio",
-                WarningThreshold = 0.80, // 80%
-                CriticalThreshold = 0.70, // 70%
-                ComparisonType = AlertComparisonType.LessThan,
-                EvaluationWindow = TimeSpan.FromMinutes(5)
+                ["CacheHitRatio"] = new AlertThreshold
+                {
+                    MetricName = "CacheHitRatio",
+                    WarningThreshold = 0.80, // 80%
+                    CriticalThreshold = 0.70, // 70%
+                    ComparisonType = AlertComparisonType.LessThan,
+                    EvaluationWindow = TimeSpan.FromMinutes(5)
+                },
+                ["InvalidationSuccessRate"] = new AlertThreshold
+                {
+                    MetricName = "InvalidationSuccessRate",
+                    WarningThreshold = 0.95, // 95%
+                    CriticalThreshold = 0.90, // 90%
+                    ComparisonType = AlertComparisonType.LessThan,
+                    EvaluationWindow = TimeSpan.FromMinutes(5)
+                },
+                ["TotalMemoryUsage"] = new AlertThreshold
+                {
+                    MetricName = "TotalMemoryUsage",
+                    WarningThreshold = 1024L * 1024 * 1024, // 1GB
+                    CriticalThreshold = 2048L * 1024 * 1024, // 2GB
+                    ComparisonType = AlertComparisonType.GreaterThan,
+                    EvaluationWindow = TimeSpan.FromMinutes(10)
+                },
+                ["FailedInvalidations"] = new AlertThreshold
+                {
+                    MetricName = "FailedInvalidations",
+                    WarningThreshold = 10,
+                    CriticalThreshold = 50,
+                    ComparisonType = AlertComparisonType.GreaterThan,
+                    EvaluationWindow = TimeSpan.FromMinutes(5)
+                }
             };
 
-            alertConfig.Thresholds["InvalidationSuccessRate"] = new AlertThreshold
+            return new AlertConfiguration
             {
-                MetricName = "InvalidationSuccessRate",
-                WarningThreshold = 0.95, // 95%
-                CriticalThreshold = 0.90, // 90%
-                ComparisonType = AlertComparisonType.LessThan,
-                EvaluationWindow = TimeSpan.FromMinutes(5)
+                Thresholds = thresholds,
+                EvaluationInterval = TimeSpan.FromMinutes(1)
             };
-
-            alertConfig.Thresholds["TotalMemoryUsage"] = new AlertThreshold
-            {
-                MetricName = "TotalMemoryUsage",
-                WarningThreshold = 1024 * 1024 * 1024, // 1GB
-                CriticalThreshold = 2048 * 1024 * 1024, // 2GB
-                ComparisonType = AlertComparisonType.GreaterThan,
-                EvaluationWindow = TimeSpan.FromMinutes(10)
-            };
-
-            alertConfig.Thresholds["FailedInvalidations"] = new AlertThreshold
-            {
-                MetricName = "FailedInvalidations",
-                WarningThreshold = 10,
-                CriticalThreshold = 50,
-                ComparisonType = AlertComparisonType.GreaterThan,
-                EvaluationWindow = TimeSpan.FromMinutes(5)
-            };
-
-            alertConfig.EvaluationInterval = TimeSpan.FromMinutes(1);
         });
+        
+        return services;
     }
 
     #endregion
@@ -290,7 +298,7 @@ public class InvalidationSystemHealthCheck : IHealthCheck
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public async Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -298,7 +306,7 @@ public class InvalidationSystemHealthCheck : IHealthCheck
 
             if (systemHealth.IsHealthy)
             {
-                return HealthCheckResult.Healthy(
+                return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(
                     $"System is healthy ({systemHealth.HealthyProviders}/{systemHealth.TotalProviders} providers healthy)",
                     new Dictionary<string, object>
                     {
@@ -309,7 +317,7 @@ public class InvalidationSystemHealthCheck : IHealthCheck
             }
             else
             {
-                return HealthCheckResult.Degraded(
+                return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Degraded(
                     $"System partially healthy ({systemHealth.HealthyProviders}/{systemHealth.TotalProviders} providers healthy)",
                     null,
                     new Dictionary<string, object>
@@ -325,7 +333,7 @@ public class InvalidationSystemHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             _logger.LogError(ex, "System health check failed");
-            return HealthCheckResult.Unhealthy("System health check failed", ex);
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("System health check failed", ex);
         }
     }
 }
@@ -347,7 +355,7 @@ public class InvalidationEngineHealthCheck : IHealthCheck
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public async Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -355,7 +363,7 @@ public class InvalidationEngineHealthCheck : IHealthCheck
 
             if (engineHealth.IsHealthy)
             {
-                return HealthCheckResult.Healthy(
+                return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(
                     "Invalidation engine is healthy",
                     new Dictionary<string, object>
                     {
@@ -368,7 +376,7 @@ public class InvalidationEngineHealthCheck : IHealthCheck
             }
             else
             {
-                return HealthCheckResult.Degraded(
+                return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Degraded(
                     "Invalidation engine has issues",
                     null,
                     new Dictionary<string, object>
@@ -382,7 +390,7 @@ public class InvalidationEngineHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             _logger.LogError(ex, "Engine health check failed");
-            return HealthCheckResult.Unhealthy("Engine health check failed", ex);
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Engine health check failed", ex);
         }
     }
 }
