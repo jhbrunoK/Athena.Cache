@@ -170,9 +170,13 @@ public class RedisCacheProvider : ICacheProvider, IDisposable
                 if (line.StartsWith("db") && line.Contains("keys="))
                 {
                     var keysPart = line.Split(',').FirstOrDefault(p => p.Contains("keys="));
-                    if (keysPart != null && long.TryParse(keysPart.Split('=')[1], out var dbKeys))
+                    if (keysPart != null)
                     {
-                        totalKeys += dbKeys;
+                        var keyValueParts = keysPart.Split('=');
+                        if (keyValueParts.Length > 1 && long.TryParse(keyValueParts[1], out var dbKeys))
+                        {
+                            totalKeys += dbKeys;
+                        }
                     }
                 }
             }

@@ -144,7 +144,8 @@ public class RedisInvalidationProvider : IRedisInvalidationProvider, IDisposable
                 if (cancellationToken.IsCancellationRequested)
                     break;
                     
-                keys.Add(key);
+                if (!string.IsNullOrEmpty(key))
+                    keys.Add(key!);
                 
                 // 메모리 사용량 제한
                 if (keys.Count >= _options.MaxScanResults)

@@ -1,3 +1,5 @@
+#pragma warning disable CS1998 // 비동기 메서드에 await 연산자가 없으며 동기적으로 실행됨
+
 using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Redis.Abstractions;
 
@@ -180,7 +182,7 @@ public class RedisInvalidationEngine(
         return InvalidateByPatternAsync(key, cancellationToken);
     }
 
-    public async Task TrackCacheKeyAsync(string tableName, string cacheKey, CancellationToken cancellationToken = default)
+    public Task TrackCacheKeyAsync(string tableName, string cacheKey, CancellationToken cancellationToken = default)
     {
         if (_disposed) throw new ObjectDisposedException(nameof(RedisInvalidationEngine));
         
@@ -202,6 +204,8 @@ public class RedisInvalidationEngine(
             _logger.LogError(ex, "Failed to track cache key {CacheKey} for table {TableName}", cacheKey, tableName);
             throw;
         }
+        
+        return Task.CompletedTask;
     }
 
     public async Task TrackCacheKeyAsync(string[] tableNames, string cacheKey, CancellationToken cancellationToken = default)

@@ -344,23 +344,39 @@ public class HierarchicalInvalidationTreeTests
 
     [Theory]
     [InlineData("")]
-    [InlineData(null)]
     public void AssignTableToLayer_InvalidTableName_ThrowsArgumentException(string tableName)
     {
         // Arrange
         _tree.DefineLayer("TestLayer");
 
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => _tree.AssignTableToLayer(tableName!, "TestLayer"));
+        Assert.Throws<ArgumentException>(() => _tree.AssignTableToLayer(tableName, "TestLayer"));
+    }
+    
+    [Fact]
+    public void AssignTableToLayer_NullTableName_ThrowsArgumentException()
+    {
+        // Arrange
+        _tree.DefineLayer("TestLayer");
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => _tree.AssignTableToLayer(null!, "TestLayer"));
     }
 
     [Theory]
     [InlineData("")]
-    [InlineData(null)]
     public async Task CreateInvalidationPlanAsync_InvalidRootTable_ThrowsArgumentException(string rootTable)
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => 
-            _tree.CreateInvalidationPlanAsync(rootTable!));
+            _tree.CreateInvalidationPlanAsync(rootTable));
+    }
+    
+    [Fact]
+    public async Task CreateInvalidationPlanAsync_NullRootTable_ThrowsArgumentException()
+    {
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _tree.CreateInvalidationPlanAsync(null!));
     }
 }
