@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    
+    <!-- Package Information -->
+    <PackageId>Invalidus.Core</PackageId>
+    <Title>Invalidus Core - Universal Cache Invalidation Engine</Title>
+    <Description>
+      The core abstractions and interfaces for Invalidus - a universal cache invalidation engine that works with any cache provider.
+      Provides unified invalidation across Memory, Redis, FusionCache, and custom cache implementations.
+    </Description>
+    <PackageTags>cache;invalidation;redis;memory;fusion;cqrs;event-sourcing;distributed</PackageTags>
+    <RepositoryUrl>https://github.com/jhbrunoK/Athena.Cache</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>jhbrunoK</Authors>
+    <Company>Invalidus</Company>
+    <Product>Invalidus - Universal Cache Invalidation Engine</Product>
+    
+    <!-- Version Information -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    
+    <!-- Build Configuration -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS1591</WarningsNotAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Folder Include="Implementations\" />
+    <Folder Include="Models\" />
+    <Folder Include="Extensions\" />
+  </ItemGroup>
+
+</Project>
