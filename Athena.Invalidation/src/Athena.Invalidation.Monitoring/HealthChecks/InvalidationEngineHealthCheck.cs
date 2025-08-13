@@ -1,6 +1,5 @@
 using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Monitoring.Abstractions;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Athena.Invalidation.Monitoring.HealthChecks;
 

@@ -1,6 +1,5 @@
 #pragma warning disable CS1998 // 비동기 메서드에 await 연산자가 없으며 동기적으로 실행됨
 
-using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Redis.Abstractions;
 
 namespace Athena.Invalidation.Redis.Engine;

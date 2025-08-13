@@ -1,6 +1,3 @@
-using Athena.Invalidation.Core.Abstractions;
-using Microsoft.Extensions.Hosting;
-
 namespace Athena.Invalidation.Core.Performance;
 
 /// <summary>

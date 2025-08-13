@@ -7,10 +7,11 @@ namespace Athena.Cache.FusionCache.Implementations;
 /// FusionCache를 사용한 IAthenaCache 구현체
 /// FusionCache의 고급 기능(Fail-Safe, Circuit Breaker 등)을 Athena.Cache 인터페이스로 제공
 /// </summary>
-public class FusionCacheProvider : IAthenaCache
+public class FusionCacheProvider(IFusionCache fusionCache, ILogger<FusionCacheProvider> logger)
+    : IAthenaCache
 {
-    private readonly IFusionCache _fusionCache;
-    private readonly ILogger<FusionCacheProvider> _logger;
+    private readonly IFusionCache _fusionCache = fusionCache ?? throw new ArgumentNullException(nameof(fusionCache));
+    private readonly ILogger<FusionCacheProvider> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly CacheStatistics _statistics = new();
     private readonly DateTime _startTime = DateTime.UtcNow;
 
@@ -18,12 +19,6 @@ public class FusionCacheProvider : IAthenaCache
     private long _hitCount = 0;
     private long _missCount = 0;
     private readonly ConcurrentDictionary<string, DateTime> _keyRegistry = new();
-
-    public FusionCacheProvider(IFusionCache fusionCache, ILogger<FusionCacheProvider> logger)
-    {
-        _fusionCache = fusionCache ?? throw new ArgumentNullException(nameof(fusionCache));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     /// <summary>
     /// 캐시에서 값 조회

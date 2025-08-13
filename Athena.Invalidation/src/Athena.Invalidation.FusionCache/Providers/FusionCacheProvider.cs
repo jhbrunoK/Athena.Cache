@@ -1,7 +1,3 @@
-using Athena.Invalidation.Core.Abstractions;
-using System.Text.RegularExpressions;
-using ZiggyCreatures.Caching.Fusion;
-
 namespace Athena.Invalidation.FusionCache.Providers;
 
 /// <summary>

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-
 namespace Athena.Invalidation.Monitoring.Abstractions;
 
 /// <summary>

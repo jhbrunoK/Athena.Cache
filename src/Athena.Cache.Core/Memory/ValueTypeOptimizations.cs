@@ -49,23 +49,14 @@ public readonly struct CacheMetrics
 /// 캐시 키 정보를 위한 값 타입 구조체
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public readonly struct CacheKeyInfo
+public readonly struct CacheKeyInfo(string key, DateTime createdAt, DateTime lastAccessedAt, int accessCount)
 {
-    public readonly int KeyHashCode;
-    public readonly int KeyLength;
-    public readonly DateTime CreatedAt;
-    public readonly DateTime LastAccessedAt;
-    public readonly int AccessCount;
-    
-    public CacheKeyInfo(string key, DateTime createdAt, DateTime lastAccessedAt, int accessCount)
-    {
-        KeyHashCode = key?.GetHashCode() ?? 0;
-        KeyLength = key?.Length ?? 0;
-        CreatedAt = createdAt;
-        LastAccessedAt = lastAccessedAt;
-        AccessCount = accessCount;
-    }
-    
+    public readonly int KeyHashCode = key?.GetHashCode() ?? 0;
+    public readonly int KeyLength = key?.Length ?? 0;
+    public readonly DateTime CreatedAt = createdAt;
+    public readonly DateTime LastAccessedAt = lastAccessedAt;
+    public readonly int AccessCount = accessCount;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TimeSpan GetAge() => DateTime.UtcNow - CreatedAt;
     
@@ -80,21 +71,14 @@ public readonly struct CacheKeyInfo
 /// 메모리 할당 없는 키-값 쌍 구조체
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
-public readonly struct KeyValueMetric<TKey, TValue> 
-    where TKey : unmanaged 
+public readonly struct KeyValueMetric<TKey, TValue>(TKey key, TValue value)
+    where TKey : unmanaged
     where TValue : unmanaged
 {
-    public readonly TKey Key;
-    public readonly TValue Value;
-    public readonly DateTime Timestamp;
-    
-    public KeyValueMetric(TKey key, TValue value)
-    {
-        Key = key;
-        Value = value;
-        Timestamp = DateTime.UtcNow;
-    }
-    
+    public readonly TKey Key = key;
+    public readonly TValue Value = value;
+    public readonly DateTime Timestamp = DateTime.UtcNow;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsExpired(TimeSpan expiration) => DateTime.UtcNow - Timestamp > expiration;
 }
@@ -236,15 +220,10 @@ public static class BitOptimizations
 /// 메모리 정렬 최적화된 버퍼 (안전한 버전)
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 64)] // 캐시 라인 정렬
-public struct AlignedBuffer
+public struct AlignedBuffer()
 {
-    private readonly byte[] _buffer;
-    
-    public AlignedBuffer()
-    {
-        _buffer = new byte[4096]; // 4KB 페이지 크기에 맞춤
-    }
-    
+    private readonly byte[] _buffer = new byte[4096]; // 4KB 페이지 크기에 맞춤
+
     public Span<byte> AsSpan() => _buffer.AsSpan();
     
     public ReadOnlySpan<byte> AsReadOnlySpan() => _buffer.AsSpan();

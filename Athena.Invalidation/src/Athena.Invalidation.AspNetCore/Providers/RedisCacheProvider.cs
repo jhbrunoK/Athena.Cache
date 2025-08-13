@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using StackExchange.Redis;
 
 namespace Athena.Invalidation.AspNetCore.Providers;

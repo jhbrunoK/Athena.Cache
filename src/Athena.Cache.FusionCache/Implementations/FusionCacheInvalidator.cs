@@ -3,24 +3,17 @@ namespace Athena.Cache.FusionCache.Implementations;
 /// <summary>
 /// FusionCache의 태깅 시스템과 Athena.Cache의 무효화 메커니즘을 통합한 고급 무효화자
 /// </summary>
-public class FusionCacheInvalidator : ICacheInvalidator
+public class FusionCacheInvalidator(
+    IFusionCache fusionCache,
+    ICacheKeyGenerator keyGenerator,
+    AthenaCacheOptions options,
+    ILogger<FusionCacheInvalidator> logger)
+    : ICacheInvalidator
 {
-    private readonly IFusionCache _fusionCache;
-    private readonly ICacheKeyGenerator _keyGenerator;
-    private readonly AthenaCacheOptions _options;
-    private readonly ILogger<FusionCacheInvalidator> _logger;
-
-    public FusionCacheInvalidator(
-        IFusionCache fusionCache,
-        ICacheKeyGenerator keyGenerator,
-        AthenaCacheOptions options,
-        ILogger<FusionCacheInvalidator> logger)
-    {
-        _fusionCache = fusionCache ?? throw new ArgumentNullException(nameof(fusionCache));
-        _keyGenerator = keyGenerator ?? throw new ArgumentNullException(nameof(keyGenerator));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IFusionCache _fusionCache = fusionCache ?? throw new ArgumentNullException(nameof(fusionCache));
+    private readonly ICacheKeyGenerator _keyGenerator = keyGenerator ?? throw new ArgumentNullException(nameof(keyGenerator));
+    private readonly AthenaCacheOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+    private readonly ILogger<FusionCacheInvalidator> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// 테이블 기반 무효화 - FusionCache의 태그 시스템 활용

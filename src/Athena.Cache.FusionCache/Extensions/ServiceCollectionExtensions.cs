@@ -107,16 +107,11 @@ public interface IAthenaCacheTagHelper
 /// <summary>
 /// FusionCache 태깅 시스템 헬퍼 구현
 /// </summary>
-public class AthenaCacheTagHelper : IAthenaCacheTagHelper
+public class AthenaCacheTagHelper(IFusionCache fusionCache, ILogger<AthenaCacheTagHelper> logger)
+    : IAthenaCacheTagHelper
 {
-    private readonly IFusionCache _fusionCache;
-    private readonly ILogger<AthenaCacheTagHelper> _logger;
-
-    public AthenaCacheTagHelper(IFusionCache fusionCache, ILogger<AthenaCacheTagHelper> logger)
-    {
-        _fusionCache = fusionCache ?? throw new ArgumentNullException(nameof(fusionCache));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IFusionCache _fusionCache = fusionCache ?? throw new ArgumentNullException(nameof(fusionCache));
+    private readonly ILogger<AthenaCacheTagHelper> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// 캐시 항목에 테이블 태그를 추가하여 저장

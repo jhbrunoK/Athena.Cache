@@ -1,6 +1,5 @@
 using Athena.Invalidation.Distributed.Abstractions;
 using Athena.Invalidation.Distributed.Models;
-using Athena.Invalidation.Core.Abstractions;
 
 namespace Athena.Invalidation.Distributed.Handlers;
 

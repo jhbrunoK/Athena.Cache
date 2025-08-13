@@ -1,10 +1,6 @@
 using Athena.Invalidation.Distributed.Abstractions;
-using Athena.Invalidation.Distributed.Models;
 using StackExchange.Redis;
-using System.Collections.Concurrent;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Athena.Invalidation.Distributed.Implementations;
 

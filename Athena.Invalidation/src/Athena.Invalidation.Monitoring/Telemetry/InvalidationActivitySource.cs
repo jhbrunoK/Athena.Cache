@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Athena.Invalidation.Core.Abstractions;
 
 namespace Athena.Invalidation.Monitoring.Telemetry;

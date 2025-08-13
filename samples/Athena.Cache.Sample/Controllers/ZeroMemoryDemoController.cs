@@ -10,18 +10,12 @@ namespace Athena.Cache.Sample.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class ZeroMemoryDemoController : ControllerBase
+public class ZeroMemoryDemoController(
+    MemoryPressureManager memoryManager,
+    ILogger<ZeroMemoryDemoController> logger)
+    : ControllerBase
 {
-    private readonly MemoryPressureManager _memoryManager;
-    private readonly ILogger<ZeroMemoryDemoController> _logger;
-
-    public ZeroMemoryDemoController(
-        MemoryPressureManager memoryManager,
-        ILogger<ZeroMemoryDemoController> logger)
-    {
-        _memoryManager = memoryManager;
-        _logger = logger;
-    }
+    private readonly ILogger<ZeroMemoryDemoController> _logger = logger;
 
     /// <summary>
     /// 메모리 상태 및 캐시 통계 조회
@@ -29,7 +23,7 @@ public class ZeroMemoryDemoController : ControllerBase
     [HttpGet("memory-status")]
     public ActionResult<object> GetMemoryStatus()
     {
-        var memoryStatus = _memoryManager.GetMemoryStatus();
+        var memoryStatus = memoryManager.GetMemoryStatus();
         var cacheStats = LazyCache.GetCacheStats();
         var poolStats = HighPerformanceStringPool.GetPoolStats();
 
@@ -101,7 +95,7 @@ public class ZeroMemoryDemoController : ControllerBase
     public ActionResult<object> MemoryPressureTest()
     {
         var initialMemory = GC.GetTotalMemory(false);
-        var initialStats = _memoryManager.GetMemoryStatus();
+        var initialStats = memoryManager.GetMemoryStatus();
 
         // 대량의 메모리 할당으로 의도적 압박 생성
         var memoryHogs = new List<byte[]>();
@@ -113,7 +107,7 @@ public class ZeroMemoryDemoController : ControllerBase
         var peakMemory = GC.GetTotalMemory(false);
 
         // 강제 정리 수행
-        _memoryManager.ForceCleanup(MemoryPressureLevel.High);
+        memoryManager.ForceCleanup(MemoryPressureLevel.High);
 
         // 할당된 메모리 해제
         memoryHogs.Clear();
@@ -122,7 +116,7 @@ public class ZeroMemoryDemoController : ControllerBase
         GC.Collect();
 
         var finalMemory = GC.GetTotalMemory(true);
-        var finalStats = _memoryManager.GetMemoryStatus();
+        var finalStats = memoryManager.GetMemoryStatus();
 
         return Ok(new
         {

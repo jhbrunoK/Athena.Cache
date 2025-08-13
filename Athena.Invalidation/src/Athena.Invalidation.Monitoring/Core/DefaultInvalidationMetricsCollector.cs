@@ -1,6 +1,5 @@
 using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Monitoring.Abstractions;
-using System.Diagnostics.Metrics;
 
 namespace Athena.Invalidation.Monitoring.Core;
 

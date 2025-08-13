@@ -9,20 +9,15 @@ namespace Athena.Cache.FusionCache.Implementations;
 /// FusionCache GetOrSet 패턴에 최적화된 캐시 키 생성기
 /// Athena.Cache의 정교한 키 맹글링과 FusionCache의 패턴을 결합
 /// </summary>
-public class FusionCacheKeyGenerator : ICacheKeyGenerator
+public class FusionCacheKeyGenerator(AthenaCacheOptions options) : ICacheKeyGenerator
 {
-    private readonly AthenaCacheOptions _options;
+    private readonly AthenaCacheOptions _options = options ?? throw new ArgumentNullException(nameof(options));
     private readonly ConcurrentDictionary<string, string> _keyCache = new(
         concurrencyLevel: Environment.ProcessorCount * 2,
         capacity: MaxCacheSize
     );
     private const int MaxCacheSize = 1000;
     private long _cacheCount = 0;
-
-    public FusionCacheKeyGenerator(AthenaCacheOptions options)
-    {
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-    }
 
     /// <summary>
     /// FusionCache GetOrSet에 최적화된 비동기 키 생성

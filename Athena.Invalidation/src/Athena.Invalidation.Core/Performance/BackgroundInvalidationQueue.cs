@@ -1,5 +1,4 @@
 using System.Threading.Channels;
-using Athena.Invalidation.Core.Abstractions;
 
 namespace Athena.Invalidation.Core.Performance;
 

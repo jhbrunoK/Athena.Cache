@@ -1,4 +1,3 @@
-using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.MultiProvider.Abstractions;
 
 namespace Athena.Invalidation.MultiProvider.Engine;

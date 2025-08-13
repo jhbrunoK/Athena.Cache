@@ -4,7 +4,6 @@ using Athena.Invalidation.Monitoring.Core;
 using Athena.Invalidation.Monitoring.Decorators;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Athena.Invalidation.Tests.Integration;

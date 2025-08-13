@@ -1,6 +1,5 @@
 using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Hierarchical.Abstractions;
-using System.Collections.Concurrent;
 
 namespace Athena.Invalidation.Hierarchical.Implementations;
 

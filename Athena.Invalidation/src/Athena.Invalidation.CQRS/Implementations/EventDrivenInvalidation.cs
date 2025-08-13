@@ -1,5 +1,4 @@
 using Athena.Invalidation.CQRS.Abstractions;
-using System.Collections.Concurrent;
 
 namespace Athena.Invalidation.CQRS.Implementations;
 

@@ -1,4 +1,3 @@
-using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Core.Performance;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

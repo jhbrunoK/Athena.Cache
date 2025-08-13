@@ -9,18 +9,13 @@ namespace Athena.Cache.Core.Security;
 /// 보안이 강화된 캐시 키 생성기
 /// 민감한 데이터 감지 및 안전한 해싱 기능 제공
 /// </summary>
-public class SecureCacheKeyGenerator : ICacheKeyGenerator
+public class SecureCacheKeyGenerator(
+    ILogger<SecureCacheKeyGenerator> logger,
+    SecureCacheKeyOptions? options = null)
+    : ICacheKeyGenerator
 {
-    private readonly ILogger<SecureCacheKeyGenerator> _logger;
-    private readonly SecureCacheKeyOptions _options;
-
-    public SecureCacheKeyGenerator(
-        ILogger<SecureCacheKeyGenerator> logger,
-        SecureCacheKeyOptions? options = null)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options ?? new SecureCacheKeyOptions();
-    }
+    private readonly ILogger<SecureCacheKeyGenerator> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly SecureCacheKeyOptions _options = options ?? new SecureCacheKeyOptions();
 
     /// <summary>
     /// API 요청 파라미터를 기반으로 캐시 키 생성 (동기)

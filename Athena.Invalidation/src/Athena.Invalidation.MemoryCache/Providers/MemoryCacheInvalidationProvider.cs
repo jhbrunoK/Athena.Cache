@@ -1,9 +1,3 @@
-using System.Collections.Concurrent;
-using System.Text.RegularExpressions;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.MemoryCache.Abstractions;
 
 namespace Athena.Invalidation.MemoryCache.Providers;

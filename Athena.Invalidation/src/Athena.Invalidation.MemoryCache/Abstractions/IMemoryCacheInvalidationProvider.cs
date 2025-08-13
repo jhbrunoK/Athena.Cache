@@ -1,5 +1,3 @@
-using Athena.Invalidation.Core.Abstractions;
-
 namespace Athena.Invalidation.MemoryCache.Abstractions;
 
 /// <summary>

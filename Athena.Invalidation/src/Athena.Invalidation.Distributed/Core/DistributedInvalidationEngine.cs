@@ -1,4 +1,3 @@
-using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Distributed.Abstractions;
 using Athena.Invalidation.Distributed.Models;
 

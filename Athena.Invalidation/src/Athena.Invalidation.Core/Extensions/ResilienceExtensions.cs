@@ -1,6 +1,4 @@
-using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Core.Resilience;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Athena.Invalidation.Core.Extensions;
 

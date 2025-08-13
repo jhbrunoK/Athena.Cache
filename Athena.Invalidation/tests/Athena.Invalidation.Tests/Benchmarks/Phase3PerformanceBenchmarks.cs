@@ -5,7 +5,6 @@ using BenchmarkDotNet.Toolchains.InProcess.Emit;
 using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Core.Performance;
 using Athena.Invalidation.Distributed.Core;
-using Athena.Invalidation.Distributed.Implementations;
 using Athena.Invalidation.Monitoring.Decorators;
 using Athena.Invalidation.Monitoring.Core;
 using Microsoft.Extensions.DependencyInjection;

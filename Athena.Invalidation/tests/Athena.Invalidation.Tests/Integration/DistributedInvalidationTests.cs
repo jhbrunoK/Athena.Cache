@@ -2,7 +2,6 @@ using Athena.Invalidation.Core.Abstractions;
 using Athena.Invalidation.Distributed.Abstractions;
 using Athena.Invalidation.Distributed.Core;
 using Athena.Invalidation.Distributed.Implementations;
-using Athena.Invalidation.Distributed.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

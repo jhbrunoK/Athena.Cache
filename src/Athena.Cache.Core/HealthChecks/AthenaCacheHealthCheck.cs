@@ -10,30 +10,19 @@ namespace Athena.Cache.Core.HealthChecks;
 /// <summary>
 /// Athena Cache 시스템의 종합 헬스 체크
 /// </summary>
-public class AthenaCacheHealthCheck : MsHealthCheck.IHealthCheck
+public class AthenaCacheHealthCheck(
+    IAthenaCache cache,
+    CacheHealthMonitor healthMonitor,
+    ILogger<AthenaCacheHealthCheck> logger,
+    AthenaCacheHealthCheckOptions? options = null,
+    MemoryPressureManager? memoryManager = null,
+    SecureCacheManager? secureCache = null)
+    : MsHealthCheck.IHealthCheck
 {
-    private readonly IAthenaCache _cache;
-    private readonly CacheHealthMonitor _healthMonitor;
-    private readonly MemoryPressureManager? _memoryManager;
-    private readonly SecureCacheManager? _secureCache;
-    private readonly ILogger<AthenaCacheHealthCheck> _logger;
-    private readonly AthenaCacheHealthCheckOptions _options;
-
-    public AthenaCacheHealthCheck(
-        IAthenaCache cache,
-        CacheHealthMonitor healthMonitor,
-        ILogger<AthenaCacheHealthCheck> logger,
-        AthenaCacheHealthCheckOptions? options = null,
-        MemoryPressureManager? memoryManager = null,
-        SecureCacheManager? secureCache = null)
-    {
-        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _healthMonitor = healthMonitor ?? throw new ArgumentNullException(nameof(healthMonitor));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options ?? new AthenaCacheHealthCheckOptions();
-        _memoryManager = memoryManager;
-        _secureCache = secureCache;
-    }
+    private readonly IAthenaCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+    private readonly CacheHealthMonitor _healthMonitor = healthMonitor ?? throw new ArgumentNullException(nameof(healthMonitor));
+    private readonly ILogger<AthenaCacheHealthCheck> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly AthenaCacheHealthCheckOptions _options = options ?? new AthenaCacheHealthCheckOptions();
 
     public async Task<MsHealthCheck.HealthCheckResult> CheckHealthAsync(
         MsHealthCheck.HealthCheckContext context, 
@@ -71,7 +60,7 @@ public class AthenaCacheHealthCheck : MsHealthCheck.IHealthCheck
             }
 
             // 3. 메모리 상태 검사
-            if (_memoryManager != null)
+            if (memoryManager != null)
             {
                 var memoryStatus = CheckMemoryStatus();
                 healthData["memory"] = memoryStatus;
@@ -90,7 +79,7 @@ public class AthenaCacheHealthCheck : MsHealthCheck.IHealthCheck
             }
 
             // 4. 보안 상태 검사
-            if (_secureCache != null)
+            if (secureCache != null)
             {
                 var securityStatus = CheckSecurityStatus();
                 healthData["security"] = securityStatus;
@@ -300,7 +289,7 @@ public class AthenaCacheHealthCheck : MsHealthCheck.IHealthCheck
     {
         try
         {
-            var memoryStatus = _memoryManager!.GetMemoryStatus();
+            var memoryStatus = memoryManager!.GetMemoryStatus();
 
             var issues = new List<string>();
             var isCritical = false;
@@ -378,7 +367,7 @@ public class AthenaCacheHealthCheck : MsHealthCheck.IHealthCheck
     {
         try
         {
-            var securityStats = _secureCache!.GetSecurityStats();
+            var securityStats = secureCache!.GetSecurityStats();
 
             var issues = new List<string>();
 

@@ -8,29 +8,22 @@ namespace Athena.Cache.Core.Security;
 /// 보안이 강화된 캐시 매니저
 /// 민감한 데이터 감지 및 안전한 캐시 작업 제공
 /// </summary>
-public class SecureCacheManager : IAthenaCache
+public class SecureCacheManager(
+    IAthenaCache innerCache,
+    SecureCacheKeyGenerator keyGenerator,
+    ILogger<SecureCacheManager> logger,
+    SecureCacheOptions? options = null)
+    : IAthenaCache
 {
-    private readonly IAthenaCache _innerCache;
-    private readonly SecureCacheKeyGenerator _keyGenerator;
-    private readonly ILogger<SecureCacheManager> _logger;
-    private readonly SecureCacheOptions _options;
+    private readonly IAthenaCache _innerCache = innerCache ?? throw new ArgumentNullException(nameof(innerCache));
+    private readonly SecureCacheKeyGenerator _keyGenerator = keyGenerator ?? throw new ArgumentNullException(nameof(keyGenerator));
+    private readonly ILogger<SecureCacheManager> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly SecureCacheOptions _options = options ?? new SecureCacheOptions();
 
     // 보안 관련 통계
     private long _blockedOperations = 0;
     private long _sensitiveCacheAttempts = 0;
     private long _totalOperations = 0;
-
-    public SecureCacheManager(
-        IAthenaCache innerCache,
-        SecureCacheKeyGenerator keyGenerator,
-        ILogger<SecureCacheManager> logger,
-        SecureCacheOptions? options = null)
-    {
-        _innerCache = innerCache ?? throw new ArgumentNullException(nameof(innerCache));
-        _keyGenerator = keyGenerator ?? throw new ArgumentNullException(nameof(keyGenerator));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options ?? new SecureCacheOptions();
-    }
 
     /// <summary>
     /// 보안 검증을 통과한 값만 캐시에서 조회합니다
