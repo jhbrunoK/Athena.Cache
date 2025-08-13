@@ -5,7 +5,7 @@ namespace Athena.Cache.Monitoring.Models;
 /// <summary>
 /// 개별 컴포넌트 상태 확인 결과
 /// </summary>
-public class HealthCheckResult
+public class CacheHealthResult
 {
     public HealthStatus Status { get; set; }
     public string Message { get; set; } = string.Empty;

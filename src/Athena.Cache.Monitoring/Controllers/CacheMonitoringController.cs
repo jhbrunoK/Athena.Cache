@@ -93,7 +93,7 @@ public class CacheMonitoringController(
     /// 개별 컴포넌트 상태 확인
     /// </summary>
     [HttpGet("health/{component}")]
-    public async Task<ActionResult<HealthCheckResult>> GetComponentHealth(string component)
+    public async Task<ActionResult<CacheHealthResult>> GetComponentHealth(string component)
     {
         try
         {

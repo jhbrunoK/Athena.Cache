@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Athena.Cache.Core\Athena.Cache.Core.csproj" />
+    <ProjectReference Include="..\Invalidus.Core\Invalidus.Core.csproj" />
   </ItemGroup>
 
 

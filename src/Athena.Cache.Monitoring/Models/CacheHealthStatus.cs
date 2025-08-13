@@ -10,6 +10,6 @@ public class CacheHealthStatus
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public HealthStatus Status { get; set; }
     public string Message { get; set; } = string.Empty;
-    public Dictionary<string, HealthCheckResult> ComponentsHealth { get; set; } = new();
+    public Dictionary<string, CacheHealthResult> ComponentsHealth { get; set; } = new();
     public CacheMetrics Metrics { get; set; } = new();
 }

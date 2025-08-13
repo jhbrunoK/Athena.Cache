@@ -540,18 +540,11 @@ public class UniversalRedisProvider : ICacheProvider, IDisposable
 
     public async Task<CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
     {
-        var statistics = new CacheStatistics
-        {
-            ProviderName = ProviderName,
-            Type = ProviderType,
-            TotalKeys = 0,
-            DatabaseSize = 0,
-            ExpiredKeys = 0,
-            EvictedKeys = 0,
-            HitRatio = CalculateHitRatio(),
-            Uptime = DateTime.UtcNow - _startTime,
-            LastAccess = DateTime.UtcNow
-        };
+        long totalKeys = 0;
+        long databaseSize = 0;
+        long expiredKeys = 0;
+        long evictedKeys = 0;
+        var additionalMetrics = new Dictionary<string, object>();
 
         try
         {
@@ -571,9 +564,9 @@ public class UniversalRedisProvider : ICacheProvider, IDisposable
                     foreach (var item in statsSection)
                     {
                         if (item.Key == "expired_keys" && long.TryParse(item.Value, out var expired))
-                            statistics.ExpiredKeys = expired;
+                            expiredKeys = expired;
                         else if (item.Key == "evicted_keys" && long.TryParse(item.Value, out var evicted))
-                            statistics.EvictedKeys = evicted;
+                            evictedKeys = evicted;
                     }
                 }
                 
@@ -588,20 +581,20 @@ public class UniversalRedisProvider : ICacheProvider, IDisposable
                         var keysPart = parts.FirstOrDefault(p => p.StartsWith("keys="));
                         if (keysPart != null && long.TryParse(keysPart.Substring(5), out var keys))
                         {
-                            statistics.TotalKeys = keys;
-                            statistics.DatabaseSize = keys;
+                            totalKeys = keys;
+                            databaseSize = keys;
                         }
                     }
                 }
 
                 // Additional metrics
-                statistics.AdditionalMetrics["database_number"] = _options.Database;
-                statistics.AdditionalMetrics["connection_string"] = _connectionMultiplexer.Configuration;
-                statistics.AdditionalMetrics["is_connected"] = IsAvailable;
-                statistics.AdditionalMetrics["scan_page_size"] = _options.ScanPageSize;
-                statistics.AdditionalMetrics["use_transaction"] = _options.UseTransaction;
-                statistics.AdditionalMetrics["hit_count"] = Interlocked.Read(ref _hitCount);
-                statistics.AdditionalMetrics["miss_count"] = Interlocked.Read(ref _missCount);
+                additionalMetrics["database_number"] = _options.Database;
+                additionalMetrics["connection_string"] = _connectionMultiplexer.Configuration;
+                additionalMetrics["is_connected"] = IsAvailable;
+                additionalMetrics["scan_page_size"] = _options.ScanPageSize;
+                additionalMetrics["use_transaction"] = _options.UseTransaction;
+                additionalMetrics["hit_count"] = Interlocked.Read(ref _hitCount);
+                additionalMetrics["miss_count"] = Interlocked.Read(ref _missCount);
             }
         }
         catch (Exception ex)
@@ -609,7 +602,19 @@ public class UniversalRedisProvider : ICacheProvider, IDisposable
             _logger.LogWarning(ex, "Failed to get Redis statistics");
         }
 
-        return statistics;
+        return new CacheStatistics
+        {
+            ProviderName = ProviderName,
+            Type = ProviderType,
+            TotalKeys = totalKeys,
+            DatabaseSize = databaseSize,
+            ExpiredKeys = expiredKeys,
+            EvictedKeys = evictedKeys,
+            HitRatio = CalculateHitRatio(),
+            Uptime = DateTime.UtcNow - _startTime,
+            LastAccess = DateTime.UtcNow,
+            AdditionalMetrics = additionalMetrics
+        };
     }
 
     public async Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default)
@@ -637,7 +642,7 @@ public class UniversalRedisProvider : ICacheProvider, IDisposable
         }
     }
 
-    public async Task<HealthCheckResult> GetHealthCheckAsync(CancellationToken cancellationToken = default)
+    public async Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> GetHealthCheckAsync(CancellationToken cancellationToken = default)
     {
         var startTime = DateTime.UtcNow;
         
@@ -646,38 +651,30 @@ public class UniversalRedisProvider : ICacheProvider, IDisposable
             var isHealthy = await IsHealthyAsync(cancellationToken);
             var responseTime = DateTime.UtcNow - startTime;
 
-            return new HealthCheckResult
+            var data = new Dictionary<string, object>
             {
-                IsHealthy = isHealthy,
-                Status = isHealthy ? "Healthy" : "Unhealthy",
-                Description = isHealthy ? "Redis connection is working properly" : "Redis connection issues detected",
-                ResponseTime = responseTime,
-                Data = new Dictionary<string, object>
-                {
-                    ["Provider"] = ProviderName,
-                    ["Database"] = _options.Database,
-                    ["IsConnected"] = IsAvailable,
-                    ["ResponseTime"] = responseTime.TotalMilliseconds
-                }
+                ["Provider"] = ProviderName,
+                ["Database"] = _options.Database,
+                ["IsConnected"] = IsAvailable,
+                ["ResponseTime"] = responseTime.TotalMilliseconds
             };
+            
+            return isHealthy
+                ? Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Redis connection is working properly", data)
+                : Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Redis connection issues detected", null, data);
         }
         catch (Exception ex)
         {
             var responseTime = DateTime.UtcNow - startTime;
             
-            return new HealthCheckResult
+            var data = new Dictionary<string, object>
             {
-                IsHealthy = false,
-                Status = "Unhealthy",
-                Description = "Redis health check failed with exception",
-                ResponseTime = responseTime,
-                Exception = ex,
-                Data = new Dictionary<string, object>
-                {
-                    ["Provider"] = ProviderName,
-                    ["Error"] = ex.Message
-                }
+                ["Provider"] = ProviderName,
+                ["Error"] = ex.Message,
+                ["ResponseTime"] = responseTime.TotalMilliseconds
             };
+            
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Redis health check failed with exception", ex, data);
         }
     }
 
@@ -685,8 +682,10 @@ public class UniversalRedisProvider : ICacheProvider, IDisposable
 
     #region Events
 
+#pragma warning disable CS0067 // Event is never used
     public event EventHandler<CacheKeyRemovedEventArgs>? KeyRemoved;
     public event EventHandler<CacheKeyExpiredEventArgs>? KeyExpired;
+#pragma warning restore CS0067
 
     #endregion
 

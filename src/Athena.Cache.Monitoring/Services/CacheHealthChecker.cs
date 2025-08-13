@@ -47,14 +47,14 @@ public class CacheHealthChecker(
         return healthStatus;
     }
 
-    public async Task<HealthCheckResult> CheckComponentHealthAsync(string componentName)
+    public async Task<CacheHealthResult> CheckComponentHealthAsync(string componentName)
     {
         return componentName.ToLower() switch
         {
             "cache" => await CheckCacheConnectionAsync(),
             "memory" => await CheckMemoryUsageAsync(),
             "performance" => await CheckPerformanceAsync(),
-            _ => new HealthCheckResult
+            _ => new CacheHealthResult
             {
                 Status = HealthStatus.Warning,
                 Message = "Unknown component"
@@ -62,7 +62,7 @@ public class CacheHealthChecker(
         };
     }
 
-    private async Task<HealthCheckResult> CheckCacheConnectionAsync()
+    private async Task<CacheHealthResult> CheckCacheConnectionAsync()
     {
         var startTime = DateTime.UtcNow;
         try
@@ -77,7 +77,7 @@ public class CacheHealthChecker(
 
             var responseTime = DateTime.UtcNow - startTime;
 
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Status = retrieved == testValue ? HealthStatus.Healthy : HealthStatus.Warning,
                 Message = retrieved == testValue ? "Cache connection healthy" : "Cache data mismatch",
@@ -86,7 +86,7 @@ public class CacheHealthChecker(
         }
         catch (Exception ex)
         {
-            return new HealthCheckResult
+            return new CacheHealthResult
             {
                 Status = HealthStatus.Critical,
                 Message = $"Cache connection failed: {ex.Message}",
@@ -95,7 +95,7 @@ public class CacheHealthChecker(
         }
     }
 
-    private async Task<HealthCheckResult> CheckMemoryUsageAsync()
+    private async Task<CacheHealthResult> CheckMemoryUsageAsync()
     {
         var metrics = await metricsCollector.CollectMetricsAsync();
         var memoryUsage = metrics.MemoryUsageMB;
@@ -108,7 +108,7 @@ public class CacheHealthChecker(
             _ => HealthStatus.Healthy
         };
 
-        return new HealthCheckResult
+        return new CacheHealthResult
         {
             Status = status,
             Message = $"Memory usage: {memoryUsage}MB / {threshold}MB",
@@ -121,7 +121,7 @@ public class CacheHealthChecker(
         };
     }
 
-    private async Task<HealthCheckResult> CheckPerformanceAsync()
+    private async Task<CacheHealthResult> CheckPerformanceAsync()
     {
         var metrics = await metricsCollector.CollectMetricsAsync();
         var responseTime = metrics.AverageResponseTimeMs;
@@ -154,7 +154,7 @@ public class CacheHealthChecker(
             messages.Add($"Hit ratio below target: {hitRatio:P1}");
         }
 
-        return new HealthCheckResult
+        return new CacheHealthResult
         {
             Status = status,
             Message = messages.Any() ? string.Join(", ", messages) : "Performance healthy",

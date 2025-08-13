@@ -1,3 +1,5 @@
+using Invalidus.Core.Abstractions;
+
 namespace Invalidus.Monitoring.Abstractions;
 
 /// <summary>

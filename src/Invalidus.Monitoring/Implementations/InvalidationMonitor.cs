@@ -171,12 +171,12 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
             {
                 ProviderName = providerName,
                 ProviderType = provider.ProviderType,
-                IsHealthy = healthResult.IsHealthy,
+                IsHealthy = healthResult.Status == Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy,
                 CheckedAt = DateTime.UtcNow,
                 ResponseTime = stopwatch.Elapsed,
-                Status = healthResult.Status,
+                Status = healthResult.Status.ToString(),
                 ErrorMessage = healthResult.Exception?.Message,
-                Details = healthResult.Data
+                Details = healthResult.Data?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? new Dictionary<string, object>()
             };
         }
         catch (Exception ex)
@@ -399,8 +399,21 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
                     TotalMemoryUsage = current.TotalMemoryUsage
                 };
                 
-                historicalMetrics = historicalMetrics with 
-                { 
+                historicalMetrics = new InvalidationMetrics
+                {
+                    Timestamp = historicalMetrics.Timestamp,
+                    TotalCacheHits = historicalMetrics.TotalCacheHits,
+                    TotalCacheMisses = historicalMetrics.TotalCacheMisses,
+                    TotalInvalidations = historicalMetrics.TotalInvalidations,
+                    SuccessfulInvalidations = historicalMetrics.SuccessfulInvalidations,
+                    FailedInvalidations = historicalMetrics.FailedInvalidations,
+                    TotalKeys = historicalMetrics.TotalKeys,
+                    TotalMemoryUsage = historicalMetrics.TotalMemoryUsage,
+                    TotalCacheOperations = historicalMetrics.TotalCacheOperations,
+                    AverageCacheResponseTime = historicalMetrics.AverageCacheResponseTime,
+                    AverageInvalidationTime = historicalMetrics.AverageInvalidationTime,
+                    ProviderMetrics = historicalMetrics.ProviderMetrics,
+                    AdditionalMetrics = historicalMetrics.AdditionalMetrics,
                     CacheHitRatio = historicalMetrics.TotalCacheHits + historicalMetrics.TotalCacheMisses > 0 
                         ? (double)historicalMetrics.TotalCacheHits / (historicalMetrics.TotalCacheHits + historicalMetrics.TotalCacheMisses) 
                         : 0.0,
@@ -417,6 +430,7 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
             _logger.LogError(ex, "Error getting metrics history from {StartTime} to {EndTime}", startTime, endTime);
         }
 
+        await Task.CompletedTask;
         return history;
     }
 
@@ -424,7 +438,7 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
 
     #region Performance Monitoring
 
-    public async Task<InvalidationPerformanceStats> GetPerformanceStatsAsync(TimeSpan period, CancellationToken cancellationToken = default)
+    public Task<InvalidationPerformanceStats> GetPerformanceStatsAsync(TimeSpan period, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -449,7 +463,7 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
             var errors = recentInvalidationEvents.Where(e => !e.Success).ToList();
             var errorRate = totalInvalidations > 0 ? (double)errors.Count / totalInvalidations : 0.0;
             
-            return new InvalidationPerformanceStats
+            return Task.FromResult(new InvalidationPerformanceStats
             {
                 Period = period,
                 StartTime = startTime,
@@ -472,16 +486,16 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
                     .ToDictionary(g => g.Key, g => (long)g.Count()),
                 AverageLatencyByProvider = recentInvalidationEvents.GroupBy(e => e.ProviderName)
                     .ToDictionary(g => g.Key, g => TimeSpan.FromTicks((long)g.Average(e => e.Duration.Ticks)))
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error calculating performance stats for period {Period}", period);
-            return new InvalidationPerformanceStats { Period = period };
+            return Task.FromResult(new InvalidationPerformanceStats { Period = period });
         }
     }
 
-    public async Task<IEnumerable<HotKeyAnalysis>> GetHotKeysAnalysisAsync(TimeSpan period, int topCount = 50, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<HotKeyAnalysis>> GetHotKeysAnalysisAsync(TimeSpan period, int topCount = 50, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -509,16 +523,16 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
                 .OrderByDescending(h => h.InvalidationCount)
                 .Take(topCount);
 
-            return keyGroups;
+            return Task.FromResult(keyGroups);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error analyzing hot keys for period {Period}", period);
-            return Enumerable.Empty<HotKeyAnalysis>();
+            return Task.FromResult(Enumerable.Empty<HotKeyAnalysis>());
         }
     }
 
-    public async Task<InvalidationPatternAnalysis> AnalyzeInvalidationPatternsAsync(TimeSpan period, CancellationToken cancellationToken = default)
+    public Task<InvalidationPatternAnalysis> AnalyzeInvalidationPatternsAsync(TimeSpan period, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -546,7 +560,7 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
 
             var recommendations = GenerateRecommendations(patternFrequency, patternAverageLatency, patternSuccessRate);
 
-            return new InvalidationPatternAnalysis
+            return Task.FromResult(new InvalidationPatternAnalysis
             {
                 AnalysisPeriod = period,
                 GeneratedAt = DateTime.UtcNow,
@@ -558,12 +572,12 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
                 CascadePatterns = new Dictionary<string, List<string>>(), // Would need more complex analysis
                 CascadeEfficiency = new Dictionary<string, double>(),
                 Recommendations = recommendations
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error analyzing invalidation patterns for period {Period}", period);
-            return new InvalidationPatternAnalysis { AnalysisPeriod = period };
+            return Task.FromResult(new InvalidationPatternAnalysis { AnalysisPeriod = period });
         }
     }
 
@@ -700,7 +714,7 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
             try
             {
                 var metrics = await CollectMetricsAsync();
-                await EvaluateAlertsAsync(metrics);
+                EvaluateAlertsAsync(metrics);
             }
             catch (Exception ex)
             {
@@ -709,7 +723,7 @@ public class InvalidationMonitor : IInvalidationMonitor, IDisposable
         });
     }
 
-    private async Task EvaluateAlertsAsync(InvalidationMetrics metrics)
+    private void EvaluateAlertsAsync(InvalidationMetrics metrics)
     {
         foreach (var threshold in _alertConfiguration.Thresholds.Values)
         {
