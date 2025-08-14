@@ -1,0 +1,389 @@
+@host = https://localhost:7140
+@contentType = application/json
+
+###
+# 🏠 기본 정보
+GET {{host}}/
+
+###
+# 🏥 Health Check
+GET {{host}}/health
+
+###
+# 🏥 Health Check - Ready
+GET {{host}}/health/ready
+
+###
+# 🏥 Health Check - Live
+GET {{host}}/health/live
+
+### ========================================
+# 📋 기본 무효화 기능 테스트
+### ========================================
+
+###
+# 무효화 엔진 상태 확인
+GET {{host}}/api/BasicInvalidation/status
+
+###
+# 추적된 캐시 키 확인 - Products
+GET {{host}}/api/BasicInvalidation/tracked-keys/products
+
+###
+# 추적된 캐시 키 확인 - Categories
+GET {{host}}/api/BasicInvalidation/tracked-keys/categories
+
+###
+# 테이블 기반 무효화 - Products
+POST {{host}}/api/BasicInvalidation/invalidate/table/products
+
+###
+# 테이블 기반 무효화 - Categories
+POST {{host}}/api/BasicInvalidation/invalidate/table/categories
+
+###
+# 패턴 기반 무효화 - 모든 상품
+POST {{host}}/api/BasicInvalidation/invalidate/pattern
+Content-Type: {{contentType}}
+
+{
+  "pattern": "product:*"
+}
+
+###
+# 패턴 기반 무효화 - 카테고리별 상품
+POST {{host}}/api/BasicInvalidation/invalidate/pattern
+Content-Type: {{contentType}}
+
+{
+  "pattern": "products:category:*"
+}
+
+###
+# 키 기반 무효화 - 특정 상품
+POST {{host}}/api/BasicInvalidation/invalidate/key
+Content-Type: {{contentType}}
+
+{
+  "key": "product:1"
+}
+
+###
+# 키 기반 무효화 - 인기 상품 목록
+POST {{host}}/api/BasicInvalidation/invalidate/key
+Content-Type: {{contentType}}
+
+{
+  "key": "products:featured"
+}
+
+###
+# 상품 캐시 시나리오 데모 - 키 기반 무효화
+POST {{host}}/api/BasicInvalidation/demo/product-cache-scenario
+Content-Type: {{contentType}}
+
+{
+  "productId": 1,
+  "invalidateType": "key"
+}
+
+###
+# 상품 캐시 시나리오 데모 - 패턴 기반 무효화
+POST {{host}}/api/BasicInvalidation/demo/product-cache-scenario
+Content-Type: {{contentType}}
+
+{
+  "productId": 2,
+  "invalidateType": "pattern"
+}
+
+###
+# 상품 캐시 시나리오 데모 - 테이블 기반 무효화
+POST {{host}}/api/BasicInvalidation/demo/product-cache-scenario
+Content-Type: {{contentType}}
+
+{
+  "productId": 3,
+  "invalidateType": "table"
+}
+
+###
+# 상품 캐시 시나리오 데모 - 무효화 없음
+POST {{host}}/api/BasicInvalidation/demo/product-cache-scenario
+Content-Type: {{contentType}}
+
+{
+  "productId": 1
+}
+
+### ========================================
+# 📦 배치 무효화 기능 테스트
+### ========================================
+
+###
+# 배치 테이블 무효화 - 여러 테이블
+POST {{host}}/api/BatchInvalidation/invalidate/batch-tables
+Content-Type: {{contentType}}
+
+{
+  "tableNames": ["products", "categories", "users"]
+}
+
+###
+# 배치 패턴 무효화 - 여러 패턴
+POST {{host}}/api/BatchInvalidation/invalidate/batch-patterns
+Content-Type: {{contentType}}
+
+{
+  "patterns": [
+    "product:*",
+    "products:category:*",
+    "category:*",
+    "user:*"
+  ]
+}
+
+###
+# 배치 키 무효화 - 여러 키
+POST {{host}}/api/BatchInvalidation/invalidate/batch-keys
+Content-Type: {{contentType}}
+
+{
+  "keys": [
+    "product:1",
+    "product:2",
+    "product:3",
+    "products:featured",
+    "products:on-sale",
+    "categories:all"
+  ]
+}
+
+###
+# 대량 가격 업데이트 시나리오 - 개별 전략
+POST {{host}}/api/BatchInvalidation/demo/bulk-price-update
+Content-Type: {{contentType}}
+
+{
+  "productUpdates": [
+    {
+      "productId": 1,
+      "newPrice": 999.99,
+      "newSalePrice": 899.99
+    },
+    {
+      "productId": 2,
+      "newPrice": 1299.99
+    },
+    {
+      "productId": 4,
+      "newPrice": 2199.99,
+      "newSalePrice": 1999.99
+    }
+  ],
+  "invalidationStrategy": "individual"
+}
+
+###
+# 대량 가격 업데이트 시나리오 - 패턴 전략
+POST {{host}}/api/BatchInvalidation/demo/bulk-price-update
+Content-Type: {{contentType}}
+
+{
+  "productUpdates": [
+    {
+      "productId": 5,
+      "newPrice": 1199.99
+    },
+    {
+      "productId": 6,
+      "newPrice": 1699.99,
+      "newSalePrice": 1499.99
+    }
+  ],
+  "invalidationStrategy": "pattern"
+}
+
+###
+# 대량 가격 업데이트 시나리오 - 테이블 전략
+POST {{host}}/api/BatchInvalidation/demo/bulk-price-update
+Content-Type: {{contentType}}
+
+{
+  "productUpdates": [
+    {
+      "productId": 7,
+      "newPrice": 299.99,
+      "newSalePrice": 249.99
+    },
+    {
+      "productId": 8,
+      "newPrice": 399.99,
+      "newSalePrice": 349.99
+    }
+  ],
+  "invalidationStrategy": "table"
+}
+
+###
+# 대량 가격 업데이트 시나리오 - 스마트 전략 (권장)
+POST {{host}}/api/BatchInvalidation/demo/bulk-price-update
+Content-Type: {{contentType}}
+
+{
+  "productUpdates": [
+    {
+      "productId": 1,
+      "newPrice": 949.99,
+      "newSalePrice": 849.99
+    },
+    {
+      "productId": 2,
+      "newPrice": 879.99
+    },
+    {
+      "productId": 7,
+      "newPrice": 269.99,
+      "newSalePrice": 229.99
+    },
+    {
+      "productId": 11,
+      "newPrice": 52.99
+    }
+  ],
+  "invalidationStrategy": "smart"
+}
+
+###
+# 카테고리 재구성 시나리오
+POST {{host}}/api/BatchInvalidation/demo/category-restructure
+Content-Type: {{contentType}}
+
+{
+  "affectedCategoryIds": [1, 2, 5, 6, 7]
+}
+
+### ========================================
+# ⚠️ 위험한 작업 (주의해서 사용!)
+### ========================================
+
+###
+# 전체 캐시 초기화 (주의: 모든 캐시가 삭제됨)
+# POST {{host}}/api/BasicInvalidation/invalidate/all
+
+### ========================================
+# 🧪 테스트 워크플로우 예제
+### ========================================
+
+###
+# 워크플로우 1: 기본 캐시 테스트
+# 1단계: 상품 정보 조회 (캐시됨)
+# GET /api/products/1
+
+###
+# 2단계: 캐시 상태 확인
+GET {{host}}/api/BasicInvalidation/tracked-keys/products
+
+###
+# 3단계: 특정 상품 캐시 무효화
+POST {{host}}/api/BasicInvalidation/invalidate/key
+Content-Type: {{contentType}}
+
+{
+  "key": "product:1"
+}
+
+###
+# 4단계: 캐시 상태 재확인
+GET {{host}}/api/BasicInvalidation/tracked-keys/products
+
+### ========================================
+# 워크플로우 2: 대량 업데이트 테스트
+###
+
+###
+# 1단계: 여러 상품 정보 조회하여 캐시 생성
+# (실제 앱에서는 GET /api/products 등을 호출)
+
+###
+# 2단계: 대량 가격 업데이트 실행
+POST {{host}}/api/BatchInvalidation/demo/bulk-price-update
+Content-Type: {{contentType}}
+
+{
+  "productUpdates": [
+    { "productId": 1, "newPrice": 899.99 },
+    { "productId": 2, "newPrice": 1199.99 },
+    { "productId": 3, "newPrice": 649.99 },
+    { "productId": 4, "newPrice": 2099.99 }
+  ],
+  "invalidationStrategy": "smart"
+}
+
+###
+# 3단계: 업데이트 후 캐시 상태 확인
+GET {{host}}/api/BasicInvalidation/tracked-keys/products
+
+### ========================================
+# 워크플로우 3: 시스템 상태 모니터링
+###
+
+###
+# 1단계: 전체 시스템 상태 확인
+GET {{host}}/health
+
+###
+# 2단계: 무효화 엔진 상태 확인
+GET {{host}}/api/BasicInvalidation/status
+
+###
+# 3단계: 각 테이블별 추적 상태 확인
+GET {{host}}/api/BasicInvalidation/tracked-keys/products
+
+###
+GET {{host}}/api/BasicInvalidation/tracked-keys/categories
+
+###
+GET {{host}}/api/BasicInvalidation/tracked-keys/users
+
+### ========================================
+# 🚀 성능 테스트 시나리오
+### ========================================
+
+###
+# 대용량 배치 무효화 테스트 (10개 상품)
+POST {{host}}/api/BatchInvalidation/invalidate/batch-keys
+Content-Type: {{contentType}}
+
+{
+  "keys": [
+    "product:1", "product:2", "product:3", "product:4", "product:5",
+    "product:6", "product:7", "product:8", "product:9", "product:10"
+  ]
+}
+
+###
+# 복합 패턴 무효화 테스트
+POST {{host}}/api/BatchInvalidation/invalidate/batch-patterns
+Content-Type: {{contentType}}
+
+{
+  "patterns": [
+    "product:*",
+    "products:category:1:*",
+    "products:category:2:*",
+    "products:category:5:*",
+    "products:featured",
+    "products:on-sale",
+    "products:in-stock"
+  ]
+}
+
+### ========================================
+# 📊 Swagger UI 링크
+### ========================================
+# 
+# Swagger UI에서 더 자세한 API 문서와 인터랙티브 테스트를 확인하세요:
+# {{host}}/swagger
+#
+### ========================================

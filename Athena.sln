@@ -65,6 +65,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Cache.Sample", "samp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Invalidus", "Invalidus", "{62E936B7-0478-4F55-9466-F1E270BB09D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Athena.Invalidation.Sample", "samples\Athena.Invalidation.Sample\Athena.Invalidation.Sample.csproj", "{C973A724-FAF7-4082-B133-8BE3AAE35295}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -159,6 +161,10 @@ Global
 		{B2D0AD5D-E5E3-414F-A2C7-9AADA1CBD8F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2D0AD5D-E5E3-414F-A2C7-9AADA1CBD8F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2D0AD5D-E5E3-414F-A2C7-9AADA1CBD8F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C973A724-FAF7-4082-B133-8BE3AAE35295}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C973A724-FAF7-4082-B133-8BE3AAE35295}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C973A724-FAF7-4082-B133-8BE3AAE35295}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C973A724-FAF7-4082-B133-8BE3AAE35295}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -186,5 +192,6 @@ Global
 		{3628458B-07F9-46A0-B2CC-84C68C00FC29} = {826B9C26-51B5-434D-876A-C1112423CBED}
 		{65D7D3B6-D846-46F7-8F5B-C19169CC3429} = {826B9C26-51B5-434D-876A-C1112423CBED}
 		{B2D0AD5D-E5E3-414F-A2C7-9AADA1CBD8F8} = {8AF68B0C-7CFD-4FA5-8A1E-291318B0A157}
+		{C973A724-FAF7-4082-B133-8BE3AAE35295} = {8AF68B0C-7CFD-4FA5-8A1E-291318B0A157}
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageReference Include="ZiggyCreatures.FusionCache" Version="2.3.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.58" />
+    <PackageReference Include="System.Text.Json" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.Core\Athena.Invalidation.Core.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.Engine\Athena.Invalidation.Engine.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.Strategies\Athena.Invalidation.Strategies.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.AspNetCore\Athena.Invalidation.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.Redis\Athena.Invalidation.Redis.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.MemoryCache\Athena.Invalidation.MemoryCache.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.FusionCache\Athena.Invalidation.FusionCache.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.MultiProvider\Athena.Invalidation.MultiProvider.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.CQRS\Athena.Invalidation.CQRS.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.Hierarchical\Athena.Invalidation.Hierarchical.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.Distributed\Athena.Invalidation.Distributed.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.Monitoring\Athena.Invalidation.Monitoring.csproj" />
+    <ProjectReference Include="..\..\Athena.Invalidation\src\Athena.Invalidation.Tracking\Athena.Invalidation.Tracking.csproj" />
+  </ItemGroup>
+
+</Project>
