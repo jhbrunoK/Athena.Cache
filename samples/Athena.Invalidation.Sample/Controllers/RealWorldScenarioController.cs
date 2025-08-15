@@ -420,8 +420,8 @@ public class RealWorldScenarioController : ControllerBase
                 summary = new
                 {
                     totalSteps = steps.Count,
-                    cacheHits = steps.Count(s => ((dynamic)s).cacheHit),
-                    cacheMisses = steps.Count(s => !((dynamic)s).cacheHit),
+                    cacheHits = new[] { wasCached1, wasCached2, false, wasCached3, wasCached4 }.Count(hit => hit),
+                    cacheMisses = new[] { wasCached1, wasCached2, false, wasCached3, wasCached4 }.Count(hit => !hit),
                     priceSuccessfullyUpdated = product3!.Price == request.NewPrice,
                     cacheSuccessfullyInvalidated = !wasCached3,
                     cacheSuccessfullyRebuilt = wasCached4
